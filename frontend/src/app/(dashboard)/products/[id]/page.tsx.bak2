@@ -1,0 +1,2864 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import api from "../../../../lib/api";
+import { useDashboardStore } from "../../../../stores/dashboard";
+import { Button } from "../../../../components/ui/button";
+import { Input } from "../../../../components/ui/input";
+import { Card, CardContent } from "../../../../components/ui/card";
+import { Plus, Trash2, Edit2, Image, Sparkles, AlertCircle, GripVertical, EyeOff, Layers, Text, Camera, Star, SplitSquareHorizontal, Gift, CheckSquare, ChevronDown, Palette, Check, Shield, Smartphone } from "lucide-react";
+import { formatCurrency } from "../../../../lib/utils";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+
+interface SortableImageItemProps {
+  id: string;
+  url: string;
+  isPrimary: boolean;
+  onDelete: () => void;
+}
+
+function SortableImageItem({ id, url, isPrimary, onDelete }: SortableImageItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: id });
+
+  const style = {
+    transform: transform ? CSS.Transform.toString(transform) : undefined,
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative aspect-square rounded-xl overflow-hidden border border-border bg-muted/20 flex items-center justify-center group shadow-sm select-none"
+    >
+      <img src={url} alt="Product image" className="w-full h-full object-cover pointer-events-none" />
+      
+      {/* Drag handle area */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-grab active:cursor-grabbing text-white"
+      >
+        <GripVertical className="h-6 w-6" />
+      </div>
+
+      {/* Primary Badge */}
+      {isPrimary && (
+        <span className="absolute top-2 right-2 bg-primary text-primary-foreground text-[8px] font-bold px-2 py-0.5 rounded-full shadow z-10">
+          الرئيسية
+        </span>
+      )}
+
+      {/* Delete button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        className="absolute bottom-2 left-2 p-1.5 rounded-full bg-red-600/80 hover:bg-red-650 text-white shadow opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        title="حذف الصورة"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+
+interface ProductFormProps {
+  storeId?: string;
+}
+
+export default function ProductFormPage({ storeId }: ProductFormProps) {
+  const params = useParams();
+  const router = useRouter();
+  const { selectedStore } = useDashboardStore();
+  const currentStoreId = storeId || selectedStore?.id;
+  const productId = params.id as string;
+  const isCreateMode = productId === "new";
+
+  const [loading, setLoading] = useState(!isCreateMode);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  // Form fields
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [title, setTitle] = useState("");
+  const [sku, setSku] = useState("");
+  const [price, setPrice] = useState("");
+  const [comparePrice, setComparePrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
+  const [adCostPerOrder, setAdCostPerOrder] = useState("");
+  const [stock, setStock] = useState("100");
+  const [primaryImage, setPrimaryImage] = useState("");
+  const [images, setImages] = useState<{ id?: string; clientId: string; image_url: string; alt_text?: string; position: number; is_primary: boolean }[]>([]);
+  const [directImageUrl, setDirectImageUrl] = useState("");
+
+  // Variants state
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variantAttributes, setVariantAttributes] = useState<{ name: string; values: string[]; inputVal?: string }[]>([]);
+  const [variantCombinations, setVariantCombinations] = useState<{
+    id?: string;
+    name: string;
+    price: string;
+    sku: string;
+    stock_quantity: string;
+    is_active: boolean;
+    image_url: string;
+    options: { option_type: string; label: string; value: string }[];
+  }[]>([]);
+
+  const [description, setDescription] = useState("");
+
+  // Quantity offers
+  const [quantityOffers, setQuantityOffers] = useState<{ quantity: number; price: number; label: string }[]>([]);
+  const [showAddOffer, setShowAddOffer] = useState(false);
+  const [offerQty, setOfferQty] = useState("");
+  const [offerPrice, setOfferPrice] = useState("");
+
+  // Section builder
+  const [sections, setSections] = useState<any[]>([]);
+  const [sectionsLoading, setSectionsLoading] = useState(false);
+  const [showAddSection, setShowAddSection] = useState(false);
+  const [editingSection, setEditingSection] = useState<any | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+  const [sectionUploading, setSectionUploading] = useState<string | null>(null);
+
+  // Pending sections for creation mode
+  const [pendingSections, setPendingSections] = useState<any[]>([]);
+
+  // Theme
+  const [selectedTheme, setSelectedTheme] = useState("");
+  const [showThemePicker, setShowThemePicker] = useState(false);
+
+  // A/B Layout Testing States
+  const [enableAbTest, setEnableAbTest] = useState(false);
+  const [abTestProductBId, setAbTestProductBId] = useState<string>("");
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [abTestStats, setAbTestStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const [activeSections, setActiveSections] = useState({
+    basicInfo: true,
+    pricing: true,
+    profitability: false,
+    media: false,
+    description: false,
+    offers: false,
+    pageSections: false,
+    theme: false,
+    abTesting: false,
+  });
+
+  const themeCatalog = [
+    {
+      id: 'theme-minimal',
+      name: 'كلاسيكي بسيط',
+      nameEn: 'Minimal',
+      description: 'تصميم نظيف وبسيط مع خطوط أنيقة',
+      colors: { bg: '#ffffff', text: '#111111', accent: '#666666', btn: '#111111' },
+    },
+    {
+      id: 'theme-direct-offer',
+      name: 'عرض مباشر',
+      nameEn: 'Direct Offer',
+      description: 'تصميم جريء لصفحات العروض والتخفيضات',
+      colors: { bg: '#ffffff', text: '#000000', accent: '#d00000', btn: '#ffc300' },
+    },
+    {
+      id: 'theme-classic-luxury',
+      name: 'فخامة كلاسيكية',
+      nameEn: 'Classic Luxury',
+      description: 'خلفية داكنة مع لمسات ذهبية فاخرة',
+      colors: { bg: '#0a0a0a', text: '#f4f4f4', accent: '#c5a059', btn: '#c5a059' },
+    },
+    {
+      id: 'theme-raw-authentic',
+      name: 'أصيل وبسيط',
+      nameEn: 'Raw Authentic',
+      description: 'مظهر خام وطبيعي بخط أحادي المسافة',
+      colors: { bg: '#fafafa', text: '#222222', accent: '#222222', btn: '#e0e0e0' },
+    },
+    {
+      id: 'theme-brutalist',
+      name: 'بروتاليست',
+      nameEn: 'Brutalist',
+      description: 'تصميم صارم وقوي بأسلوب معماري حديث',
+      colors: { bg: '#e6e6e6', text: '#000000', accent: '#0000ff', btn: '#000000' },
+    },
+    {
+      id: 'theme-soft-eco',
+      name: 'طبيعي ناعم',
+      nameEn: 'Soft Eco',
+      description: 'ألوان طبيعية هادئة مستوحاة من البيئة',
+      colors: { bg: '#f4f7f4', text: '#3e4a3d', accent: '#6b8e6b', btn: '#6b8e6b' },
+    },
+    {
+      id: 'theme-glass',
+      name: 'زجاجي عصري',
+      nameEn: 'Glass',
+      description: 'تأثير الزجاج مع خلفية داكنة متدرجة',
+      colors: { bg: '#1e1e2f', text: '#ffffff', accent: '#00f0ff', btn: 'rgba(255,255,255,0.1)' },
+    },
+    {
+      id: 'theme-playful',
+      name: 'مرح وممتع',
+      nameEn: 'Playful',
+      description: 'ألوان وردية مرحة مع حركات ديناميكية',
+      colors: { bg: '#fff0f5', text: '#505050', accent: '#ff69b4', btn: '#ff69b4' },
+    },
+  ];
+
+  const PREVIEW_THEME_STYLES: Record<string, React.CSSProperties> = {
+    'theme-minimal': {
+      '--theme-bg': '#ffffff',
+      '--theme-text': '#111111',
+      '--theme-accent': '#666666',
+      '--theme-font': "Cairo, sans-serif",
+      '--theme-btn-bg': '#111111',
+      '--theme-btn-text': '#ffffff',
+      '--theme-btn-hover-bg': '#333333',
+      '--theme-btn-radius': '8px',
+      '--theme-img-radius': '12px',
+      '--theme-card-bg': '#f8f8f8',
+      '--theme-card-border': '#e5e5e5',
+      '--theme-section-radius': '16px',
+    } as any,
+    'theme-direct-offer': {
+      '--theme-bg': '#ffffff',
+      '--theme-text': '#000000',
+      '--theme-accent': '#d00000',
+      '--theme-font': "Arial, sans-serif",
+      '--theme-btn-bg': '#ffc300',
+      '--theme-btn-text': '#000000',
+      '--theme-btn-hover-bg': '#ffaa00',
+      '--theme-btn-radius': '6px',
+      '--theme-btn-border': '2px solid #000',
+      '--theme-btn-shadow': '4px 4px 0px #000',
+      '--theme-img-radius': '0',
+      '--theme-card-bg': '#fff8e8',
+      '--theme-card-border': '#ffc300',
+      '--theme-section-radius': '4px',
+      '--theme-title-transform': 'uppercase',
+      '--theme-title-weight': '900',
+    } as any,
+    'theme-classic-luxury': {
+      '--theme-bg': '#0a0a0a',
+      '--theme-text': '#f4f4f4',
+      '--theme-accent': '#c5a059',
+      '--theme-font': "Georgia, serif",
+      '--theme-btn-bg': 'transparent',
+      '--theme-btn-text': '#c5a059',
+      '--theme-btn-hover-bg': '#c5a059',
+      '--theme-btn-hover-text': '#0a0a0a',
+      '--theme-btn-radius': '0',
+      '--theme-btn-border': '1px solid #c5a059',
+      '--theme-img-radius': '0',
+      '--theme-card-bg': '#141414',
+      '--theme-card-border': '#2a2a2a',
+      '--theme-section-radius': '0',
+      '--theme-title-weight': '400',
+    } as any,
+    'theme-raw-authentic': {
+      '--theme-bg': '#fafafa',
+      '--theme-text': '#222222',
+      '--theme-accent': '#222222',
+      '--theme-font': "Courier New, monospace",
+      '--theme-btn-bg': '#e0e0e0',
+      '--theme-btn-text': '#222222',
+      '--theme-btn-hover-bg': '#cccccc',
+      '--theme-btn-radius': '4px',
+      '--theme-btn-border': '1px solid #222',
+      '--theme-img-radius': '0',
+      '--theme-img-border': '1px solid #e0e0e0',
+      '--theme-card-bg': '#f0f0f0',
+      '--theme-card-border': '#d0d0d0',
+      '--theme-section-radius': '2px',
+    } as any,
+    'theme-brutalist': {
+      '--theme-bg': '#e6e6e6',
+      '--theme-text': '#000000',
+      '--theme-accent': '#0000ff',
+      '--theme-font': "Impact, sans-serif",
+      '--theme-btn-bg': '#000000',
+      '--theme-btn-text': '#ffffff',
+      '--theme-btn-hover-bg': '#0000ff',
+      '--theme-btn-radius': '0',
+      '--theme-img-radius': '0',
+      '--theme-img-border': '3px solid #000',
+      '--theme-card-bg': '#d6d6d6',
+      '--theme-card-border': '#000000',
+      '--theme-section-radius': '0',
+      '--theme-title-transform': 'uppercase',
+      '--theme-title-size': '2rem',
+    } as any,
+    'theme-soft-eco': {
+      '--theme-bg': '#f4f7f4',
+      '--theme-text': '#3e4a3d',
+      '--theme-accent': '#6b8e6b',
+      '--theme-font': "Georgia, serif",
+      '--theme-btn-bg': '#6b8e6b',
+      '--theme-btn-text': '#ffffff',
+      '--theme-btn-hover-bg': '#5a7a5a',
+      '--theme-btn-radius': '50px',
+      '--theme-btn-shadow': '0 10px 20px rgba(107, 142, 107, 0.2)',
+      '--theme-img-radius': '20px',
+      '--theme-card-bg': '#eaf0ea',
+      '--theme-card-border': '#c8d8c8',
+      '--theme-section-radius': '20px',
+    } as any,
+    'theme-glass': {
+      '--theme-bg': '#1e1e2f',
+      '--theme-text': '#ffffff',
+      '--theme-accent': '#00f0ff',
+      '--theme-font': "sans-serif",
+      '--theme-btn-bg': 'rgba(255, 255, 255, 0.1)',
+      '--theme-btn-text': '#00f0ff',
+      '--theme-btn-hover-bg': 'rgba(255, 255, 255, 0.2)',
+      '--theme-btn-radius': '12px',
+      '--theme-btn-border': '1px solid rgba(255, 255, 255, 0.2)',
+      '--theme-btn-shadow': '0 4px 30px rgba(0, 0, 0, 0.1)',
+      '--theme-img-radius': '12px',
+      '--theme-card-bg': 'rgba(255, 255, 255, 0.05)',
+      '--theme-card-border': 'rgba(255, 255, 255, 0.1)',
+      '--theme-section-radius': '16px',
+      '--theme-card-backdrop': 'blur(10px)',
+    } as any,
+    'theme-playful': {
+      '--theme-bg': '#fff0f5',
+      '--theme-text': '#505050',
+      '--theme-accent': '#ff69b4',
+      '--theme-font': "sans-serif",
+      '--theme-btn-bg': '#ff69b4',
+      '--theme-btn-text': '#ffffff',
+      '--theme-btn-hover-bg': '#ff1493',
+      '--theme-btn-radius': '30px',
+      '--theme-img-radius': '30px',
+      '--theme-card-bg': '#fff5f9',
+      '--theme-card-border': '#ffc0d9',
+      '--theme-section-radius': '24px',
+    } as any,
+  };
+
+  const sectionTypeMeta: Record<string, { label: string; icon: React.ReactNode; customEditor?: boolean; fields: { key: string; label: string; type: string }[] }> = {
+    product_info: {
+      label: "معلومات المنتج (الاسم، السعر، الصورة)",
+      icon: <Layers className="h-4 w-4" />,
+      fields: [],
+    },
+    security_captcha: {
+      label: "أمان: كابتشا Google reCAPTCHA v3",
+      icon: <Shield className="h-4 w-4" />,
+      fields: [],
+    },
+    security_otp: {
+      label: "أمان: التحقق عبر الهاتف SMS OTP",
+      icon: <Shield className="h-4 w-4" />,
+      fields: [],
+    },
+    security_rate_limit: {
+      label: "أمان: حد أقصى للطلبات اليومية لكل IP",
+      icon: <Shield className="h-4 w-4" />,
+      fields: [],
+    },
+    security_algerian_ip: {
+      label: "أمان: حظر الطلبات من خارج الجزائر",
+      icon: <Shield className="h-4 w-4" />,
+      fields: [],
+    },
+    quantity_offers: {
+      label: "عروض الكمية (التخفيضات)",
+      icon: <Gift className="h-4 w-4" />,
+      fields: [],
+    },
+    checkout: {
+      label: "استمارة الطلب (الدفع عند الاستلام)",
+      icon: <CheckSquare className="h-4 w-4" />,
+      fields: [],
+    },
+    text: {
+      label: "نص مخصص",
+      icon: <Text className="h-4 w-4" />,
+      customEditor: true,
+      fields: [
+        { key: "background_color", label: "لون الخلفية", type: "color" },
+      ],
+    },
+    image: {
+      label: "صورة / كاروسيل",
+      icon: <Camera className="h-4 w-4" />,
+      fields: [
+        { key: "image", label: "الصورة", type: "image" },
+        { key: "caption", label: "التسمية التوضيحية", type: "text" },
+      ],
+    },
+    reviews: {
+      label: "آراء العملاء",
+      icon: <Star className="h-4 w-4" />,
+      fields: [],
+    },
+    before_after: {
+      label: "مقارنة قبل / بعد",
+      icon: <SplitSquareHorizontal className="h-4 w-4" />,
+      fields: [
+        { key: "before", label: "صورة قبل", type: "image" },
+        { key: "after", label: "صورة بعد", type: "image" },
+      ],
+    },
+    bundles: {
+      label: "باقة منتجات",
+      icon: <Gift className="h-4 w-4" />,
+      fields: [],
+    },
+    features: {
+      label: "مميزات المنتج",
+      icon: <CheckSquare className="h-4 w-4" />,
+      fields: [
+        { key: "features", label: "المميزات (مفصولة بسطر جديد)", type: "textarea" },
+      ],
+    },
+    footer: {
+      label: "تذييل الصفحة (Footer)",
+      icon: <Layers className="h-4 w-4" />,
+      customEditor: true,
+      fields: [
+        { key: "background_color", label: "لون الخلفية", type: "color" },
+      ],
+    },
+    header: {
+      label: "ترويسة الصفحة (Header)",
+      icon: <Layers className="h-4 w-4" />,
+      customEditor: true,
+      fields: [
+        { key: "background_color", label: "لون الخلفية", type: "color" },
+      ],
+    },
+  };
+
+  useEffect(() => {
+    if (!currentStoreId) return;
+
+    // Load categories list
+    api.get(`/products/${currentStoreId}/categories/`)
+      .then((res) => {
+        setCategories(Array.isArray(res.data) ? res.data : (res.data?.results || []));
+      })
+      .catch(() => {});
+
+    if (isCreateMode) {
+      // Creation Mode Initialization
+      setTitle("");
+      setSku("");
+      setPrice("");
+      setComparePrice("");
+      setCostPrice("");
+      setAdCostPerOrder("");
+      setStock("100");
+      setPrimaryImage("");
+      setImages([]);
+      setHasVariants(false);
+      setVariantAttributes([]);
+      setVariantCombinations([]);
+      setDescription("");
+      setError("");
+      setSections([]);
+      setPendingSections([
+        { id: 'pending-header', section_type: 'header', config: { content: selectedStore?.name || "متجرنا", background_color: "#ffffff", color: "#111111", text_align: "right", font_size: "18px" }, order: 0 },
+        { id: 'pending-info', section_type: 'product_info', config: {}, order: 1 },
+        { id: 'pending-checkout', section_type: 'checkout', config: {}, order: 2 },
+        { id: 'pending-footer', section_type: 'footer', config: { content: "© جميع الحقوق محفوظة", background_color: "#ffffff", color: "#666666", text_align: "center", font_size: "14px" }, order: 3 }
+      ]);
+      setQuantityOffers([]);
+      setSelectedTheme("");
+      setShowThemePicker(false);
+      setActiveSections({
+        basicInfo: true,
+        pricing: true,
+        profitability: false,
+        media: false,
+        description: false,
+        offers: false,
+        pageSections: false,
+        theme: false,
+        abTesting: false,
+      });
+      setLoading(false);
+    }
+  }, [currentStoreId, isCreateMode]);
+
+  const [activeTab, setActiveTab] = useState<'A' | 'B'>('A');
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const activeList = (!isCreateMode ? sections : pendingSections).filter(s => s.section_type !== 'security_phone_validation');
+    const currentSelectedId = selectedSectionId || activeList.find(s => s.section_type === 'product_info')?.id || null;
+    
+    if (currentSelectedId) {
+      const sec = activeList.find(s => s.id === currentSelectedId);
+      if (sec) {
+        setEditingSection({ ...sec, config: sec.config || {} });
+      } else {
+        setEditingSection(null);
+      }
+    } else {
+      setEditingSection(null);
+    }
+  }, [selectedSectionId, sections, pendingSections, isCreateMode]);
+
+  const loadProductData = async (id: string) => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/products/${currentStoreId}/${id}/`);
+      const p = res.data;
+      setTitle(p.title);
+      setSelectedCategory(p.category || "");
+      setSku(p.sku || "");
+      setPrice(p.price ? p.price.toString() : "");
+      setComparePrice(p.compare_price ? p.compare_price.toString() : "");
+      setCostPrice(p.cost_price ? p.cost_price.toString() : "");
+      setAdCostPerOrder(p.ad_cost_per_order ? p.ad_cost_per_order.toString() : "");
+      setStock(p.stock ? p.stock.toString() : "100");
+      setPrimaryImage(p.primary_image || "");
+      
+      const loadedImgs = (p.images || []).map((img: any) => ({
+        ...img,
+        clientId: img.id || `img-${Math.random().toString(36).substr(2, 9)}`,
+      }));
+      setImages(loadedImgs.length > 0 ? loadedImgs : (p.primary_image ? [{ clientId: `img-${Date.now()}`, image_url: p.primary_image, position: 0, is_primary: true }] : []));
+
+      if (p.variants && p.variants.length > 0) {
+        setHasVariants(true);
+        const attrsMap: Record<string, Set<string>> = {};
+        p.variants.forEach((v: any) => {
+          (v.options || []).forEach((opt: any) => {
+            if (!attrsMap[opt.label]) {
+              attrsMap[opt.label] = new Set();
+            }
+            attrsMap[opt.label].add(opt.value);
+          });
+        });
+        const attrs = Object.entries(attrsMap).map(([name, vals]) => ({
+          name,
+          values: Array.from(vals),
+          inputVal: "",
+        }));
+        setVariantAttributes(attrs);
+        setVariantCombinations(p.variants.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          price: v.price ? v.price.toString() : "",
+          sku: v.sku || "",
+          stock_quantity: v.stock_quantity ? v.stock_quantity.toString() : "100",
+          is_active: v.is_active !== false,
+          image_url: v.image_url || "",
+          options: v.options || [],
+        })));
+      } else {
+        setHasVariants(false);
+        setVariantAttributes([]);
+        setVariantCombinations([]);
+      }
+
+      setDescription(p.description || "");
+      setError("");
+      setQuantityOffers((p.quantity_offers || []).map((o: any) => ({ quantity: o.quantity, price: parseFloat(o.price), label: o.label || "" })));
+      setSelectedTheme(p.theme || "");
+      setShowThemePicker(false);
+      
+      if (id === productId) {
+        setEnableAbTest(p.enable_ab_test || false);
+        setAbTestProductBId(p.ab_test_product_b || "");
+      }
+
+      setActiveSections({
+        basicInfo: true,
+        pricing: true,
+        profitability: !!(p.cost_price || p.ad_cost_per_order),
+        media: !!p.primary_image,
+        description: !!p.description,
+        offers: !!(p.quantity_offers && p.quantity_offers.length > 0),
+        pageSections: false,
+        theme: !!p.theme,
+        abTesting: !!p.enable_ab_test,
+      });
+
+      // fetch sections
+      setSectionsLoading(true);
+      const secRes = await api.get(`/products/${currentStoreId}/${id}/sections/`);
+      setSections(secRes.data || []);
+    } catch (err) {
+      setError("حدث خطأ أثناء تحميل بيانات المنتج.");
+    } finally {
+      setLoading(false);
+      setSectionsLoading(false);
+    }
+  };
+
+  const saveProductData = async (id: string, overrideAbTest?: boolean) => {
+    setError("");
+    const payload: any = {
+      store_id: currentStoreId,
+      title,
+      sku: sku || "",
+      price: parseFloat(price) || 0,
+      compare_price: comparePrice ? parseFloat(comparePrice) : null,
+      cost_price: activeSections.profitability && costPrice ? parseFloat(costPrice) : null,
+      ad_cost_per_order: activeSections.profitability && adCostPerOrder ? parseFloat(adCostPerOrder) : null,
+      category: selectedCategory || null,
+      stock: parseInt(stock) || 100,
+      primary_image: images.length > 0 ? images[0].image_url : primaryImage,
+      images: images.map((img, idx) => ({
+        id: img.id,
+        image_url: img.image_url,
+        alt_text: img.alt_text || "",
+        position: idx,
+        is_primary: idx === 0,
+      })),
+      description: description || "",
+      theme: selectedTheme || "",
+      variants: hasVariants ? variantCombinations.map(combo => ({
+        id: combo.id,
+        name: combo.name,
+        sku: combo.sku,
+        price: combo.price ? parseFloat(combo.price) : null,
+        stock_quantity: parseInt(combo.stock_quantity) || 0,
+        is_active: combo.is_active,
+        image_url: combo.image_url,
+        options: combo.options.map(opt => ({
+          option_type: opt.option_type,
+          label: opt.label,
+          value: opt.value,
+        })),
+      })) : [],
+    };
+    if (quantityOffers.length > 0) {
+      payload.quantity_offers = quantityOffers;
+    } else {
+      payload.quantity_offers = [];
+    }
+
+    if (id === productId) {
+      payload.enable_ab_test = overrideAbTest !== undefined ? overrideAbTest : enableAbTest;
+      payload.ab_test_product_b = abTestProductBId || null;
+    }
+
+    try {
+      await api.put(`/products/${currentStoreId}/${id}/`, payload);
+      return true;
+    } catch (err) {
+      setError("حدث خطأ أثناء حفظ التغييرات.");
+      return false;
+    }
+  };
+
+  const handleSwitchTab = async (tab: 'A' | 'B') => {
+    if (tab === activeTab) return;
+    const currentId = activeTab === 'A' ? productId : abTestProductBId;
+    if (!currentId) return;
+    
+    setLoading(true);
+    const saved = await saveProductData(currentId);
+    if (saved) {
+      setActiveTab(tab);
+      const targetId = tab === 'A' ? productId : abTestProductBId;
+      await loadProductData(targetId);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isCreateMode) {
+      setActiveSections({
+        basicInfo: true,
+        pricing: true,
+        profitability: false,
+        media: false,
+        description: false,
+        offers: false,
+        pageSections: false,
+        theme: false,
+        abTesting: false,
+      });
+      setLoading(false);
+    } else {
+      loadProductData(productId);
+    }
+  }, [productId, currentStoreId]);
+
+  // Fetch all store products (for Group B selection)
+  useEffect(() => {
+    if (!currentStoreId) return;
+    api.get(`/products/${currentStoreId}/`)
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+        setAllProducts(list.filter((p: any) => p.id !== productId));
+      })
+      .catch(() => {});
+  }, [currentStoreId, productId]);
+
+  // Fetch A/B Testing Stats
+  useEffect(() => {
+    if (isCreateMode || !productId || !currentStoreId || !enableAbTest) return;
+    setStatsLoading(true);
+    api.get(`/analytics/${currentStoreId}/product/${productId}/ab-test/`)
+      .then((res) => {
+        setAbTestStats(res.data);
+      })
+      .catch(() => {})
+      .finally(() => setStatsLoading(false));
+  }, [productId, currentStoreId, enableAbTest, isCreateMode]);
+
+  const [creatingReplica, setCreatingReplica] = useState(false);
+
+  const handleCreateReplicaB = async () => {
+    if (!currentStoreId || isCreateMode) return;
+    setCreatingReplica(true);
+    setError("");
+    try {
+      const res = await api.post(`/products/${currentStoreId}/${productId}/duplicate/`);
+      const newProd = res.data;
+      setAllProducts(prev => [newProd, ...prev]);
+      setAbTestProductBId(newProd.id);
+      setEnableAbTest(true);
+
+      // Persist the A/B link on the master product immediately
+      try {
+        await api.put(`/products/${currentStoreId}/${productId}/`, {
+          enable_ab_test: true,
+          ab_test_product_b: newProd.id,
+        });
+      } catch (linkErr: any) {
+        console.error("Failed to link B variant to master:", linkErr?.response?.data || linkErr);
+      }
+    } catch (err: any) {
+      console.error("Duplicate API error:", err?.response?.status, err?.response?.data || err?.message);
+      setError("فشل إنشاء الصفحة البديلة المكررة B.");
+    } finally {
+      setCreatingReplica(false);
+    }
+  };
+
+  const handleDeactivateAbTest = async () => {
+    setLoading(true);
+    const wasOnB = activeTab === 'B';
+    
+    // Switch state
+    setEnableAbTest(false);
+    
+    if (wasOnB) {
+      setActiveTab('A');
+      await loadProductData(productId);
+    }
+    
+    // Save master product with enable_ab_test = false
+    await saveProductData(productId, false);
+    setLoading(false);
+  };
+
+  const toggleLayoutSection = async (sectionType: string, sectionId?: string) => {
+    if (sectionType === 'product_info') return;
+
+    if (!isCreateMode) {
+      // Edit mode
+      const activeList = [...sections];
+      const existingSection = activeList.find(s => s.section_type === sectionType || (sectionId && s.id === sectionId));
+      
+      if (existingSection) {
+        // Active -> delete it
+        try {
+          await api.delete(`/products/${currentStoreId}/${productId}/sections/${existingSection.id}/`);
+          setSections(prev => prev.filter(s => s.id !== existingSection.id));
+          if (sectionType === 'quantity_offers') {
+            setQuantityOffers([]);
+          }
+        } catch {
+          setError("فشل إزالة القسم");
+        }
+      } else {
+        // Inactive -> create it
+        try {
+          const maxOrder = sections.length > 0 ? Math.max(...sections.map(s => s.order || 0)) : 0;
+          const config: any = {};
+          let order = maxOrder + 1;
+          if (sectionType === 'header') {
+            config.content = selectedStore?.name || "متجرنا";
+            config.background_color = "#ffffff";
+            config.color = "#111111";
+            config.text_align = "right";
+            config.font_size = "18px";
+            order = -100;
+          } else if (sectionType === 'footer') {
+            config.content = "© جميع الحقوق محفوظة";
+            config.background_color = "#ffffff";
+            config.color = "#666666";
+            config.text_align = "center";
+            config.font_size = "14px";
+            order = 999;
+          }
+          const res = await api.post(`/products/${currentStoreId}/${productId}/sections/`, {
+            section_type: sectionType,
+            config,
+            order
+          });
+          setSections(prev => [...prev, res.data].sort((a, b) => (a.order || 0) - (b.order || 0)));
+        } catch {
+          setError("فشل تفعيل القسم");
+        }
+      }
+    } else {
+      // Create mode
+      setPendingSections(prev => {
+        const existing = prev.find(s => s.section_type === sectionType || (sectionId && s.id === sectionId));
+        if (existing) {
+          if (sectionType === 'quantity_offers') {
+            setQuantityOffers([]);
+          }
+          return prev.filter(s => s.id !== existing.id);
+        } else {
+          const config: any = {};
+          let order = prev.length;
+          if (sectionType === 'header') {
+            config.content = selectedStore?.name || "متجرنا";
+            config.background_color = "#ffffff";
+            config.color = "#111111";
+            config.text_align = "right";
+            config.font_size = "18px";
+            order = -100;
+          } else if (sectionType === 'footer') {
+            config.content = "© جميع الحقوق محفوظة";
+            config.background_color = "#ffffff";
+            config.color = "#666666";
+            config.text_align = "center";
+            config.font_size = "14px";
+            order = 999;
+          }
+          return [...prev, {
+            id: `pending-${sectionType}-${Date.now()}`,
+            section_type: sectionType,
+            config,
+            order
+          }].sort((a, b) => (a.order || 0) - (b.order || 0));
+        }
+      });
+    }
+  };
+
+  const fetchSections = async (id: string) => {
+    if (!currentStoreId) return;
+    setSectionsLoading(true);
+    try {
+      const res = await api.get(`/products/${currentStoreId}/${id}/sections/`);
+      let fetchedSections = res.data || [];
+      
+      const hasInfo = fetchedSections.some((s: any) => s.section_type === 'product_info');
+      const hasCheckout = fetchedSections.some((s: any) => s.section_type === 'checkout');
+      const hasFooter = fetchedSections.some((s: any) => s.section_type === 'footer');
+      const hasHeader = fetchedSections.some((s: any) => s.section_type === 'header');
+      
+      let updated = false;
+      
+      if (!hasInfo) {
+        try {
+          const createRes = await api.post(`/products/${currentStoreId}/${id}/sections/`, {
+            section_type: 'product_info',
+            config: {},
+            order: -2
+          });
+          fetchedSections.push(createRes.data);
+          updated = true;
+        } catch {}
+      }
+      
+      if (!hasCheckout) {
+        try {
+          const createRes = await api.post(`/products/${currentStoreId}/${id}/sections/`, {
+            section_type: 'checkout',
+            config: {},
+            order: 998
+          });
+          fetchedSections.push(createRes.data);
+          updated = true;
+        } catch {}
+      }
+
+      if (!hasFooter) {
+        try {
+          const createRes = await api.post(`/products/${currentStoreId}/${id}/sections/`, {
+            section_type: 'footer',
+            config: { content: "© جميع الحقوق محفوظة", background_color: "#ffffff", color: "#666666", text_align: "center", font_size: "14px" },
+            order: 999
+          });
+          fetchedSections.push(createRes.data);
+          updated = true;
+        } catch {}
+      }
+
+      if (!hasHeader) {
+        try {
+          const createRes = await api.post(`/products/${currentStoreId}/${id}/sections/`, {
+            section_type: 'header',
+            config: { content: selectedStore?.name || "متجرنا", background_color: "#ffffff", color: "#111111", text_align: "right", font_size: "18px" },
+            order: -100
+          });
+          fetchedSections.push(createRes.data);
+          updated = true;
+        } catch {}
+      }
+      
+      if (updated) {
+        fetchedSections.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+      }
+      
+      setSections(fetchedSections);
+      
+      setActiveSections(prev => ({
+        ...prev,
+        profitability: false,
+        theme: false
+      }));
+    } catch {
+      setSections([]);
+    } finally {
+      setSectionsLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await api.post(`/products/${currentStoreId}/upload/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      const newImg = {
+        clientId: `img-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        image_url: res.data.image_url,
+        position: images.length,
+        is_primary: images.length === 0,
+      };
+      setImages((prev) => [...prev, newImg]);
+    } catch (err: any) {
+      setError("فشل تحميل الصورة. يرجى المحاولة مرة أخرى.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddDirectImageUrl = () => {
+    if (!directImageUrl.trim()) return;
+    const newImg = {
+      clientId: `img-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      image_url: directImageUrl.trim(),
+      position: images.length,
+      is_primary: images.length === 0,
+    };
+    setImages((prev) => [...prev, newImg]);
+    setDirectImageUrl("");
+  };
+
+  const handleDeleteImage = (clientId: string) => {
+    setImages((prev) => {
+      const filtered = prev.filter((img) => img.clientId !== clientId);
+      return filtered.map((img, idx) => ({
+        ...img,
+        position: idx,
+        is_primary: idx === 0,
+      }));
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setImages((items) => {
+      const oldIndex = items.findIndex((item) => item.clientId === active.id);
+      const newIndex = items.findIndex((item) => item.clientId === over.id);
+      const reordered = arrayMove(items, oldIndex, newIndex);
+      return reordered.map((item, idx) => ({
+        ...item,
+        position: idx,
+        is_primary: idx === 0,
+      }));
+    });
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const generateCombinations = (attrs: typeof variantAttributes) => {
+    const validAttrs = attrs.filter(a => a.name.trim() && a.values.length > 0);
+    if (validAttrs.length === 0) return [];
+
+    const cartesian = (acc: any[][], val: string[]) => {
+      return acc.flatMap(c => val.map(v => [...c, v]));
+    };
+
+    let combinations = validAttrs[0].values.map(v => [v]);
+    for (let i = 1; i < validAttrs.length; i++) {
+    combinations = cartesian(combinations, validAttrs[i].values);
+    }
+
+    return combinations.map(combo => {
+      const name = combo.join(" - ");
+      const options = combo.map((val, idx) => {
+        const attrName = validAttrs[idx].name.trim();
+        let optionType = "custom";
+        if (attrName.includes("لون") || attrName.toLowerCase().includes("color")) optionType = "color";
+        else if (attrName.includes("مقاس") || attrName.includes("حجم") || attrName.toLowerCase().includes("size")) optionType = "size";
+        
+        return {
+          option_type: optionType,
+          label: attrName,
+          value: val,
+        };
+      });
+
+      const existing = variantCombinations.find(c => c.name === name);
+      if (existing) {
+        return existing;
+      }
+
+      return {
+        id: undefined,
+        name,
+        price: price || "",
+        sku: sku ? `${sku}-${combo.join("-")}` : "",
+        stock_quantity: "100",
+        is_active: true,
+        image_url: "",
+        options,
+      };
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+
+    try {
+      if (!isCreateMode) {
+        const activeId = activeTab === 'A' ? productId : abTestProductBId;
+        const success = await saveProductData(activeId);
+        if (!success) {
+          setSubmitting(false);
+          return;
+        }
+      } else {
+        const payload: any = {
+          store_id: currentStoreId,
+          title,
+          sku: sku || "",
+          price: parseFloat(price) || 0,
+          compare_price: comparePrice ? parseFloat(comparePrice) : null,
+          cost_price: activeSections.profitability && costPrice ? parseFloat(costPrice) : null,
+          ad_cost_per_order: activeSections.profitability && adCostPerOrder ? parseFloat(adCostPerOrder) : null,
+          category: selectedCategory || null,
+          stock: parseInt(stock) || 100,
+          primary_image: images.length > 0 ? images[0].image_url : primaryImage,
+          images: images.map((img, idx) => ({
+            id: img.id,
+            image_url: img.image_url,
+            alt_text: img.alt_text || "",
+            position: idx,
+            is_primary: idx === 0,
+          })),
+          description: description || "",
+          enable_ab_test: enableAbTest,
+          ab_test_product_b: abTestProductBId || null,
+          theme: selectedTheme || "",
+          variants: hasVariants ? variantCombinations.map(combo => ({
+            id: combo.id,
+            name: combo.name,
+            sku: combo.sku,
+            price: combo.price ? parseFloat(combo.price) : null,
+            stock_quantity: parseInt(combo.stock_quantity) || 0,
+            is_active: combo.is_active,
+            image_url: combo.image_url,
+            options: combo.options.map(opt => ({
+              option_type: opt.option_type,
+              label: opt.label,
+              value: opt.value,
+            })),
+          })) : [],
+        };
+        if (quantityOffers.length > 0) {
+          payload.quantity_offers = quantityOffers;
+        } else {
+          payload.quantity_offers = [];
+        }
+
+        const res = await api.post(`/products/${currentStoreId}/`, payload);
+        const newProductId = res.data.id;
+        if (pendingSections.length > 0 && newProductId) {
+          for (let i = 0; i < pendingSections.length; i++) {
+            const ps = pendingSections[i];
+            try {
+              await api.post(`/products/${currentStoreId}/${newProductId}/sections/`, {
+                section_type: ps.section_type,
+                config: ps.config,
+                order: i,
+              });
+            } catch {}
+          }
+        }
+      }
+      router.push("/products");
+    } catch (err: any) {
+      const detail = err.response?.data;
+      if (typeof detail === "string") setError(detail);
+      else if (detail?.quantity_offers) setError("عروض الكمية: " + JSON.stringify(detail.quantity_offers));
+      else if (typeof detail === "object") setError(Object.values(detail).flat().join("; "));
+      else setError("فشل حفظ المنتج. يرجى التحقق من صحة البيانات.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddSection = async (sectionType: string) => {
+    const config: any = {};
+    if (sectionType === "text" || sectionType === "footer" || sectionType === "header") {
+      config.content = sectionType === "footer" ? "© جميع الحقوق محفوظة" : (sectionType === "header" ? selectedStore?.name || "متجرنا" : "");
+      config.font_size = sectionType === "footer" ? "14px" : (sectionType === "header" ? "18px" : "16px");
+      config.color = sectionType === "footer" ? "#666666" : (sectionType === "header" ? "#111111" : "#ffffff");
+      config.text_align = sectionType === "footer" ? "center" : (sectionType === "header" ? "right" : "right");
+    }
+
+    if (!isCreateMode) {
+      if (!currentStoreId) return;
+      try {
+        const res = await api.post(`/products/${currentStoreId}/${productId}/sections/`, {
+          section_type: sectionType,
+          config,
+        });
+        setSections((prev) => [...prev, res.data]);
+        setShowAddSection(false);
+      } catch {
+        setError("فشل إضافة القسم");
+      }
+    } else {
+      const tempId = `pending-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      setPendingSections((prev) => [...prev, { id: tempId, section_type: sectionType, config, order: prev.length }]);
+      setShowAddSection(false);
+    }
+  };
+
+  const handleDeleteSection = async (sectionId: string) => {
+    if (!isCreateMode) {
+      if (!currentStoreId) return;
+      try {
+        await api.delete(`/products/${currentStoreId}/${productId}/sections/${sectionId}/`);
+        setSections((prev) => prev.filter((s) => s.id !== sectionId));
+      } catch {
+        setError("فشل حذف القسم");
+      }
+    } else {
+      setPendingSections((prev) => prev.filter((s) => s.id !== sectionId));
+    }
+  };
+
+  const handleUpdateSection = async (sectionId: string, updates: any) => {
+    if (!isCreateMode) {
+      if (!currentStoreId) return;
+      try {
+        const res = await api.patch(`/products/${currentStoreId}/${productId}/sections/${sectionId}/`, updates);
+        setSections((prev) => prev.map((s) => (s.id === sectionId ? res.data : s)));
+      } catch {
+        setError("فشل تحديث القسم");
+      }
+    } else {
+      setPendingSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, ...updates } : s)));
+    }
+  };
+
+  const handleSectionFileUpload = async (fieldKey: string, file: File) => {
+    if (!currentStoreId) return;
+    setSectionUploading(fieldKey);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await api.post(`/products/${currentStoreId}/upload/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, [fieldKey]: res.data.image_url } } : prev);
+    } catch {
+      setError("فشل رفع الصورة");
+    } finally {
+      setSectionUploading(null);
+    }
+  };
+
+  const handleDropSection = async (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    if (!isCreateMode) {
+      const newSections = [...sections];
+      const [moved] = newSections.splice(fromIdx, 1);
+      newSections.splice(toIdx, 0, moved);
+      const reordered = newSections.map((s, i) => ({ ...s, order: i }));
+      setSections(reordered);
+      setDragIndex(null);
+      if (!currentStoreId) return;
+      try {
+        const sectionIds = reordered.map(s => s.id);
+        await api.post(`/products/${currentStoreId}/${productId}/sections/reorder/`, {
+          section_ids: sectionIds,
+        });
+      } catch {
+        fetchSections(productId);
+      }
+    } else {
+      const newPending = [...pendingSections];
+      const [moved] = newPending.splice(fromIdx, 1);
+      newPending.splice(toIdx, 0, moved);
+      const reordered = newPending.map((s, i) => ({ ...s, order: i }));
+      setPendingSections(reordered);
+      setDragIndex(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-foreground font-cairo">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+        <span>جاري تحميل صفحة المنتج...</span>
+      </div>
+    );
+  }
+
+  const activeList = (!isCreateMode ? sections : pendingSections).filter(s => s.section_type !== 'security_phone_validation');
+  const currentSelectedId = selectedSectionId || activeList.find(s => s.section_type === 'product_info')?.id || null;
+  const hasCheckout = activeList.some(s => s.section_type === 'checkout');
+  const hasFooter = activeList.some(s => s.section_type === 'footer');
+  const hasHeader = activeList.some(s => s.section_type === 'header');
+  const hasOffers = activeList.some(s => s.section_type === 'quantity_offers');
+  const hasCaptcha = activeList.some(s => s.section_type === 'security_captcha');
+  const hasPhoneValidation = false;
+  const hasOtp = activeList.some(s => s.section_type === 'security_otp');
+  const hasRateLimit = activeList.some(s => s.section_type === 'security_rate_limit');
+  const hasAlgerianIp = activeList.some(s => s.section_type === 'security_algerian_ip');
+
+  return (
+    <div className="space-y-6 font-cairo text-foreground text-right pb-12" dir="rtl">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-primary" />
+            {isCreateMode ? "إضافة منتج جديد" : "تعديل المنتج"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isCreateMode ? "قم بإعداد صفحة المنتج الجديد، وتخصيص هيكل صفحة الهبوط." : `تعديل تفاصيل وأقسام: ${title || "المنتج"}`}
+          </p>
+        </div>
+        <Button onClick={() => router.push("/products")} variant="outline" className="text-xs">
+          العودة للمنتجات
+        </Button>
+      </div>
+
+      {error && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }} className="space-y-6">
+        {/* A/B Layout Testing Header Panel */}
+        {!isCreateMode && (
+          <Card className="border border-white/10 bg-slate-900/50 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg">
+            <CardContent className="p-5 space-y-4">
+              {/* Top row: Status, Info, and Main Toggle */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
+                <div className="space-y-1 text-right">
+                  <div className="flex items-center gap-2 justify-start md:justify-end">
+                    {enableAbTest ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-ping"></span>
+                        اختبار تقسيم الزوار نشط
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-muted/20 text-muted-foreground border border-border">
+                        الاختبار معطل
+                      </span>
+                    )}
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <SplitSquareHorizontal className="h-5 w-5 text-primary" />
+                      اختبار تقسيم الزوار A/B لصفحة الهبوط
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    قم بإنشاء وتعديل نسختين مختلفتين من صفحة الهبوط. سيتم تقسيم حركة مرور الزوار بنسبة 50/50 تلقائياً لقياس أي النسختين تحقق أعلى نسبة تحويل ومبيعات.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {enableAbTest ? (
+                    <Button
+                      type="button"
+                      onClick={handleDeactivateAbTest}
+                      variant="outline"
+                      className="text-xs border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 font-semibold flex items-center gap-1.5 px-3 py-1.5 h-auto rounded-xl"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      تعطيل اختبار A/B
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => setEnableAbTest(true)}
+                      variant="glow"
+                      className="text-xs font-bold flex items-center gap-1.5 px-4 py-2 h-auto rounded-xl"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      تفعيل اختبار A/B
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {enableAbTest && (
+                <div className="space-y-4">
+                  {/* Middle row: Tab switching windows */}
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchTab('A')}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                          activeTab === 'A'
+                            ? 'border-primary/50 bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                            : 'border-white/5 bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <Layers className="h-4 w-4" />
+                        النسخة A (الأساسية)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchTab('B')}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                          activeTab === 'B'
+                            ? 'border-primary/50 bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                            : 'border-white/5 bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <Layers className="h-4 w-4" />
+                        النسخة B (البديلة)
+                        {abTestProductBId ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 font-medium">غير منشأة</span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Informational edit context */}
+                    <div className="text-xs text-muted-foreground">
+                      {activeTab === 'A' ? (
+                        <span>⚙️ أنت تقوم حالياً بتعديل <strong>الصفحة الأساسية (النسخة A)</strong>.</span>
+                      ) : (
+                        <span>⚙️ أنت تقوم حالياً بتعديل <strong>الصفحة البديلة (النسخة B)</strong>.</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Scoreboard stats details */}
+                  {abTestStats && (
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-muted-foreground">تحديث تلقائي مستمر للنتائج</span>
+                        <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                          📊 إحصائيات المقارنة والأداء
+                        </h4>
+                      </div>
+
+                      {statsLoading ? (
+                        <div className="py-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                          <div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          <span>جاري تحميل أحدث الإحصائيات...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Variant A scorecard */}
+                            <div className={`p-3 rounded-lg border transition-all ${activeTab === 'A' ? 'bg-primary/5 border-primary/25' : 'bg-slate-900/30 border-white/5'}`}>
+                              <div className="flex justify-between items-center border-b border-white/5 pb-1.5 mb-2">
+                                <span className="text-[10px] text-muted-foreground">المجموعة A (الأساسية)</span>
+                                <span className="text-xs font-bold text-white truncate max-w-[180px]">{activeTab === 'A' ? title : "النسخة الأساسية"}</span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div>
+                                  <div className="text-[10px] text-muted-foreground">الزيارات</div>
+                                  <div className="text-sm font-bold font-outfit text-white">{abTestStats.group_a.views}</div>
+                                </div>
+                                <div>
+                                  <div className="text-[10px] text-muted-foreground">الطلبات</div>
+                                  <div className="text-sm font-bold font-outfit text-white">{abTestStats.group_a.purchases}</div>
+                                </div>
+                                <div>
+                                  <div className="text-[10px] text-muted-foreground">التحويل</div>
+                                  <div className="text-sm font-bold font-outfit text-green-400">{abTestStats.group_a.conversion_rate}%</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Variant B scorecard */}
+                            <div className={`p-3 rounded-lg border transition-all ${activeTab === 'B' ? 'bg-primary/5 border-primary/25' : 'bg-slate-900/30 border-white/5'}`}>
+                              <div className="flex justify-between items-center border-b border-white/5 pb-1.5 mb-2">
+                                <span className="text-[10px] text-amber-400">المجموعة B (البديلة)</span>
+                                <span className="text-xs font-bold text-white truncate max-w-[180px]">
+                                  {abTestProductBId ? (allProducts.find(p => p.id === abTestProductBId)?.title || "النسخة البديلة") : "النسخة البديلة"}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div>
+                                  <div className="text-[10px] text-muted-foreground">الزيارات</div>
+                                  <div className="text-sm font-bold font-outfit text-white">{abTestStats.group_b.views}</div>
+                                </div>
+                                <div>
+                                  <div className="text-[10px] text-muted-foreground">الطلبات</div>
+                                  <div className="text-sm font-bold font-outfit text-white">{abTestStats.group_b.purchases}</div>
+                                </div>
+                                <div>
+                                  <div className="text-[10px] text-muted-foreground">التحويل</div>
+                                  <div className="text-sm font-bold font-outfit text-green-400">{abTestStats.group_b.conversion_rate}%</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Winner/Insight Announcement */}
+                          {abTestStats.winner === 'B' && (
+                            <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-xs flex items-center justify-between">
+                              <span className="font-bold flex items-center gap-1">🚀 تفوق النسخة B (البديلة) بنسبة تحسين +{abTestStats.improvement.toFixed(1)}%!</span>
+                              <span className="text-[10px] opacity-85">ننصح باعتمادها كصفحة أساسية قريباً.</span>
+                            </div>
+                          )}
+                          {abTestStats.winner === 'A' && (
+                            <div className="p-2.5 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-xs flex items-center justify-between">
+                              <span className="font-bold flex items-center gap-1">🚀 تفوق النسخة A (الأساسية) بفارق +{Math.abs(abTestStats.improvement).toFixed(1)}%!</span>
+                              <span className="text-[10px] opacity-85">ننصح بالإبقاء عليها وإيقاف الاختبار.</span>
+                            </div>
+                          )}
+                          {abTestStats.winner === 'none' && (
+                            <div className="p-2.5 bg-white/5 border border-white/5 rounded-lg text-muted-foreground text-[10px] text-center">
+                              ℹ️ يجرى جمع بيانات التصفح والشراء حالياً لمقارنة دقيقة. لا توجد فروقات ذات دلالة إحصائية واضحة بين النسختين بعد.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {enableAbTest && activeTab === 'B' && !abTestProductBId ? (
+          /* Premium Placeholder Card for Creating Version B */
+          <div className="bg-card border border-border rounded-2xl p-8 max-w-2xl mx-auto text-center space-y-6 shadow-lg my-6">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+              <SplitSquareHorizontal className="h-8 w-8" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white">لم يتم إنشاء النسخة البديلة (النسخة B) بعد</h2>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                لتفعيل اختبار الـ A/B، يجب إنشاء صفحة بديلة تحتوي على تعد�          <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
+            
+            {/* Column 1: Right Column (Sections Sidebar, lg:w-[25%]) */}
+            <div className="w-full lg:w-[25%] space-y-4">
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-5 text-right shadow-sm text-card-foreground">
+                <div>
+                  <h4 className="text-sm font-bold mb-1 text-primary flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-primary" /> أقسام صفحة الهبوط
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    قم بسحب الأقسام لترتيبها، واضغط على أي قسم لتعديله في المنتصف.
+                  </p>
+                </div>
+
+                {/* Draggable Visible Sections */}
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">الأقسام النشطة (اسحب للترتيب)</p>
+                  {(() => {
+                    const visibleSections = activeList.filter(s =>
+                      !["security_captcha", "security_otp", "security_rate_limit", "security_algerian_ip"].includes(s.section_type)
+                    );
+                    if (visibleSections.length === 0) {
+                      return <p className="text-xs text-muted-foreground py-2 text-center border border-dashed border-border rounded-xl">لا توجد أقسام نشطة</p>;
+                    }
+                    return (
+                      <div className="space-y-2">
+                        {visibleSections.map((section) => {
+                          const meta = sectionTypeMeta[section.section_type] || sectionTypeMeta.text;
+                          const isRequired = section.section_type === "product_info";
+                          const isSelected = section.id === currentSelectedId;
+                          return (
+                            <div
+                              key={section.id}
+                              draggable
+                              onDragStart={() => setDraggedSectionId(section.id)}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => {
+                                if (draggedSectionId && draggedSectionId !== section.id) {
+                                  const fromIdx = activeList.findIndex(s => s.id === draggedSectionId);
+                                  const toIdx = activeList.findIndex(s => s.id === section.id);
+                                  if (fromIdx !== -1 && toIdx !== -1) {
+                                    handleDropSection(fromIdx, toIdx);
+                                  }
+                                }
+                                setDraggedSectionId(null);
+                              }}
+                              onClick={() => setSelectedSectionId(section.id)}
+                              className={`flex items-center justify-between p-3 rounded-xl border transition-all select-none text-right cursor-pointer ${
+                                isSelected
+                                  ? 'bg-primary/10 border-primary text-primary shadow-sm font-bold'
+                                  : 'bg-primary/5 border-primary/20 text-foreground hover:border-primary/40'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 flex-grow min-w-0">
+                                <div 
+                                  className="text-muted-foreground hover:text-foreground flex-shrink-0 cursor-grab active:cursor-grabbing"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <GripVertical className="h-4 w-4" />
+                                </div>
+                                <input
+                                  type="checkbox"
+                                  checked={true}
+                                  disabled={isRequired}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={() => toggleLayoutSection(section.section_type, section.id)}
+                                  className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                                />
+                                <div className="flex-1 min-w-0 text-right">
+                                  <span className="text-xs font-bold truncate flex items-center gap-1.5 justify-start">
+                                    {meta.icon} {meta.label}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {!isRequired && !["checkout", "footer", "header", "quantity_offers"].includes(section.section_type) && (
+                                  <button 
+                                    type="button" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleLayoutSection(section.section_type, section.id);
+                                      if (isSelected) {
+                                        setSelectedSectionId(null);
+                                      }
+                                    }} 
+                                    className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                    title="إزالة القسم"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Quick Add Standard Sections */}
+                {(!hasCheckout || !hasOffers || !hasFooter || !hasHeader) && (
+                  <div className="space-y-2 pt-2 border-t border-border">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">أقسام جاهزة للإضافة</p>
+                    <div className="space-y-1.5">
+                      {!hasOffers && (
+                        <div
+                          onClick={() => toggleLayoutSection('quantity_offers')}
+                          className="flex items-center gap-3 p-2.5 rounded-lg border border-dashed border-border bg-muted/5 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all text-right"
+                        >
+                          <input type="checkbox" checked={false} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                          <span className="text-xs font-medium flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" /> عروض الكمية والتخفيضات</span>
+                        </div>
+                      )}
+                      {!hasCheckout && (
+                        <div
+                          onClick={() => toggleLayoutSection('checkout')}
+                          className="flex items-center gap-3 p-2.5 rounded-lg border border-dashed border-border bg-muted/5 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all text-right"
+                        >
+                          <input type="checkbox" checked={false} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                          <span className="text-xs font-medium flex items-center gap-1.5"><CheckSquare className="h-3.5 w-3.5" /> استمارة الطلب (Order Form)</span>
+                        </div>
+                      )}
+                      {!hasHeader && (
+                        <div
+                          onClick={() => toggleLayoutSection('header')}
+                          className="flex items-center gap-3 p-2.5 rounded-lg border border-dashed border-border bg-muted/5 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all text-right"
+                        >
+                          <input type="checkbox" checked={false} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                          <span className="text-xs font-medium flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" /> ترويسة الصفحة (Header)</span>
+                        </div>
+                      )}
+                      {!hasFooter && (
+                        <div
+                          onClick={() => toggleLayoutSection('footer')}
+                          className="flex items-center gap-3 p-2.5 rounded-lg border border-dashed border-border bg-muted/5 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all text-right"
+                        >
+                          <input type="checkbox" checked={false} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                          <span className="text-xs font-medium flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" /> تذييل الصفحة (Footer)</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Sections quick add */}
+                <div className="pt-2 border-t border-border">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">أقسام مخصصة لصفحة الهبوط</p>
+                  {showAddSection ? (
+                    <div className="bg-card rounded-xl p-2 border border-border space-y-1 shadow-md">
+                      <div className="flex flex-col gap-1">
+                        {Object.entries(sectionTypeMeta)
+                          .filter(([key]) => key !== "product_info" && key !== "checkout" && key !== "quantity_offers" && key !== "footer" && key !== "header")
+                          .map(([key, meta]) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => {
+                                handleAddSection(key);
+                                setShowAddSection(false);
+                              }}
+                              className="flex items-center gap-2 w-full p-2 rounded bg-muted/10 hover:bg-muted/20 border border-border text-right text-xs text-foreground"
+                            >
+                              {meta.icon}
+                              <span>{meta.label}</span>
+                            </button>
+                          ))}
+                      </div>
+                      <button type="button" onClick={() => setShowAddSection(false)} className="text-[10px] text-muted-foreground hover:text-foreground block w-full text-center mt-1">إلغاء</button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => setShowAddSection(true)}
+                      variant="outline"
+                      className="w-full text-xs flex items-center justify-center gap-1.5 py-1.5 h-auto"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> إضافة قسم مخصص
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Security & Verification Options Card */}
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm text-card-foreground">
+                <div>
+                  <h4 className="text-sm font-bold mb-1 text-primary flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" /> خيارات الأمان والتحقق
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    ميزات أمان غير مرئية لحماية استمارات الطلبات والحد من الطلبات الوهمية.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-border">
+                  {/* Google reCAPTCHA v3 */}
+                  <div className="space-y-1">
+                    <div
+                      onClick={() => toggleLayoutSection('security_captcha')}
+                      className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
+                    >
+                      <input type="checkbox" checked={hasCaptcha} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                      <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> كابتشا Google reCAPTCHA v3</span>
+                    </div>
+                    {hasCaptcha && (!(selectedStore?.settings as any)?.security_captcha_site_key || !(selectedStore?.settings as any)?.security_captcha_secret_key) && (
+                      <p className="text-[9px] text-amber-500 mr-2 leading-tight">⚠️ لم يتم إعداد مفاتيح الكابتشا في إعدادات المتجر العامة بعد.</p>
+                    )}
+                  </div>
+
+                  {/* SMS OTP */}
+                  <div className="space-y-1">
+                    <div
+                      onClick={() => toggleLayoutSection('security_otp')}
+                      className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
+                    >
+                      <input type="checkbox" checked={hasOtp} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                      <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> التحقق عبر الهاتف SMS OTP</span>
+                    </div>
+                    {hasOtp && !(selectedStore?.settings as any)?.security_firebase_config_json && (
+                      <p className="text-[9px] text-amber-500 mr-2 leading-tight">⚠️ لم يتم إدخال إعدادات Firebase في إعدادات المتجر العامة بعد.</p>
+                    )}
+                  </div>
+
+                  {/* Rate Limit */}
+                  <div
+                    onClick={() => toggleLayoutSection('security_rate_limit')}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
+                  >
+                    <input type="checkbox" checked={hasRateLimit} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                    <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> حد أقصى للطلبات اليومية لكل IP</span>
+                  </div>
+
+                  {/* Algerian IP restrict */}
+                  <div
+                    onClick={() => toggleLayoutSection('security_algerian_ip')}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
+                  >
+                    <input type="checkbox" checked={hasAlgerianIp} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                    <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> حظر الطلبات من خارج الجزائر</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: Middle Column (Active Editor, lg:w-[45%]) */}
+            <div className="w-full lg:w-[45%] space-y-6">
+            {(() => {
+              const section = activeList.find(s => s.id === currentSelectedId);
+              if (!section) {
+                return (
+                  <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+                      <Layers className="h-6 w-6" />
+                    </div>
+                    <h4 className="text-sm font-bold text-white">الرجاء اختيار قسم للتعديل</h4>
+                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                      اختر أحد أقسام صفحة المنتج النشطة من القائمة اليمنى لبدء تحرير المحتوى وتخصيص التفاصيل.
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div key={section.id}>
+                  {/* Selected section fields */}
+                  {(() => {r"
+                        />
+                        <span className="text-xs font-medium flex items-center gap-1.5">
+                          <Shield className="h-3.5 w-3.5" /> أمان: حظر الطلبات من خارج الجزائر
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Custom Section Button */}
+              <div className="pt-2 border-t border-border">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">أقسام مخصصة لصفحة الهبوط</p>
+                {showAddSection ? (
+                  <div className="bg-card rounded-xl p-2 border border-border space-y-1 shadow-md">
+                    <div className="flex flex-col gap-1">
+                      {Object.entries(sectionTypeMeta)
+                        .filter(([key]) => key !== "product_info" && key !== "checkout" && key !== "quantity_offers" && key !== "footer" && key !== "header")
+                        .map(([key, meta]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => {
+                              handleAddSection(key);
+                              setShowAddSection(false);
+                            }}
+                            className="flex items-center gap-2 w-full p-2 rounded bg-muted/10 hover:bg-muted/20 border border-border text-right text-xs text-foreground"
+                          >
+                            {meta.icon}
+                            <span>{meta.label}</span>
+                          </button>
+                        ))}
+                    </div>
+                    <button type="button" onClick={() => setShowAddSection(false)} className="text-[10px] text-muted-foreground hover:text-foreground block w-full text-center mt-1">إلغاء</button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setShowAddSection(true)}
+                    variant="outline"
+                    className="w-full text-xs flex items-center justify-center gap-1.5 py-1.5 h-auto"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> إضافة قسم مخصص
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+            {/* Form fields area */}
+            <div className="md:col-span-8 space-y-6 text-card-foreground">
+            {activeList.map((section) => {
+              if (section.section_type === 'product_info') {
+                return (
+                  <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-border pb-3">
+                      <Layers className="h-4 w-4 text-primary" />
+                      <h4 className="font-bold text-sm">معلومات المنتج الأساسية والتسعير</h4>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-muted-foreground">اسم المنتج</label>
+                      <Input required placeholder="مثال: ساعة يد ذكية مقاومة للماء" value={title} onChange={(e) => setTitle(e.target.value)} className="pr-3 text-right" />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-muted-foreground">فئة / مجموعة المنتج</label>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-white/5 bg-white/5 text-white pr-3 text-right"
+                      >
+                        <option value="" className="bg-slate-900 text-white">اختر فئة للمنتج (اختياري)</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id} className="bg-slate-900 text-white">
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground">الرمز المرجعي (SKU)</label>
+                        <Input placeholder="SMART-WATCH-01" value={sku} onChange={(e) => setSku(e.target.value)} className="pr-3 text-right font-outfit" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground">المخزون المتوفر</label>
+                        <Input type="number" required value={stock} onChange={(e) => setStock(e.target.value)} className="pr-3 text-right font-outfit" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground">سعر البيع (DZD)</label>
+                        <Input type="number" required placeholder="5900" value={price} onChange={(e) => setPrice(e.target.value)} className="pr-3 text-right font-outfit" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground">السعر الأصلي للمقارنة (DZD)</label>
+                        <Input type="number" placeholder="8900" value={comparePrice} onChange={(e) => setComparePrice(e.target.value)} className="pr-3 text-right font-outfit" />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-muted-foreground">حساب التكاليف والأرباح</label>
+                        <input 
+                          type="checkbox" 
+                          checked={activeSections.profitability} 
+                          onChange={(e) => setActiveSections(prev => ({ ...prev, profitability: e.target.checked }))} 
+                          className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer"
+                        />
+                      </div>
+                      {activeSections.profitability && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-muted-foreground">سعر الشراء / التكلفة (DZD)</label>
+                            <Input type="number" placeholder="2500" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-muted-foreground">تكلفة الإعلان لكل طلب (DZD)</label>
+                            <Input type="number" placeholder="500" value={adCostPerOrder} onChange={(e) => setAdCostPerOrder(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <label className="text-xs font-bold text-muted-foreground">صور المنتج (اسحب للترتيب، الصورة الأولى هي الرئيسية)</label>
+                      
+                      {/* Image drag-and-drop sortable container */}
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={images.map((img) => img.clientId)}
+                          strategy={rectSortingStrategy}
+                        >
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                            {images.map((img) => (
+                              <SortableImageItem
+                                key={img.clientId}
+                                id={img.clientId}
+                                url={img.image_url}
+                                isPrimary={img.is_primary}
+                                onDelete={() => handleDeleteImage(img.clientId)}
+                              />
+                            ))}
+
+                            {/* Upload card placeholder */}
+                            <label className="relative aspect-square border border-dashed border-border rounded-xl bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all flex flex-col items-center justify-center p-2 text-center select-none">
+                              {uploading ? (
+                                <div className="text-[10px] text-muted-foreground font-medium animate-pulse">جاري الرفع...</div>
+                              ) : (
+                                <>
+                                  <Camera className="h-5 w-5 text-muted-foreground opacity-60 mb-1" />
+                                  <span className="text-[9px] text-muted-foreground font-bold leading-tight">تحميل صورة</span>
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleImageUpload}
+                                disabled={uploading}
+                              />
+                            </label>
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+
+                      {/* Direct image URL input with append button */}
+                      <div className="flex gap-2 pt-2">
+                        <Input
+                          placeholder="أو أدخل رابط صورة مباشر (https://...)"
+                          value={directImageUrl}
+                          onChange={(e) => setDirectImageUrl(e.target.value)}
+                          className="pr-3 text-right font-outfit text-xs flex-grow h-9"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleAddDirectImageUrl}
+                          className="text-xs h-9"
+                        >
+                          إضافة رابط
+                        </Button>
+                      </div>
+                    </div>
+
+
+
+                    {/* Variants Builder Block */}
+                    <div className="pt-4 border-t border-border space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 cursor-pointer">
+                          <SplitSquareHorizontal className="h-4 w-4 text-primary" /> خيارات وتغيرات المنتج (Variants)
+                        </label>
+                        <input 
+                          type="checkbox" 
+                          checked={hasVariants} 
+                          onChange={(e) => setHasVariants(e.target.checked)} 
+                          className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer"
+                        />
+                      </div>
+                      
+                      {hasVariants && (
+                        <div className="space-y-4 bg-muted/5 p-4 rounded-xl border border-border animate-fade-in-up">
+                          <p className="text-[10px] text-muted-foreground leading-relaxed">
+                            أضف خيارات للمنتج (مثل اللون والمقاس) وسيتم إنشاء قائمة بجميع المتغيرات الممكنة تلقائياً لتتمكن من تحديد سعر وصورة لكل منها.
+                          </p>
+
+                          {/* Attributes configuration */}
+                          <div className="space-y-3">
+                            {variantAttributes.map((attr, attrIdx) => (
+                              <div key={attrIdx} className="bg-card p-3 rounded-lg border border-border space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 space-y-1">
+                                    <label className="text-[10px] font-bold text-muted-foreground">اسم الخيار (مثال: اللون)</label>
+                                    <Input 
+                                      placeholder="اللون، المقاس، الحجم..." 
+                                      value={attr.name} 
+                                      onChange={(e) => {
+                                        const newAttrs = [...variantAttributes];
+                                        newAttrs[attrIdx].name = e.target.value;
+                                        setVariantAttributes(newAttrs);
+                                      }} 
+                                      className="text-xs pr-3 text-right"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newAttrs = variantAttributes.filter((_, idx) => idx !== attrIdx);
+                                      setVariantAttributes(newAttrs);
+                                      setVariantCombinations(generateCombinations(newAttrs));
+                                    }}
+                                    className="self-end p-2 text-red-400 hover:text-red-300 rounded hover:bg-red-500/10"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-bold text-muted-foreground">القيم (مثال: أحمر، أزرق)</label>
+                                  <div className="flex flex-wrap gap-1 mb-1">
+                                    {attr.values.map((val, valIdx) => (
+                                      <span key={valIdx} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs bg-primary/10 text-primary border border-primary/20">
+                                        {val}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newAttrs = [...variantAttributes];
+                                            newAttrs[attrIdx].values = attr.values.filter((_, idx) => idx !== valIdx);
+                                            setVariantAttributes(newAttrs);
+                                            setVariantCombinations(generateCombinations(newAttrs));
+                                          }}
+                                          className="text-[10px] hover:text-red-400"
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Input
+                                      placeholder="أدخل قيمة واضغط إضافة أو Enter..."
+                                      value={attr.inputVal || ""}
+                                      onChange={(e) => {
+                                        const newAttrs = [...variantAttributes];
+                                        newAttrs[attrIdx].inputVal = e.target.value;
+                                        setVariantAttributes(newAttrs);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          const val = attr.inputVal?.trim();
+                                          if (val && !attr.values.includes(val)) {
+                                            const newAttrs = [...variantAttributes];
+                                            newAttrs[attrIdx].values.push(val);
+                                            newAttrs[attrIdx].inputVal = "";
+                                            setVariantAttributes(newAttrs);
+                                            setVariantCombinations(generateCombinations(newAttrs));
+                                          }
+                                        }
+                                      }}
+                                      className="text-xs pr-3 text-right flex-grow"
+                                    />
+                                    <Button
+                                      type="button"
+                                      onClick={() => {
+                                        const val = attr.inputVal?.trim();
+                                        if (val && !attr.values.includes(val)) {
+                                          const newAttrs = [...variantAttributes];
+                                          newAttrs[attrIdx].values.push(val);
+                                          newAttrs[attrIdx].inputVal = "";
+                                          setVariantAttributes(newAttrs);
+                                          setVariantCombinations(generateCombinations(newAttrs));
+                                        }
+                                      }}
+                                      className="text-xs h-9"
+                                    >
+                                      إضافة
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+
+                            {variantAttributes.length < 2 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setVariantAttributes([...variantAttributes, { name: "", values: [], inputVal: "" }])}
+                                className="w-full text-xs flex items-center justify-center gap-1"
+                              >
+                                <Plus className="h-3.5 w-3.5" /> إضافة خيار آخر (مثال: المقاس)
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Combinations List */}
+                          {variantCombinations.length > 0 && (
+                            <div className="space-y-3 pt-3 border-t border-border">
+                              <label className="text-xs font-bold text-muted-foreground block">قائمة المتغيرات والأسعار</label>
+                              <div className="space-y-3">
+                                {variantCombinations.map((combo, idx) => (
+                                  <div key={idx} className="bg-card p-3 rounded-lg border border-border space-y-3 text-right">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold text-primary">{combo.name}</span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted-foreground font-semibold">نشط</span>
+                                        <input
+                                          type="checkbox"
+                                          checked={combo.is_active}
+                                          onChange={(e) => {
+                                            const newCombos = [...variantCombinations];
+                                            newCombos[idx].is_active = e.target.checked;
+                                            setVariantCombinations(newCombos);
+                                          }}
+                                          className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 accent-primary cursor-pointer"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div className="space-y-1">
+                                        <label className="text-[9px] font-bold text-muted-foreground">السعر (DZD)</label>
+                                        <Input
+                                          type="number"
+                                          placeholder={price || "السعر الرئيسي"}
+                                          value={combo.price}
+                                          onChange={(e) => {
+                                            const newCombos = [...variantCombinations];
+                                            newCombos[idx].price = e.target.value;
+                                            setVariantCombinations(newCombos);
+                                          }}
+                                          className="text-xs pr-2 text-right font-outfit h-8"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[9px] font-bold text-muted-foreground">المخزون</label>
+                                        <Input
+                                          type="number"
+                                          placeholder="100"
+                                          value={combo.stock_quantity}
+                                          onChange={(e) => {
+                                            const newCombos = [...variantCombinations];
+                                            newCombos[idx].stock_quantity = e.target.value;
+                                            setVariantCombinations(newCombos);
+                                          }}
+                                          className="text-xs pr-2 text-right font-outfit h-8"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[9px] font-bold text-muted-foreground">الرمز (SKU)</label>
+                                        <Input
+                                          placeholder="SKU"
+                                          value={combo.sku}
+                                          onChange={(e) => {
+                                            const newCombos = [...variantCombinations];
+                                            newCombos[idx].sku = e.target.value;
+                                            setVariantCombinations(newCombos);
+                                          }}
+                                          className="text-xs pr-2 text-right font-outfit h-8"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Link image dropdown with preview */}
+                                    <div className="flex items-center gap-3 pt-1">
+                                      <div className="flex-1 space-y-1">
+                                        <label className="text-[9px] font-bold text-muted-foreground">ربط بصورة للمتغير</label>
+                                        <select
+                                          value={combo.image_url}
+                                          onChange={(e) => {
+                                            const newCombos = [...variantCombinations];
+                                            newCombos[idx].image_url = e.target.value;
+                                            setVariantCombinations(newCombos);
+                                          }}
+                                          className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-right font-cairo"
+                                        >
+                                          <option value="">-- اختر صورة --</option>
+                                          {images.map((img, imgIdx) => (
+                                            <option key={imgIdx} value={img.image_url}>
+                                              الصورة {imgIdx + 1} ({img.is_primary ? "الرئيسية" : `رابط...${img.image_url.substring(img.image_url.length - 15)}`})
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      {/* Small preview */}
+                                      {combo.image_url ? (
+                                        <div className="h-10 w-10 rounded border border-border overflow-hidden bg-muted/20 flex-shrink-0 flex items-center justify-center">
+                                          <img src={combo.image_url} alt="Variant preview" className="w-full h-full object-cover" />
+                                        </div>
+                                      ) : (
+                                        <div className="h-10 w-10 rounded border border-dashed border-border bg-muted/5 flex-shrink-0 flex items-center justify-center text-muted-foreground/30">
+                                          <Image className="h-4 w-4" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-border space-y-1.5">
+                      <label className="text-xs font-bold text-muted-foreground">وصف المنتج</label>
+                      <textarea placeholder="اكتب تفاصيل ومواصفات المنتج هنا..." value={description} onChange={(e) => setDescription(e.target.value)} className="flex min-h-[80px] w-full rounded-lg border border-border bg-input px-3 py-2 text-xs text-foreground focus-visible:outline-none text-right" dir="rtl" />
+                    </div>
+
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowThemePicker(!showThemePicker)}>
+                        <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 cursor-pointer"><Palette className="h-3.5 w-3.5 text-primary" /> قالب تصميم صفحة المنتج</label>
+                        <div className="flex items-center gap-1">
+                          {selectedTheme && (
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                              {themeCatalog.find(t => t.id === selectedTheme)?.name || selectedTheme}
+                            </span>
+                          )}
+                          <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${showThemePicker ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+
+                      {showThemePicker && (
+                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTheme("")}
+                            className={`flex items-center gap-2 w-full p-2 rounded-xl border transition-all text-right text-xs ${
+                              !selectedTheme
+                                ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20'
+                                : 'border-border bg-muted/10 hover:bg-muted/20'
+                            }`}
+                          >
+                            <div className="h-7 w-7 rounded bg-muted/20 flex items-center justify-center flex-shrink-0">
+                              <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-xs">بدون قالب</p>
+                            </div>
+                            {!selectedTheme && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                          </button>
+
+                          {themeCatalog.map((theme) => {
+                            const isSelected = selectedTheme === theme.id;
+                            return (
+                              <button
+                                key={theme.id}
+                                type="button"
+                                onClick={() => setSelectedTheme(theme.id)}
+                                className={`flex items-center gap-2 w-full p-2 rounded-xl border transition-all text-right text-xs ${
+                                  isSelected
+                                    ? 'border-primary/40 bg-primary/5 ring-1 ring-primary/20'
+                                    : 'border-border bg-muted/10 hover:bg-muted/20'
+                                }`}
+                              >
+                                <div className="flex flex-col gap-0.5 flex-shrink-0">
+                                  <div className="flex gap-0.5">
+                                    <div className="h-3 w-3 rounded-full border border-border" style={{ background: theme.colors.bg }} />
+                                    <div className="h-3 w-3 rounded-full border border-border" style={{ background: theme.colors.text }} />
+                                  </div>
+                                  <div className="flex gap-0.5">
+                                    <div className="h-3 w-3 rounded-full border border-border" style={{ background: theme.colors.accent }} />
+                                    <div className="h-3 w-3 rounded-full border border-border" style={{ background: theme.colors.btn }} />
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0 text-right">
+                                  <p className="font-bold text-xs truncate">{theme.name}</p>
+                                </div>
+                                {isSelected && <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (section.section_type === 'quantity_offers') {
+                return (
+                  <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
+                      <div className="flex items-center gap-2">
+                        <Gift className="h-4 w-4 text-primary" />
+                        <h4 className="font-bold text-sm">عروض الكمية (تخفيض تدريجي)</h4>
+                      </div>
+                      {!showAddOffer && (
+                        <button type="button" onClick={() => setShowAddOffer(true)} className="text-xs text-primary hover:underline">+ إضافة عرض</button>
+                      )}
+                    </div>
+                    
+                    {showAddOffer && (
+                      <div className="flex items-end gap-2 bg-muted/5 p-3 rounded-xl border border-border">
+                        <div className="flex-1 space-y-1">
+                          <label className="text-xs text-muted-foreground">الكمية</label>
+                          <Input type="number" min="1" placeholder="2" value={offerQty} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("add-offer-btn")?.click(); } }} onChange={(e) => setOfferQty(e.target.value)} className="font-outfit text-xs" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <label className="text-xs text-muted-foreground">السعر الإجمالي (DZD)</label>
+                          <Input type="number" min="0" placeholder="3800" value={offerPrice} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("add-offer-btn")?.click(); } }} onChange={(e) => setOfferPrice(e.target.value)} className="font-outfit text-xs" />
+                        </div>
+                        <div
+                          id="add-offer-btn"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const q = parseInt(offerQty);
+                            const p = parseFloat(offerPrice);
+                            if (q > 0 && p > 0) {
+                              setQuantityOffers((prev: any[]) => [...prev, { quantity: q, price: p, label: "" }].sort((a: any, b: any) => a.quantity - b.quantity));
+                              setOfferQty(""); setOfferPrice(""); setShowAddOffer(false);
+                            }
+                          }}
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium transition-all h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer active:scale-95 select-none"
+                        >إضافة</div>
+                        <button type="button" onClick={() => setShowAddOffer(false)} className="text-xs text-muted-foreground p-2">إلغاء</button>
+                      </div>
+                    )}
+
+                    {quantityOffers.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {quantityOffers.map((offer, i) => {
+                          const unitPrice = offer.price / offer.quantity;
+                          const savingPct = parseFloat(price) > 0 ? Math.round(((parseFloat(price) - unitPrice) / parseFloat(price)) * 100) : 0;
+                          return (
+                            <div key={i} className="flex items-center justify-between bg-muted/5 rounded-lg px-3 py-2 border border-border">
+                              <div>
+                                <span className="text-sm font-bold font-outfit">{offer.quantity}×</span>
+                                <span className="text-xs text-muted-foreground mr-2">{formatCurrency(offer.price)}</span>
+                                {savingPct > 0 && <span className="text-[10px] text-green-400 mr-2">وفر {savingPct}%</span>}
+                              </div>
+                              <button type="button" onClick={() => setQuantityOffers((prev: any[]) => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 text-xs">حذف</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">لا توجد عروض كمية. أضف عروضًا لتشجيع الشراء بكميات أكبر.</p>
+                    )}
+                  </div>
+                );
+              }
+
+              if (section.section_type === 'security_captcha') {
+                const hasNoCaptchaKeys = !(selectedStore?.settings as any)?.security_captcha_site_key || !(selectedStore?.settings as any)?.security_captcha_secret_key;
+                return (
+                  <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-primary" />
+                        <h4 className="font-bold text-sm">حماية كابتشا Google reCAPTCHA v3</h4>
+                      </div>
+                      <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">حذف</Button>
+                    </div>
+                    {hasNoCaptchaKeys && (
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl text-xs flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                        <span>تنبيه: لم تقم بإعداد مفاتيح Google reCAPTCHA في إعدادات المتجر بعد. يرجى تهيئتها لضمان عمل الخدمة.</span>
+                      </div>
+                    )}
+                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        يحمي هذا القسم استمارة الطلب من الروبوتات والسبام باستخدام كابتشا Google غير المرئية.
+                      </p>
+                      <p className="text-[11px] text-primary mt-2">
+                        💡 يتم إعداد المفاتيح السرية في إعدادات الأمان العامة للمتجر. يمكنك سحب البطاقة لتغيير موضع شعار/إشعار الحماية على صفحة الهبوط.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (section.section_type === 'security_otp') {
+                const hasNoOtpConfig = !(selectedStore?.settings as any)?.security_firebase_config_json;
+                return (
+                  <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-primary" />
+                        <h4 className="font-bold text-sm">التحقق عبر رسائل الهاتف SMS OTP</h4>
+                      </div>
+                      <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">حذف</Button>
+                    </div>
+                    {hasNoOtpConfig && (
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl text-xs flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                        <span>تنبيه: لم تقم بتهيئة إعدادات Firebase لرسائل OTP في إعدادات المتجر بعد. يرجى تهيئتها لضمان عمل الخدمة.</span>
+                      </div>
+                    )}
+                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        يفرض هذا القسم إرسال رمز تحقق مؤقت (OTP) عبر رسائل الـ SMS للتحقق من هوية المشتري قبل إتمام الشراء.
+                      </p>
+                      <p className="text-[11px] text-primary mt-2">
+                        💡 يتطلب ربط وتهيئة إعدادات Firebase في لوحة التحكم العامة للمتجر. يمكنك تغيير موضع صندوق التحقق بسحب البطاقة.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (section.section_type === 'security_rate_limit') {
+                return (
+                  <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-border pb-3">
+                      <Shield className="h-4 w-4 text-primary" />
+                      <h4 className="font-bold text-sm">تحديد الطلبات اليومية لكل IP</h4>
+                    </div>
+                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        يمنع نفس المستخدم أو الجهاز من إرسال أكثر من الحد الأقصى من الطلبات يومياً للحد من التلاعب.
+                      </p>
+                      <p className="text-[11px] text-primary mt-2">
+                        💡 يمكنك تحديد الحد اليومي للطلبات من الإعدادات العامة للأمان في المتجر. يمكنك سحب البطاقة لتغيير موضع الإشعار.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (section.section_type === 'security_algerian_ip') {
+                return (
+                  <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-primary" />
+                        <h4 className="font-bold text-sm">حظر الطلبات من خارج الجزائر (Algerian IPs Only)</h4>
+                      </div>
+                      <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">حذف</Button>
+                    </div>
+                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        يتحقق من بلد المشتري عبر عنوان الـ IP ويمنع تسجيل الطلب إذا كان من خارج الجزائر.
+                      </p>
+                      <p className="text-[11px] text-primary mt-2">
+                        💡 يعمل تلقائياً لتفادي النقرات والطلبات الوهمية من الخارج. يمكنك سحب البطاقة لتغيير موضع إشعار البلد المتاح.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (section.section_type === 'checkout') {
+                return (
+                  <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-border pb-3">
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                      <h4 className="font-bold text-sm">استمارة الطلب (Order Form)</h4>
+                    </div>
+                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        هذا هو قسم استمارة الطلب التلقائي (COD checkout form) لمتجرك.
+                      </p>
+                      <p className="text-[11px] text-primary mt-2">
+                        💡 قسم استمارة الطلب لا يحتوي على حقول تعديل. يمكنك فقط سحبه لتغيير موضعه في صفحة المنتج.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              const meta = sectionTypeMeta[section.section_type] || sectionTypeMeta.text;
+              const config = section.config || {};
+              const isEditing = editingSection?.id === section.id;
+
+              return (
+                <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
+                    <div className="flex items-center gap-2">
+                      {meta.icon}
+                      <h4 className="font-bold text-sm">{meta.label}</h4>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" onClick={() => setEditingSection(isEditing ? null : { ...section, config })} size="sm" variant="outline" className="text-xs">
+                        {isEditing ? "إغلاق التعديل" : "تعديل المحتوى"}
+                      </Button>
+                      {!["product_info", "checkout", "footer", "header", "quantity_offers", "security_captcha", "security_phone_validation", "security_otp", "security_rate_limit", "security_algerian_ip"].includes(section.section_type) && (
+                        <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">
+                          حذف
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {isEditing ? (
+                    (section.section_type === 'text' || section.section_type === 'footer' || section.section_type === 'header') ? (
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/5 rounded-lg">
+                          <button type="button" onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold'); }} className="p-1.5 rounded hover:bg-muted/20 font-bold text-sm min-w-[28px]" title="عريض">B</button>
+                          <button type="button" onMouseDown={(e) => { e.preventDefault(); document.execCommand('italic'); }} className="p-1.5 rounded hover:bg-muted/20 italic text-sm min-w-[28px]" title="مائل">I</button>
+                          <span className="w-px h-5 bg-border mx-1" />
+                          <select onChange={(e) => document.execCommand('fontName', false, e.target.value)} className="bg-muted/10 border border-border rounded text-xs px-1 py-1 text-foreground">
+                            <option value="">الخط</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Tahoma">Tahoma</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Cairo">Cairo</option>
+                          </select>
+                          <select onChange={(e) => { e.preventDefault(); document.execCommand('fontSize', false, e.target.value); }} className="bg-muted/10 border border-border rounded text-xs px-1 py-1 text-foreground">
+                            <option value="" disabled>الحجم</option>
+                            <option value="1">صغير جداً</option>
+                            <option value="3">صغير</option>
+                            <option value="5">وسط</option>
+                            <option value="7">كبير</option>
+                          </select>
+                          <span className="w-px h-5 bg-border mx-1" />
+                          <label className="p-1.5 rounded hover:bg-muted/20 cursor-pointer text-xs min-w-[28px] text-center relative" title="لون النص">
+                            <span className="block w-4 h-4 rounded border border-border" style={{ backgroundColor: editingSection.config.color || '#ffffff' }} />
+                            <input type="color" value={editingSection.config.color || '#ffffff'} onChange={(e) => { document.execCommand('foreColor', false, e.target.value); setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, color: e.target.value } } : prev); }} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
+                          </label>
+                          <span className="w-px h-5 bg-border mx-1" />
+                          <button type="button" onMouseDown={(e) => { e.preventDefault(); document.execCommand('justifyRight'); }} className="p-1.5 rounded hover:bg-muted/20 text-xs min-w-[28px]"><svg className="w-3.5 h-3.5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M3 12h18M3 18h18" /><circle cx="19" cy="12" r="1" fill="currentColor" /></svg></button>
+                          <button type="button" onMouseDown={(e) => { e.preventDefault(); document.execCommand('justifyCenter'); }} className="p-1.5 rounded hover:bg-muted/20 text-xs min-w-[28px]"><svg className="w-3.5 h-3.5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M5 12h14M3 18h18" /></svg></button>
+                          <button type="button" onMouseDown={(e) => { e.preventDefault(); document.execCommand('justifyLeft'); }} className="p-1.5 rounded hover:bg-muted/20 text-xs min-w-[28px]"><svg className="w-3.5 h-3.5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M3 12h18M3 18h18" /><circle cx="5" cy="12" r="1" fill="currentColor" /></svg></button>
+                        </div>
+
+                        <div
+                          id={`text-editor-${section.id}`}
+                          contentEditable
+                          suppressContentEditableWarning
+                          ref={(el) => { if (el && editingSection.config.content && !el.innerHTML) el.innerHTML = editingSection.config.content; }}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onBlur={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, content: (e.target as HTMLElement).innerHTML } } : prev)}
+                          className="min-h-[120px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground focus-visible:outline-none text-right"
+                          style={{ backgroundColor: editingSection.config.background_color || 'transparent', textAlign: editingSection.config.text_align || 'right' }}
+                        />
+
+                        <div className="flex gap-2">
+                          <Button type="button" onClick={() => handleUpdateSection(section.id, { config: editingSection.config })} size="sm" variant="glow" className="text-xs">حفظ التغييرات</Button>
+                          <Button type="button" onClick={() => setEditingSection(null)} size="sm" variant="outline" className="text-xs">إلغاء</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {meta.fields.map((field) => {
+                          if (field.type === "image") {
+                            const val = editingSection.config[field.key] || "";
+                            return (
+                              <div key={field.key} className="space-y-1">
+                                <label className="text-xs font-medium text-muted-foreground">{field.label}</label>
+                                {val ? (
+                                  <div className="relative rounded-lg overflow-hidden border border-border bg-muted/20">
+                                    <img src={val} alt={field.label} className="w-full h-32 object-cover" />
+                                    <button type="button" onClick={() => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, [field.key]: "" } } : prev)} className="absolute top-1 right-1 bg-black/70 text-red-400 text-xs px-2 py-0.5 rounded">إزالة</button>
+                                  </div>
+                                ) : (
+                                  <label className="flex flex-col items-center justify-center h-20 w-full border border-dashed border-border rounded-lg bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all">
+                                    <span className="text-xs text-muted-foreground">{sectionUploading === field.key ? "جاري الرفع..." : "اضغط لرفع صورة"}</span>
+                                    <input type="file" accept="image/*" className="hidden" disabled={sectionUploading === field.key} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSectionFileUpload(field.key, f); }} />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          }
+                          if (field.type === "color") {
+                            return (
+                              <div key={field.key} className="flex items-center gap-3">
+                                <label className="text-xs font-medium text-muted-foreground">{field.label}</label>
+                                <input type="color" value={editingSection.config[field.key] || '#1a1a2e'} onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, [field.key]: e.target.value } } : prev)} className="w-9 h-9 rounded cursor-pointer border border-border" />
+                              </div>
+                            );
+                          }
+                          return (
+                            <div key={field.key} className="space-y-1">
+                              <label className="text-xs font-medium text-muted-foreground">{field.label}</label>
+                              {field.type === "textarea" ? (
+                                <textarea
+                                  value={Array.isArray(editingSection.config[field.key]) ? editingSection.config[field.key].join("\n") : (editingSection.config[field.key] || "")}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, [field.key]: field.key === "features" ? e.target.value.split("\n").filter(Boolean) : e.target.value } } : prev)}
+                                  className="flex min-h-[60px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground focus-visible:outline-none text-right"
+                                />
+                              ) : (
+                                <Input
+                                  value={editingSection.config[field.key] || ""}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, [field.key]: e.target.value } } : prev)}
+                                  className="text-xs text-right pr-3"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                        <div className="flex gap-2 pt-2">
+                          <Button type="button" onClick={() => handleUpdateSection(section.id, { config: editingSection.config })} size="sm" variant="glow" className="text-xs">حفظ التغييرات</Button>
+                          <Button type="button" onClick={() => setEditingSection(null)} size="sm" variant="outline" className="text-xs">إلغاء</Button>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    <div className="text-xs text-muted-foreground">اضغط على "تعديل المحتوى" لإدخال التفاصيل.</div>
+                  )}
+                </div>
+              );
+            })}
+            </div>
+          </div>
+
+            <div className="flex gap-3 justify-end pt-4 border-t border-border">
+              <Button type="button" onClick={() => router.push("/products")} variant="outline">إلغاء</Button>
+              <Button type="submit" variant="glow">
+                {isCreateMode ? "إنشاء وحفظ المنتج" : "حفظ التغييرات"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Live Preview Column (30%) */}
+          <div className="w-full xl:w-[30%] sticky top-6 space-y-4 flex-shrink-0">
+            <div className="w-full bg-card border border-border rounded-2xl p-5 shadow-sm text-card-foreground text-right" dir="rtl">
+              <h3 className="text-xs font-bold mb-3 flex items-center gap-2 justify-end">
+                <span>معاينة حية لصفحة المنتج (Mobile Preview)</span>
+                <Smartphone className="h-4 w-4 text-primary" />
+              </h3>
+
+              {(!title && !price && !primaryImage && !description) ? (
+                /* Empty/Blank state */
+                <div className="border-[6px] border-slate-850 rounded-[28px] overflow-hidden bg-muted/5 w-full h-[520px] flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
+                  <div className="h-14 w-14 bg-muted/20 rounded-full flex items-center justify-center mb-3">
+                    <Smartphone className="h-7 w-7 opacity-30 text-muted-foreground" />
+                  </div>
+                  <h4 className="font-bold text-xs text-foreground mb-1">المعاينة فارغة حالياً</h4>
+                  <p className="text-[10px] leading-relaxed max-w-[180px] mx-auto">
+                    ابدأ بإدخال اسم المنتج، السعر، أو تفعيل أقسام صفحة الهبوط لرؤية المعاينة الحية هنا فوراً.
+                  </p>
+                </div>
+              ) : (
+                /* Storefront mobile mockup */
+                <div className="border-[6px] border-slate-850 rounded-[28px] overflow-hidden shadow-2xl relative bg-slate-900 w-full h-[520px] flex flex-col">
+                  {/* Smartphone Speaker/Camera notch mock */}
+                  <div className="absolute top-0 inset-x-0 h-3 bg-slate-800 flex items-center justify-center z-20">
+                    <div className="w-12 h-2 bg-black rounded-b-md"></div>
+                  </div>
+                  
+                  {/* Preview Scrollable Screen */}
+                  <div 
+                    className="flex-grow overflow-y-auto pt-3 pb-6 space-y-3 px-2 text-right text-xs" 
+                    dir="rtl"
+                    style={{
+                      background: (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg']?.includes('gradient') 
+                        ? (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg'] 
+                        : undefined,
+                      backgroundColor: !(PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg']?.includes('gradient') 
+                        ? ((PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg'] || '#f8fafc') 
+                        : undefined,
+                      color: (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-text'] || '#1e293b',
+                      fontFamily: (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-font'] || 'sans-serif',
+                    }}
+                  >
+                    {activeList.map((section: any) => {
+                      const config = section.config || {};
+                      const previewTheme: any = PREVIEW_THEME_STYLES[selectedTheme] || {};
+                      const hasPreviewTheme = !!selectedTheme && !!PREVIEW_THEME_STYLES[selectedTheme];
+                      const previewCardStyle: React.CSSProperties = hasPreviewTheme ? {
+                        background: (previewTheme as any)['--theme-card-bg'],
+                        borderColor: (previewTheme as any)['--theme-card-border'],
+                        borderRadius: (previewTheme as any)['--theme-section-radius'] || '12px',
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                      } : {};
+                      const previewCardClass = hasPreviewTheme 
+                        ? 'shadow-sm overflow-hidden text-right' 
+                        : 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden text-right';
+
+                      switch (section.section_type) {
+                        case "product_info":
+                          return (
+                            <div key={section.id} className={previewCardClass} style={previewCardStyle}>
+                              <div className="relative aspect-square w-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                                {primaryImage ? (
+                                  <img src={primaryImage} alt={title || "Product"} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Image className="h-6 w-6 text-slate-300" />
+                                )}
+                              </div>
+                              <div className="p-3 space-y-1.5">
+                                <h1 className="font-bold text-xs" style={{ color: previewTheme['--theme-text'] }}>
+                                  {title || "عنوان المنتج..."}
+                                </h1>
+                                <div className="text-xs font-black font-outfit" style={{ color: previewTheme['--theme-accent'] || '#4f46e5' }}>
+                                  {price ? `${formatCurrency(parseFloat(price))}` : "0.00 DZD"}
+                                </div>
+                                {description && (
+                                  <p className="text-[10px] opacity-70 leading-relaxed" style={{ color: previewTheme['--theme-text'] }}>
+                                    {description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        case "quantity_offers":
+                          return quantityOffers.length > 0 ? (
+                            <div key={section.id} className={previewCardClass} style={previewCardStyle}>
+                              <div className="p-3 space-y-1.5">
+                                <div className="font-bold text-[10px]" style={{ color: previewTheme['--theme-text'] }}>عروض الكمية</div>
+                                <div className="grid grid-cols-2 gap-1">
+                                  {quantityOffers.map((o: any, idx: number) => (
+                                    <div key={idx} className="p-1 text-center border border-slate-100 rounded-lg bg-slate-50/50">
+                                      <div className="text-[10px] font-bold font-outfit">{formatCurrency(o.price)}</div>
+                                      <div className="text-[8px] text-slate-400">{o.quantity} قطع</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ) : null;
+                        case "checkout":
+                          return (
+                            <div key={section.id} className="bg-white rounded-2xl shadow border border-slate-100 p-3 space-y-2 text-slate-800 text-right">
+                              <div className="text-[10px] font-bold text-slate-900 flex items-center gap-1">
+                                <CheckSquare className="h-3 w-3 text-primary" />
+                                <span>طلب شراء سريع (COD)</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                <div className="h-7 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-end px-2 text-[9px] text-slate-400">الاسم الكامل</div>
+                                <div className="flex gap-1">
+                                  <div className="h-7 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-end px-2 text-[9px] text-slate-400 flex-grow">رقم الهاتف</div>
+                                  {hasOtp && (
+                                    <div className="h-7 bg-primary text-white rounded-lg flex items-center justify-center px-2 text-[8px] font-bold cursor-not-allowed whitespace-nowrap">إرسال SMS</div>
+                                  )}
+                                </div>
+                                <div className="h-7 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between px-2 text-[9px] text-slate-400">
+                                  <span>اختر الولاية</span>
+                                  <ChevronDown className="h-3 w-3" />
+                                </div>
+                                
+                                {hasCaptcha && (
+                                  <div className="flex items-center gap-1 text-[8px] text-slate-500 justify-end">
+                                    <Shield className="h-2.5 w-2.5 text-primary" />
+                                    <span>حماية الكابتشا مفعلة</span>
+                                  </div>
+                                )}
+                                {hasRateLimit && (
+                                  <div className="flex items-center gap-1 text-[8px] text-slate-500 justify-end">
+                                    <Shield className="h-2.5 w-2.5 text-amber-500" />
+                                    <span>حد الطلبات اليومية مفعل</span>
+                                  </div>
+                                )}
+                                {hasAlgerianIp && (
+                                  <div className="flex items-center gap-1 text-[8px] text-slate-500 justify-end">
+                                    <Shield className="h-2.5 w-2.5 text-primary" />
+                                    <span>متاح للجزائر فقط 🇩🇿</span>
+                                  </div>
+                                )}
+
+                                <div className="h-7 bg-primary rounded-lg flex items-center justify-center text-[9px] text-white font-bold cursor-not-allowed">
+                                  تأكيد الطلب
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        case "security_otp":
+                        case "security_captcha":
+                        case "security_phone_validation":
+                        case "security_rate_limit":
+                        case "security_algerian_ip":
+                          return null;
+                        case "text":
+                          return (
+                            <div key={section.id} className={previewCardClass} style={{ ...previewCardStyle, backgroundColor: config.background_color || 'transparent' }}>
+                              <div 
+                                className="text-[10px] leading-relaxed p-2" 
+                                style={{ color: config.color || previewTheme['--theme-text'], textAlign: config.text_align || 'right' as any }}
+                                dangerouslySetInnerHTML={{ __html: config.content || 'نص مخصص...' }}
+                              />
+                            </div>
+                          );
+                        case "footer":
+                          return (
+                            <div key={section.id} className="w-full text-center py-4 border-t border-slate-100 bg-white" style={{ ...previewCardStyle, backgroundColor: config.background_color || '#ffffff' }}>
+                              <div 
+                                className="text-[9px] opacity-75 leading-relaxed px-4" 
+                                style={{ color: config.color || previewTheme['--theme-text'] || '#64748b', textAlign: config.text_align || 'center' as any }}
+                                dangerouslySetInnerHTML={{ __html: config.content || '© جميع الحقوق محفوظة' }}
+                              />
+                            </div>
+                          );
+                        case "header":
+                          return (
+                            <div key={section.id} className="w-full py-3 px-4 border-b border-slate-100 bg-white flex items-center justify-between" style={{ ...previewCardStyle, backgroundColor: config.background_color || '#ffffff' }}>
+                              <div className="h-5 w-5 bg-slate-100 rounded-full flex-shrink-0 animate-pulse"></div>
+                              <div 
+                                className="text-xs font-bold leading-relaxed px-2 flex-grow text-right" 
+                                style={{ color: config.color || previewTheme['--theme-text'] || '#0f172a', textAlign: config.text_align || 'right' as any }}
+                                dangerouslySetInnerHTML={{ __html: config.content || 'متجرنا' }}
+                              />
+                            </div>
+                          );
+                        case "image":
+                          return (
+                            <div key={section.id} className={`${previewCardClass} overflow-hidden`} style={previewCardStyle}>
+                              {config.image ? (
+                                  <img src={config.image} alt="" className="w-full object-cover" />
+                              ) : (
+                                <div className="h-16 bg-slate-100 flex items-center justify-center text-[9px] text-slate-300">
+                                  قسم صورة
+                                </div>
+                              )}
+                              {config.caption && <p className="text-[8px] text-center py-0.5 opacity-60">{config.caption}</p>}
+                            </div>
+                          );
+                        case "reviews":
+                          return (
+                            <div key={section.id} className={previewCardClass} style={previewCardStyle}>
+                              <div className="p-2 space-y-1.5">
+                                <h4 className="text-[10px] font-bold" style={{ color: previewTheme['--theme-text'] }}>آراء العملاء</h4>
+                                <div className="space-y-1 text-[8px] opacity-80">
+                                  <div><strong>محمد ب.</strong>: منتج رائع جداً</div>
+                                  <div><strong>سارة م.</strong>: توصيل سريع</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        case "before_after":
+                          return (
+                            <div key={section.id} className={previewCardClass} style={previewCardStyle}>
+                              <div className="grid grid-cols-2 gap-1 p-1.5 text-center text-[8px]">
+                                <div>
+                                  <div className="opacity-60 mb-0.5">قبل</div>
+                                  <div className="h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">صورة</div>
+                                </div>
+                                <div>
+                                  <div className="opacity-60 mb-0.5">بعد</div>
+                                  <div className="h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">صورة</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        case "features":
+                          return (
+                            <div key={section.id} className={previewCardClass} style={previewCardStyle}>
+                              <div className="p-2 space-y-1 text-right text-[9px]" style={{ color: previewTheme['--theme-text'] }}>
+                                <div className="font-bold">مميزات المنتج</div>
+                                <ul className="space-y-0.5 opacity-80">
+                                  <li>✓ ميزة أولى للمنتج</li>
+                                  <li>✓ ميزة ثانية للمنتج</li>
+                                </ul>
+                              </div>
+                            </div>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      </form>
+    </div>
+  );
+}

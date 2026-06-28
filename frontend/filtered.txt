@@ -1,0 +1,490 @@
+app\(dashboard)\layout.tsx:49: const isNamed = !!selectedStore.name && selectedStore.name !== "اختر المتجر" && selectedStore.name !== "Select Store" && selectedStore.name !== "Choisir la boutique";
+app\(dashboard)\layout.tsx:219: { name: language === 'ar' ? "إدارة المتاجر" : (language === 'fr' ? "Gestion des boutiques" : "Manage Stores"), path: `/admin/accounts`, icon: Users },
+app\(dashboard)\layout.tsx:220: { name: language === 'ar' ? "إيصالات الدفع" : (language === 'fr' ? "Reçus de paiement" : "Payment Receipts"), path: `/admin/receipts`, icon: FileText },
+app\(dashboard)\layout.tsx:407: {language === 'ar' ? "عذراً، اشتراك متجرك منتهٍ!" : (language === 'fr' ? "Désolé, votre abonnement a expiré !" : "Sorry, your store subscription has expired!")}
+app\(dashboard)\layout.tsx:410: {language === 'ar' ? "توقفت مبيعات متجرك وموقعك الإلكتروني مؤقتاً بسبب انتهاء صلاحية اشتراكك. يرجى تجديد الاشتراك لاستعادة تشغيل متجرك الإلكتروني واستقبل مبيعات جديدة." : (language === 'fr' ? "Les ventes de votre boutique et votre site internet sont temporairement suspendus. Veuillez renouveler votre abonnement pour relancer votre boutique." : "Your store sales and website are temporarily suspended. Please renew your subscription to reactivate your store.")}
+app\(dashboard)\layout.tsx:414: {language === 'ar' ? "جدد اشتراكك الآن" : (language === 'fr' ? "Renouveler maintenant" : "Renew Subscription Now")}
+app\(dashboard)\admin\accounts\page.tsx:73: setError(err.response?.data?.error || t("adminAccountsToggleError", "فشل إيقاف/تنشيط المتجر."));
+app\(dashboard)\admin\accounts\page.tsx:125: <CardTitle className="text-2xl font-black text-primary">{Math.round(stats.total_revenue).toLocaleString()} دج</CardTitle>
+app\(dashboard)\admin\accounts\page.tsx:216: <span className="text-red-400 font-bold">{t("adminAccountsNoPlan", "لا يوجد خطة")}</span>
+app\(dashboard)\admin\receipts\page.tsx:75: setError(err.response?.data?.error || t("adminReceiptsApproveError", "فشل إرسال طلب الموافقة."));
+app\(dashboard)\admin\receipts\page.tsx:83: setError(t("adminReceiptsDeclineReasonRequired", "يرجى توضيح سبب الرفض في الملاحظات أولاً."));
+app\(dashboard)\admin\receipts\page.tsx:100: setError(err.response?.data?.error || t("adminReceiptsDeclineError", "فشل إرسال طلب الرفض."));
+app\(dashboard)\admin\receipts\page.tsx:206: <td className="p-4 font-bold">{Math.round(receipt.amount_da)} دج</td>
+app\(dashboard)\admin\receipts\page.tsx:294: <span className="text-muted-foreground block">{t("adminReceiptsModalLabelStore", "اسم المتجر:")}</span>
+app\(dashboard)\admin\receipts\page.tsx:298: <span className="text-muted-foreground block">{t("adminReceiptsModalLabelPlan", "الخطة المطلوبة:")}</span>
+app\(dashboard)\admin\receipts\page.tsx:302: <span className="text-muted-foreground block">{t("adminReceiptsModalLabelMethod", "وسيلة الدفع:")}</span>
+app\(dashboard)\admin\receipts\page.tsx:304: {selectedReceipt.payment_method === "baridimob_ccp" ? t("billingModalMethodCcp") : (language === "ar" ? "ريدوت باي RedotPay" : "RedotPay")}
+app\(dashboard)\admin\receipts\page.tsx:308: <span className="text-muted-foreground block">{t("adminReceiptsModalLabelAmount", "المبلغ المعلن:")}</span>
+app\(dashboard)\admin\receipts\page.tsx:309: <span className="font-bold text-emerald-400 text-sm">{Math.round(selectedReceipt.amount_da)} {language === "ar" ? "دج" : "DA"}</span>
+app\(dashboard)\admin\receipts\page.tsx:312: <span className="text-muted-foreground block">{t("adminReceiptsModalLabelDate", "تاريخ الإرسال:")}</span>
+app\(dashboard)\admin\receipts\page.tsx:318: <span className="text-muted-foreground block">{t("adminReceiptsModalLabelStatus", "حالة الإيصال:")}</span>
+app\(dashboard)\admin\receipts\page.tsx:329: <span className="font-bold text-muted-foreground block mb-1">{t("adminReceiptsModalLabelNote", "ملاحظة التاجر:")}</span>
+app\(dashboard)\billing\page.tsx:108: setError(t("billingReceiptSubmitErrorPlan", "يرجى اختيار خطة الاشتراك"));
+app\(dashboard)\billing\page.tsx:112: setError(t("billingReceiptSubmitErrorReceipt", "يرجى إرفاق صورة إيصال الدفع"));
+app\(dashboard)\billing\page.tsx:116: setError(t("billingReceiptSubmitErrorAmount", "يرجى إدخال مبلغ صحيح"));
+app\(dashboard)\billing\page.tsx:307: <div className="text-xs text-muted-foreground mb-1">{t("billingTimeRemaining", "الوقت الإجمالي المتبقي")}</div>
+app\(dashboard)\billing\page.tsx:365: <h4 className="font-bold text-sm border-b border-border pb-2 text-accent">{t("billingLimitsFeaturesTitle", "الميزات المدعومة")}</h4>
+app\(dashboard)\billing\page.tsx:393: {t("billingLimitsNoActiveSubPrompt", "يرجى تفعيل اشتراك أولاً لعرض حدود الاستهلاك والميزات المتاحة.")}
+app\(dashboard)\billing\page.tsx:431: <td className="py-4 font-semibold text-primary">{Math.round(receipt.amount_da)} {language === 'ar' ? "دج" : "DA"}</td>
+app\(dashboard)\billing\page.tsx:499: <div className="text-sm font-bold text-primary mt-2">{Math.round(p.price_da)} {language === 'ar' ? "دج" : "DA"}</div>
+app\(dashboard)\orders\page.tsx:197: const itemsSummary = order.items?.map((i: any) => `${i.product_title} (${i.quantity}x)`).join("، ") || "Product";
+app\(dashboard)\orders\page.tsx:200: text = `السلام عليكم يا ${order.full_name}،\nنشكرك على طلبك من متجرنا! رقم طلبك هو ${order.order_number}.\nتفاصيل الطلب:\n- المنتجات: ${itemsSummary}\n- المبلغ الإجمالي للطلب: ${order.total} د.ج.\n- العنوان: ${order.address || "غير محدد"}، ${order.wilaya_name || ""}، ${order.commune_name || ""}.\n\nيرجى الرد على هذه الرسالة بـ "تأكيد" لتأكيد شحن طلبيتك، أو بـ "إلغاء" لإلغائه.\nشكراً لك!`;
+app\(dashboard)\orders\page.tsx:210: const itemsSummary = order.items?.map((i: any) => `${i.product_title} (${i.quantity}x)`).join("، ") || "Product";
+app\(dashboard)\orders\page.tsx:213: text = `مرحباً يا ${order.full_name}،\nنحن سعداء باختيارك لمتجرنا! لاحظنا أنك لم تكمل طلبك الخاص بـ:\n- ${itemsSummary}\n\nهل واجهتك أي مشكلة أثناء إتمام الطلب؟ يسعدنا جداً مساعدتك وإتمام الطلب لك الآن بخصم مميز أو توصيل سريع!\nفقط قم بالرد على هذه الرسالة وسنتواصل معك فوراً.`;
+app\(dashboard)\orders\page.tsx:450: const itemsSummary = o.items?.map((i: any) => `${i.product_title} (${i.quantity}x)`).join("، ") || "—";
+app\(dashboard)\pages\builder\page.tsx:591: <TextField label={t("builderEditorBadgeText")} value={config.badge_text} onChangeValue={(v) => update("badge_text", v)} placeholder={language === 'ar' ? "مثال: عرض حصري" : (language === 'fr' ? "ex. Offre exclusive" : "e.g. Exclusive offer")} />
+app\(dashboard)\pages\builder\page.tsx:624: <span className="text-[10px] font-bold text-muted-foreground">{language === 'ar' ? `تقييم #${idx + 1}` : (language === 'fr' ? `Avis #${idx + 1}` : `Review #${idx + 1}`)}</span>
+app\(dashboard)\pages\builder\page.tsx:633: <Button onClick={() => addArrayItem("reviews", { name: "", text: "", rating: 5, date: language === 'ar' ? "جديد" : (language === 'fr' ? "Nouveau" : "New") })} variant="outline" size="sm" className="w-full text-xs gap-1">
+app\(dashboard)\pages\builder\page.tsx:647: <span className="text-[10px] font-bold text-muted-foreground">{language === 'ar' ? `سؤال #${idx + 1}` : (language === 'fr' ? `Question #${idx + 1}` : `Question #${idx + 1}`)}</span>
+app\(dashboard)\pages\builder\page.tsx:670: <span className="text-[10px] font-bold text-muted-foreground">{language === 'ar' ? `ميزة #${idx + 1}` : (language === 'fr' ? `Caractéristique #${idx + 1}` : `Feature #${idx + 1}`)}</span>
+app\(dashboard)\pages\builder\page.tsx:756: <span className="text-[10px] text-muted-foreground">{language === 'ar' ? `صف #${rIdx + 1}` : (language === 'fr' ? `Ligne #${rIdx + 1}` : `Row #${rIdx + 1}`)}</span>
+app\(dashboard)\pages\builder\page.tsx:797: <TextField label={language === 'ar' ? "العنوان (اختياري)" : (language === 'fr' ? "Titre (facultatif)" : "Title (optional)")} value={config.title} onChangeValue={(v) => update("title", v)} />
+app\(dashboard)\pages\builder\page.tsx:858: <TextField label={language === 'ar' ? "شارة التمييز" : (language === 'fr' ? "Badge de mise en valeur" : "Highlight Badge")} value={config.highlight_badge || config.highlight_text} onChangeValue={(v) => update(config.highlight_badge !== undefined ? "highlight_badge" : "highlight_text", v)} />
+app\(dashboard)\products\page.tsx:46: ? "هل أنت متأكد من رغبتك في حذف هذا المنتج؟"
+app\(dashboard)\products\page.tsx:49: ? "حدث خطأ أثناء حذف المنتج."
+app\(dashboard)\products\categories\[id]\page.tsx:26: announcement: { label: language === 'ar' ? "شريط الإعلانات (Announcement)" : (language === 'fr' ? "Bandeau d'annonce (Announcement)" : "Announcement Banner (Announcement)"), icon: <Truck className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:27: header: { label: language === 'ar' ? "ترويسة الصفحة (Header)" : (language === 'fr' ? "En-tête de page (Header)" : "Page Header (Header)"), icon: <Layout className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:28: hero: { label: language === 'ar' ? "البنر الرئيسي والترحيب (Hero)" : (language === 'fr' ? "Bannière Hero (Hero)" : "Hero Banner (Hero)"), icon: <Sparkles className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:29: featured_products: { label: language === 'ar' ? "شبكة منتجات الفئة (Category Products Grid)" : (language === 'fr' ? "Grille des produits (Category Products Grid)" : "Category Products Grid (Category Products Grid)"), icon: <Star className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:30: trust_badges: { label: language === 'ar' ? "ضمانات الثقة (Trust Badges)" : (language === 'fr' ? "Badges de confiance (Trust Badges)" : "Trust Badges (Trust Badges)"), icon: <ShieldCheck className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:31: footer: { label: language === 'ar' ? "تذييل الصفحة (Footer)" : (language === 'fr' ? "Pied de page (Footer)" : "Page Footer (Footer)"), icon: <Layers className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:32: text: { label: language === 'ar' ? "محتوى نصي مخصص (Custom Text)" : (language === 'fr' ? "Texte personnalisé (Custom Text)" : "Custom Text (Custom Text)"), icon: <Edit2 className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:33: image: { label: language === 'ar' ? "صورة / بنر مخصص (Custom Image)" : (language === 'fr' ? "Image personnalisée (Custom Image)" : "Custom Image (Custom Image)"), icon: <ImageIcon className="h-4 w-4 text-primary" /> },
+app\(dashboard)\products\categories\[id]\page.tsx:75: content: language === 'ar' ? "تصفح مجموعتنا الحصرية مع توصيل سريع ودفع عند الاستلام!" : (language === 'fr' ? "Découvrez notre collection exclusive avec livraison rapide et paiement à la livraison !" : "Browse our exclusive collection with fast shipping and Cash on Delivery!"),
+app\(dashboard)\products\categories\[id]\page.tsx:87: content: selectedStore?.name || (language === 'ar' ? "متجرنا" : (language === 'fr' ? "Notre boutique" : "Our Store")),
+app\(dashboard)\products\categories\[id]\page.tsx:99: title: language === 'ar' ? "اسم الفئة" : (language === 'fr' ? "Nom de la catégorie" : "Category Name"),
+app\(dashboard)\products\categories\[id]\page.tsx:100: description: language === 'ar' ? "اكتشف أفضل الخيارات المختارة بعناية خصيصاً لك." : (language === 'fr' ? "Découvrez les meilleures options sélectionnées avec soin pour vous." : "Discover the best options carefully selected for you."),
+app\(dashboard)\products\categories\[id]\page.tsx:112: title: language === 'ar' ? "منتجات هذه الفئة" : (language === 'fr' ? "Produits de cette catégorie" : "Products in this category")
+app\(dashboard)\products\categories\[id]\page.tsx:120: badge_1_title: language === 'ar' ? "توصيل سريع" : (language === 'fr' ? "Livraison rapide" : "Fast Delivery"),
+app\(dashboard)\products\categories\[id]\page.tsx:121: badge_1_desc: language === 'ar' ? "التوصيل لجميع الولايات بأسعار مدروسة." : (language === 'fr' ? "Livraison dans toutes les wilayas à des prix étudiés." : "Delivery to all provinces at reasonable rates."),
+app\(dashboard)\products\categories\[id]\page.tsx:122: badge_2_title: language === 'ar' ? "الدفع عند الاستلام" : (language === 'fr' ? "Paiement à la livraison" : "Cash on Delivery"),
+app\(dashboard)\products\categories\[id]\page.tsx:123: badge_2_desc: language === 'ar' ? "لا تدفع أي شيء حتى تستلم منتجك بين يديك." : (language === 'fr' ? "Ne payez rien avant d'avoir reçu votre produit." : "Pay nothing until you receive your product."),
+app\(dashboard)\products\categories\[id]\page.tsx:124: badge_3_title: language === 'ar' ? "دعم العملاء" : (language === 'fr' ? "Service client" : "Customer Support"),
+app\(dashboard)\products\categories\[id]\page.tsx:125: badge_3_desc: language === 'ar' ? "فريق عملنا متواجد للرد على استفساراتكم." : (language === 'fr' ? "Notre équipe est disponible pour répondre à vos questions." : "Our team is available to answer your questions."),
+app\(dashboard)\products\categories\[id]\page.tsx:135: content: `© ${new Date().getFullYear()} ${selectedStore?.name || (language === 'ar' ? "متجرنا" : (language === 'fr' ? "Notre boutique" : "Our Store"))}. ${language === 'ar' ? "جميع الحقوق محفوظة." : (language === 'fr' ? "Tous droits réservés." : "All rights reserved.")}`,
+app\(dashboard)\products\categories\[id]\page.tsx:163: content: language === 'ar' ? "تصفح مجموعتنا الحصرية مع توصيل سريع ودفع عند الاستلام!" : (language === 'fr' ? "Découvrez notre collection exclusive avec livraison rapide et paiement à la livraison !" : "Browse our exclusive collection with fast shipping and Cash on Delivery!"),
+app\(dashboard)\products\categories\[id]\page.tsx:175: content: selectedStore?.name || (language === 'ar' ? "متجرنا" : (language === 'fr' ? "Notre boutique" : "Our Store")),
+app\(dashboard)\products\categories\[id]\page.tsx:188: description: data.description || (language === 'ar' ? "اكتشف أفضل الخيارات المختارة بعناية خصيصاً لك." : (language === 'fr' ? "Découvrez les meilleures options sélectionnées avec soin pour vous." : "Discover the best options carefully selected for you.")),
+app\(dashboard)\products\categories\[id]\page.tsx:200: title: language === 'ar' ? `منتجات ${data.name}` : (language === 'fr' ? `Produits de ${data.name}` : `Products of ${data.name}`)
+app\(dashboard)\products\categories\[id]\page.tsx:208: badge_1_title: language === 'ar' ? "توصيل سريع" : (language === 'fr' ? "Livraison rapide" : "Fast Delivery"),
+app\(dashboard)\products\categories\[id]\page.tsx:209: badge_1_desc: language === 'ar' ? "التوصيل لجميع الولايات بأسعار مدروسة." : (language === 'fr' ? "Livraison dans toutes les wilayas à des prix étudiés." : "Delivery to all provinces at reasonable rates."),
+app\(dashboard)\products\categories\[id]\page.tsx:210: badge_2_title: language === 'ar' ? "الدفع عند الاستلام" : (language === 'fr' ? "Paiement à la livraison" : "Cash on Delivery"),
+app\(dashboard)\products\categories\[id]\page.tsx:211: badge_2_desc: language === 'ar' ? "لا تدفع أي شيء حتى تستلم منتجك بين يديك." : (language === 'fr' ? "Ne payez rien avant d'avoir reçu votre produit." : "Pay nothing until you receive your product."),
+app\(dashboard)\products\categories\[id]\page.tsx:212: badge_3_title: language === 'ar' ? "دعم العملاء" : (language === 'fr' ? "Service client" : "Customer Support"),
+app\(dashboard)\products\categories\[id]\page.tsx:213: badge_3_desc: language === 'ar' ? "فريق عملنا متواجد للرد على استفساراتكم." : (language === 'fr' ? "Notre équipe est disponible pour répondre à vos questions." : "Our team is available to answer your questions."),
+app\(dashboard)\products\categories\[id]\page.tsx:223: content: `© ${new Date().getFullYear()} ${selectedStore?.name || (language === 'ar' ? "متجرنا" : (language === 'fr' ? "Notre boutique" : "Our Store"))}. ${language === 'ar' ? "جميع الحقوق محفوظة." : (language === 'fr' ? "Tous droits réservés." : "All rights reserved.")}`,
+app\(dashboard)\products\categories\[id]\page.tsx:314: setError(detail || (language === "ar" ? "حدث خطأ أثناء حفظ البيانات." : (language === "fr" ? "Une erreur est survenue lors de l'enregistrement." : "An error occurred while saving.")));
+app\(dashboard)\products\categories\[id]\page.tsx:348: config.content = "توصيل سريع ودفع عند الاستلام!";
+app\(dashboard)\products\categories\[id]\page.tsx:355: config.content = selectedStore?.name || "متجرنا";
+app\(dashboard)\products\categories\[id]\page.tsx:362: config.title = name || "اسم الفئة";
+app\(dashboard)\products\categories\[id]\page.tsx:363: config.description = "تصفح المنتجات المتوفرة.";
+app\(dashboard)\products\categories\[id]\page.tsx:370: config.title = "منتجات الفئة";
+app\(dashboard)\products\categories\[id]\page.tsx:373: config.badge_1_title = "شحن سريع";
+app\(dashboard)\products\categories\[id]\page.tsx:374: config.badge_1_desc = "شحن لكافة الولايات.";
+app\(dashboard)\products\categories\[id]\page.tsx:379: config.content = `© ${selectedStore?.name || "متجرنا"}. جميع الحقوق محفوظة.`;
+app\(dashboard)\products\categories\[id]\page.tsx:398: config.content = "<h3>عنوان مخصص</h3><p>تفاصيل ونص إضافي يعرض في صفحة الفئة...</p>";
+app\(dashboard)\products\categories\[id]\page.tsx:433: alert(language === "ar" ? "فشل رفع صورة القسم." : (language === "fr" ? "Échec du chargement de l'image de la section." : "Failed to upload section image."));
+app\(dashboard)\products\categories\[id]\page.tsx:460: {saving ? (language === "ar" ? "جاري الحفظ..." : "Enregistrement...") : t("categorySaveBtn")}
+app\(dashboard)\products\categories\[id]\page.tsx:573: title="حذف الصورة"
+app\(dashboard)\products\categories\[id]\page.tsx:607: <Layers className="h-4 w-4" /> {language === "ar" ? "أقسام صفحة الفئة" : (language === "fr" ? "Sections de la catégorie" : "Category Page Sections")}
+app\(dashboard)\products\categories\[id]\page.tsx:610: {language === "ar" ? "قم بتفعيل وترتيب الأقسام لتظهر في صفحة الفئة. اضغط على أي قسم لتعديل محتواه." : (language === "fr" ? "Activez et organisez les sections de la catégorie. Cliquez sur une section pour la modifier." : "Enable and organize category sections. Click on a section to edit its content.")}
+app\(dashboard)\products\categories\[id]\page.tsx:616: <p className="text-[10px] font-bold text-muted uppercase tracking-wider">{language === "ar" ? "الأقسام النشطة (اسحب للترتيب)" : (language === "fr" ? "Sections Actives (glisser pour réordonner)" : "Active Sections (drag to reorder)")}</p>
+app\(dashboard)\products\categories\[id]\page.tsx:618: <p className="text-xs text-muted py-2 text-center border border-dashed border-white/10 rounded-xl">{language === "ar" ? "لا توجد أقسام نشطة" : (language === "fr" ? "Aucune section active" : "No active sections")}</p>
+app\(dashboard)\products\categories\[id]\page.tsx:670: <p className="text-[10px] font-bold text-muted uppercase tracking-wider">{language === "ar" ? "أقسام اختيارية للزيادة" : (language === "fr" ? "Sections facultatives" : "Optional Sections")}</p>
+app\(dashboard)\products\categories\[id]\page.tsx:683: <span>{language === "ar" ? `تفعيل ${meta.label}` : (language === "fr" ? `Activer ${meta.label}` : `Enable ${meta.label}`)}</span>
+app\(dashboard)\products\categories\[id]\page.tsx:694: <Plus className="h-4 w-4" /> {language === "ar" ? "إضافة قسم مخصص" : (language === "fr" ? "Ajouter section personnalisée" : "Add custom section")}
+app\(dashboard)\products\categories\[id]\page.tsx:708: {t("edit")} قسم: {SECTION_TYPE_META[editingSection.section_type]?.label}
+app\(dashboard)\products\categories\[id]\page.tsx:715: {language === "ar" ? "إغلاق" : (language === "fr" ? "Fermer" : "Close")}
+app\(dashboard)\products\categories\[id]\page.tsx:724: <label className="text-xs text-muted font-bold block">{language === "ar" ? "محتوى الإعلان" : (language === "fr" ? "Contenu de l'annonce" : "Announcement Content")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:732: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون الخلفية" : (language === "fr" ? "Couleur de fond" : "Background Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:740: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون النص" : (language === "fr" ? "Couleur du texte" : "Text Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:754: <label className="text-xs text-muted font-bold block">{language === "ar" ? "اسم المتجر / الشعار بالترويسة" : (language === "fr" ? "Nom de la boutique / Logo" : "Store Name / Logo")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:762: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون الترويسة" : (language === "fr" ? "Couleur de l'en-tête" : "Header Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:770: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون النص" : (language === "fr" ? "Couleur du texte" : "Text Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:784: <label className="text-xs text-muted font-bold block">{language === "ar" ? "عنوان البنر الرئيسي (Hero Title)" : (language === "fr" ? "Titre principal (Hero Title)" : "Hero Title")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:791: <label className="text-xs text-muted font-bold block">{language === "ar" ? "الوصف أو النص الفرعي" : (language === "fr" ? "Description / Sous-titre" : "Description / Subtitle")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:800: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون خلفية البنر" : (language === "fr" ? "Couleur de fond" : "Background Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:808: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون النص" : (language === "fr" ? "Couleur du texte" : "Text Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:821: <label className="text-xs text-muted font-bold block">{language === "ar" ? "عنوان شبكة المنتجات" : (language === "fr" ? "Titre de la grille" : "Grid Title")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:825: placeholder={language === "ar" ? "مثال: منتجات هذه المجموعة" : (language === "fr" ? "ex. Produits de cette catégorie" : "e.g. Products in this category")}
+app\(dashboard)\products\categories\[id]\page.tsx:827: <span className="text-[10px] text-muted block">{language === "ar" ? "ملاحظة: هذا القسم سيعرض تلقائياً فقط المنتجات المضافة لهذه الفئة." : (language === "fr" ? "Note : Cette section affichera automatiquement les produits de cette catégorie." : "Note: This section will automatically display products belonging to this category.")}</span>
+app\(dashboard)\products\categories\[id]\page.tsx:835: <label className="text-[10px] text-muted font-bold">{language === "ar" ? "عنوان الضمان الأول" : "Titre du badge 1"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:842: <label className="text-[10px] text-muted font-bold">{language === "ar" ? "وصف الضمان الأول" : "Description du badge 1"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:851: <label className="text-[10px] text-muted font-bold">{language === "ar" ? "عنوان الضمان الثاني" : "Titre du badge 2"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:858: <label className="text-[10px] text-muted font-bold">{language === "ar" ? "وصف الضمان الثاني" : "Description du badge 2"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:867: <label className="text-[10px] text-muted font-bold">{language === "ar" ? "عنوان الضمان الثالث" : "Titre du badge 3"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:874: <label className="text-[10px] text-muted font-bold">{language === "ar" ? "وصف الضمان الثالث" : "Description du badge 3"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:887: <label className="text-xs text-muted font-bold block">{language === "ar" ? "محتوى تذييل الصفحة (حقوق النشر)" : "Contenu du pied de page (Copyright)"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:895: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون الخلفية" : (language === "fr" ? "Couleur de fond" : "Background Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:903: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون النص" : (language === "fr" ? "Couleur du texte" : "Text Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:917: <label className="text-xs text-muted font-bold block">{language === "ar" ? "محتوى النص (يدعم وسوم HTML الأساسية)" : "Contenu texte (HTML supporté)"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:926: <label className="text-xs text-muted font-bold block">لون خلفية النص</label>
+app\(dashboard)\products\categories\[id]\page.tsx:934: <label className="text-xs text-muted font-bold block">{language === "ar" ? "لون النص" : (language === "fr" ? "Couleur du texte" : "Text Color")}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:948: <label className="text-xs text-muted font-bold block">{language === "ar" ? "صورة القسم المخصصة" : "Image personnalisée"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:956: title="حذف الصورة"
+app\(dashboard)\products\categories\[id]\page.tsx:971: {imageUploading === editingSection.id ? (language === "ar" ? "جاري الرفع..." : "Téléchargement...") : (language === "ar" ? "اضغط لرفع صورة" : "Cliquez pour charger")}
+app\(dashboard)\products\categories\[id]\page.tsx:977: <label className="text-xs text-muted font-bold block">{language === "ar" ? "وصف أو تعليق تحت الصورة" : "Légende de l'image"}</label>
+app\(dashboard)\products\categories\[id]\page.tsx:981: placeholder={language === "ar" ? "مثال: خصم خاص 30% لفترة محدودة" : "ex. Offre spéciale 30%"}
+app\(dashboard)\products\categories\[id]\page.tsx:991: اضغط على أيقونة "{t("edit")}" بجانب أي قسم نشط لبدء تخصيص نصوصه، ألوانه، وصوره.
+app\(dashboard)\products\categories\[id]\page.tsx:1003: <h4 className="font-bold text-sm text-primary border-b border-white/5 pb-2">{language === "ar" ? "تعليمات تخصيص الفئة" : "Instructions de personnalisation"}</h4>
+app\(dashboard)\products\categories\[id]\page.tsx:1005: <p>• يمكنك إضافة و{t("edit")} وترتيب الأقسام تماماً مثل الصفحة الرئيسية للمتجر.</p>
+app\(dashboard)\products\categories\[id]\page.tsx:1006: <p>{language === "ar" ? "• قسم \"شبكة منتجات الفئة\" سيعرض تلقائياً فقط المنتجات التي تنتمي لهذه الفئة." : "• The Category Products Grid section will automatically display only products in this category."}</p>
+app\(dashboard)\products\categories\[id]\page.tsx:1007: <p>• قسم <strong>"Hero"</strong> يفضل {t("edit")}ه ليظهر شعار أو اسم ومقدمة الفئة.</p>
+app\(dashboard)\products\categories\[id]\page.tsx:1008: <p>{language === "ar" ? "• لحفظ التصميم، اضغط على \"حفظ الفئة والتصميم\" في أعلى الصفحة." : "• To save the design, click \"Save Category\" at the top of the page."}</p>
+app\(dashboard)\products\categories\[id]\page.tsx:1021: <h3 className="font-bold text-lg">{language === "ar" ? "إضافة قسم مخصص" : (language === "fr" ? "Ajouter section personnalisée" : "Add custom section")} جديد</h3>
+app\(dashboard)\products\categories\[id]\page.tsx:1033: <span className="font-bold block text-sm">{language === "ar" ? "قسم نصي مخصص" : "Section texte"}</span>
+app\(dashboard)\products\categories\[id]\page.tsx:1034: <span className="text-[10px] text-muted block">{language === "ar" ? "عرض عنوان ونصوص تفصيلية أو عروض مخصصة." : "Afficher un titre, du texte ou des offres."}</span>
+app\(dashboard)\products\categories\[id]\page.tsx:1046: <span className="font-bold block text-sm">{language === "ar" ? "صورة / بنر مخصص" : "Image / Bannière"}</span>
+app\(dashboard)\products\categories\[id]\page.tsx:1047: <span className="text-[10px] text-muted block">{language === "ar" ? "عرض صورة ترويجية أو إعلان عريض." : "Afficher une image promotionnelle."}</span>
+app\(dashboard)\products\[id]\page.tsx:75: الرئيسية
+app\(dashboard)\products\[id]\page.tsx:87: title="حذف الصورة"
+app\(dashboard)\products\[id]\page.tsx:161: <h4 className="font-bold text-sm">قسم آراء العملاء</h4>
+app\(dashboard)\products\[id]\page.tsx:163: <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">حذف</Button>
+app\(dashboard)\products\[id]\page.tsx:168: <span className="text-xs text-muted-foreground">السماح لأي زائر بكتابة تقييم</span>
+app\(dashboard)\products\[id]\page.tsx:187: {tab === 'curated' ? `التقييمات المضافة (${curatedReviews.length})` : 'تقييمات الزوار'}
+app\(dashboard)\products\[id]\page.tsx:203: <Input placeholder="اسم المراجع" value={r.reviewer_name} onChange={e => {
+app\(dashboard)\products\[id]\page.tsx:206: <Input placeholder="المدينة (اختياري)" value={r.reviewer_city || ''} onChange={e => {
+app\(dashboard)\products\[id]\page.tsx:213: <textarea placeholder="نص التقييم..." value={r.body || ''} onChange={e => {
+app\(dashboard)\products\[id]\page.tsx:216: <Input placeholder="رابط صورة (اختياري)" value={r.photo_url || ''} onChange={e => {
+app\(dashboard)\products\[id]\page.tsx:219: <Button type="button" size="sm" variant="glow" className="text-xs w-full h-7" onClick={() => setEditingReviewIdx(null)}>حفظ</Button>
+app\(dashboard)\products\[id]\page.tsx:230: {r.reviewer_city && <span className="text-[10px] text-muted-foreground">، {r.reviewer_city}</span>}
+app\(dashboard)\products\[id]\page.tsx:244: <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">إضافة تقييم جديد</p>
+app\(dashboard)\products\[id]\page.tsx:246: <Input placeholder="اسم المراجع *" value={newReview.reviewer_name} onChange={e => setNewReview(p => ({ ...p, reviewer_name: e.target.value }))} className="text-xs text-right h-8" />
+app\(dashboard)\products\[id]\page.tsx:247: <Input placeholder="المدينة (اختياري)" value={newReview.reviewer_city} onChange={e => setNewReview(p => ({ ...p, reviewer_city: e.target.value }))} className="text-xs text-right h-8" />
+app\(dashboard)\products\[id]\page.tsx:251: placeholder="نص التقييم..."
+app\(dashboard)\products\[id]\page.tsx:256: <Input placeholder="رابط صورة (اختياري https://...)" value={newReview.photo_url} onChange={e => setNewReview(p => ({ ...p, photo_url: e.target.value }))} className="text-xs text-right h-8 font-outfit" />
+app\(dashboard)\products\[id]\page.tsx:270: <Plus className="h-3.5 w-3.5 mr-1" /> إضافة التقييم
+app\(dashboard)\products\[id]\page.tsx:280: <div className="p-4 text-center text-xs text-muted-foreground bg-muted/10 rounded-xl">احفظ المنتج أولاً لرؤية تقييمات الزوار.</div>
+app\(dashboard)\products\[id]\page.tsx:286: <div className="p-4 text-center text-xs text-muted-foreground bg-muted/10 rounded-xl">لا توجد تقييمات من الزوار بعد.</div>
+app\(dashboard)\products\[id]\page.tsx:302: {r.is_approved ? 'إلغاء النشر' : 'نشر ✓'}
+app\(dashboard)\products\[id]\page.tsx:319: {r.reviewer_city && <span className="text-[10px] text-muted-foreground mr-1">، {r.reviewer_city}</span>}
+app\(dashboard)\products\[id]\page.tsx:326: {r.is_approved ? '✓ منشور' : '⏳ بانتظار المراجعة'}
+app\(dashboard)\products\[id]\page.tsx:331: <Button type="button" variant="outline" size="sm" className="w-full text-xs h-7" onClick={loadBuyerReviews}>🔄 تحديث</Button>
+app\(dashboard)\products\[id]\page.tsx:351: const title = config.title ?? "تقديم طلب شراء (ملء البيانات أدناه)";
+app\(dashboard)\products\[id]\page.tsx:352: const button_text = config.button_text ?? "تأكيد طلب الشراء والدفع عند الاستلام";
+app\(dashboard)\products\[id]\page.tsx:382: <h4 className="font-bold text-sm">استمارة الطلب (Order Form)</h4>
+app\(dashboard)\products\[id]\page.tsx:384: <span className="text-[10px] text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full font-bold">قسم أساسي</span>
+app\(dashboard)\products\[id]\page.tsx:390: <h5 className="font-bold text-xs border-b border-border pb-1.5 mb-2 text-foreground">تعديل النصوص</h5>
+app\(dashboard)\products\[id]\page.tsx:393: <label className="block text-[10px] font-bold text-muted-foreground">عنوان الاستمارة</label>
+app\(dashboard)\products\[id]\page.tsx:398: placeholder="مثال: تقديم طلب شراء (ملء البيانات أدناه)"
+app\(dashboard)\products\[id]\page.tsx:403: <label className="block text-[10px] font-bold text-muted-foreground">نص زر تأكيد الطلب</label>
+app\(dashboard)\products\[id]\page.tsx:408: placeholder="مثال: تأكيد طلب الشراء والدفع عند الاستلام"
+app\(dashboard)\products\[id]\page.tsx:416: <h5 className="font-bold text-xs border-b border-border pb-1.5 mb-2 text-foreground font-cairo">إعدادات الحقول</h5>
+app\(dashboard)\products\[id]\page.tsx:420: <span className="text-xs text-muted-foreground font-semibold">تفعيل حقل العنوان بالتفصيل</span>
+app\(dashboard)\products\[id]\page.tsx:433: <span className="text-xs text-muted-foreground font-semibold">تفعيل حقل رقم هاتف إضافي (اختياري)</span>
+app\(dashboard)\products\[id]\page.tsx:445: 💡 ملاحظة: رقم الهاتف والولاية والبلدية حقول إلزامية دائماً لضمان صحة بيانات التوصيل للجزائر.
+app\(dashboard)\products\[id]\page.tsx:452: <h5 className="font-bold text-xs border-b border-border pb-1.5 mb-2 text-foreground font-cairo">تخصيص ألوان الاستمارة</h5>
+app\(dashboard)\products\[id]\page.tsx:456: { key: "form_bg_color", label: "خلفية الاستمارة", val: form_bg_color },
+app\(dashboard)\products\[id]\page.tsx:457: { key: "form_border_color", label: "حدود الاستمارة", val: form_border_color },
+app\(dashboard)\products\[id]\page.tsx:458: { key: "labels_text_color", label: "النصوص والعناوين", val: labels_text_color },
+app\(dashboard)\products\[id]\page.tsx:459: { key: "fields_bg_color", label: "خلفية حقول الإدخال", val: fields_bg_color },
+app\(dashboard)\products\[id]\page.tsx:460: { key: "fields_text_color", label: "نص حقول الإدخال", val: fields_text_color },
+app\(dashboard)\products\[id]\page.tsx:461: { key: "fields_border_color", label: "حدود حقول الإدخال", val: fields_border_color },
+app\(dashboard)\products\[id]\page.tsx:462: { key: "buttons_bg_color", label: "خلفية زر الطلب", val: buttons_bg_color },
+app\(dashboard)\products\[id]\page.tsx:463: { key: "buttons_text_color", label: "نص زر الطلب", val: buttons_text_color },
+app\(dashboard)\products\[id]\page.tsx:522: زر الطلب العائم (Sticky CTA)
+app\(dashboard)\products\[id]\page.tsx:541: <label className="block text-[10px] font-bold text-muted-foreground">نص الزر العائم</label>
+app\(dashboard)\products\[id]\page.tsx:546: placeholder={button_text || 'تأكيد طلب الشراء...'}
+app\(dashboard)\products\[id]\page.tsx:549: <p className="text-[10px] text-muted-foreground">اتركه فارغاً لاستخدام نص زر الاستمارة</p>
+app\(dashboard)\products\[id]\page.tsx:555: { key: "sticky_cta_bg_color", label: "خلفية الزر العائم", val: sticky_cta_bg_color },
+app\(dashboard)\products\[id]\page.tsx:556: { key: "sticky_cta_text_color", label: "نص الزر العائم", val: sticky_cta_text_color },
+app\(dashboard)\products\[id]\page.tsx:601: <p className="text-[10px] text-muted-foreground mb-2">معاينة الزر العائم:</p>
+app\(dashboard)\products\[id]\page.tsx:607: <span>{sticky_cta_text || button_text || 'اطلب الآن'}</span>
+app\(dashboard)\products\[id]\page.tsx:614: <p className="text-[10px] text-muted-foreground text-center py-1">الزر العائم معطّل حالياً — فعّله لإظهاره في صفحة المنتج.</p>
+app\(dashboard)\products\[id]\page.tsx:725: <span className="text-[10px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded font-outfit" title="لا توجد بيانات تفاعل بعد">
+app\(dashboard)\products\[id]\page.tsx:745: title={`${ctr}% من الزوار الذين شاهدوا المنتج مروا بهذا القسم (${stats.impressions} مشاهدة، ${stats.clicks} نقرة)`}
+app\(dashboard)\products\[id]\page.tsx:865: name: 'كلاسيكي بسيط',
+app\(dashboard)\products\[id]\page.tsx:867: description: 'تصميم نظيف وبسيط مع خطوط أنيقة',
+app\(dashboard)\products\[id]\page.tsx:872: name: 'عرض مباشر',
+app\(dashboard)\products\[id]\page.tsx:874: description: 'تصميم جريء لصفحات العروض والتخفيضات',
+app\(dashboard)\products\[id]\page.tsx:879: name: 'فخامة كلاسيكية',
+app\(dashboard)\products\[id]\page.tsx:881: description: 'خلفية داكنة مع لمسات ذهبية فاخرة',
+app\(dashboard)\products\[id]\page.tsx:886: name: 'أصيل وبسيط',
+app\(dashboard)\products\[id]\page.tsx:888: description: 'مظهر خام وطبيعي بخط أحادي المسافة',
+app\(dashboard)\products\[id]\page.tsx:893: name: 'بروتاليست',
+app\(dashboard)\products\[id]\page.tsx:895: description: 'تصميم صارم وقوي بأسلوب معماري حديث',
+app\(dashboard)\products\[id]\page.tsx:900: name: 'طبيعي ناعم',
+app\(dashboard)\products\[id]\page.tsx:902: description: 'ألوان طبيعية هادئة مستوحاة من البيئة',
+app\(dashboard)\products\[id]\page.tsx:907: name: 'زجاجي عصري',
+app\(dashboard)\products\[id]\page.tsx:909: description: 'تأثير الزجاج مع خلفية داكنة متدرجة',
+app\(dashboard)\products\[id]\page.tsx:914: name: 'مرح وممتع',
+app\(dashboard)\products\[id]\page.tsx:916: description: 'ألوان وردية مرحة مع حركات ديناميكية',
+app\(dashboard)\products\[id]\page.tsx:1054: label: "معلومات المنتج (الاسم، السعر، الصورة)",
+app\(dashboard)\products\[id]\page.tsx:1059: label: "أمان: كابتشا Google reCAPTCHA v3",
+app\(dashboard)\products\[id]\page.tsx:1064: label: "أمان: التحقق عبر الهاتف SMS OTP",
+app\(dashboard)\products\[id]\page.tsx:1069: label: "أمان: حد أقصى للطلبات اليومية لكل IP",
+app\(dashboard)\products\[id]\page.tsx:1074: label: "أمان: حظر الطلبات من خارج الجزائر",
+app\(dashboard)\products\[id]\page.tsx:1079: label: "عروض الكمية (التخفيضات)",
+app\(dashboard)\products\[id]\page.tsx:1084: label: "استمارة الطلب (الدفع عند الاستلام)",
+app\(dashboard)\products\[id]\page.tsx:1089: label: "نص مخصص",
+app\(dashboard)\products\[id]\page.tsx:1093: { key: "background_color", label: "لون الخلفية", type: "color" },
+app\(dashboard)\products\[id]\page.tsx:1097: label: "صورة / كاروسيل",
+app\(dashboard)\products\[id]\page.tsx:1100: { key: "image", label: "الصورة", type: "image" },
+app\(dashboard)\products\[id]\page.tsx:1101: { key: "caption", label: "التسمية التوضيحية", type: "text" },
+app\(dashboard)\products\[id]\page.tsx:1105: label: "آراء العملاء",
+app\(dashboard)\products\[id]\page.tsx:1110: label: "مقارنة قبل / بعد",
+app\(dashboard)\products\[id]\page.tsx:1113: { key: "before", label: "صورة قبل", type: "image" },
+app\(dashboard)\products\[id]\page.tsx:1114: { key: "after", label: "صورة بعد", type: "image" },
+app\(dashboard)\products\[id]\page.tsx:1118: label: "باقة منتجات",
+app\(dashboard)\products\[id]\page.tsx:1123: label: "مميزات المنتج",
+app\(dashboard)\products\[id]\page.tsx:1126: { key: "features", label: "المميزات (مفصولة بسطر جديد)", type: "textarea" },
+app\(dashboard)\products\[id]\page.tsx:1130: label: "تذييل الصفحة (Footer)",
+app\(dashboard)\products\[id]\page.tsx:1134: { key: "background_color", label: "لون الخلفية", type: "color" },
+app\(dashboard)\products\[id]\page.tsx:1138: label: "ترويسة الصفحة (Header)",
+app\(dashboard)\products\[id]\page.tsx:1142: { key: "background_color", label: "لون الخلفية", type: "color" },
+app\(dashboard)\products\[id]\page.tsx:1146: label: "قسيمة خصم (Coupon)",
+app\(dashboard)\products\[id]\page.tsx:1149: { key: "code", label: "كود الخصم", type: "text" },
+app\(dashboard)\products\[id]\page.tsx:1150: { key: "discount_percent", label: "نسبة الخصم (%)", type: "text" },
+app\(dashboard)\products\[id]\page.tsx:1183: { id: 'pending-header', section_type: 'header', config: { content: selectedStore?.name || "متجرنا", background_color: "#ffffff", color: "#111111", text_align: "right", font_size: "18px" }, order: 0 },
+app\(dashboard)\products\[id]\page.tsx:1186: { id: 'pending-footer', section_type: 'footer', config: { content: "© جميع الحقوق محفوظة", background_color: "#ffffff", color: "#666666", text_align: "center", font_size: "14px" }, order: 3 }
+app\(dashboard)\products\[id]\page.tsx:1307: setError("حدث خطأ أثناء تحميل بيانات المنتج.");
+app\(dashboard)\products\[id]\page.tsx:1366: setError("حدث خطأ أثناء حفظ التغييرات.");
+app\(dashboard)\products\[id]\page.tsx:1467: setError("فشل إنشاء الصفحة البديلة المكررة B.");
+app\(dashboard)\products\[id]\page.tsx:1507: setError("فشل إزالة القسم");
+app\(dashboard)\products\[id]\page.tsx:1516: config.content = selectedStore?.name || "متجرنا";
+app\(dashboard)\products\[id]\page.tsx:1523: config.content = "© جميع الحقوق محفوظة";
+app\(dashboard)\products\[id]\page.tsx:1537: setError("فشل تفعيل القسم");
+app\(dashboard)\products\[id]\page.tsx:1553: config.content = selectedStore?.name || "متجرنا";
+app\(dashboard)\products\[id]\page.tsx:1560: config.content = "© جميع الحقوق محفوظة";
+app\(dashboard)\products\[id]\page.tsx:1620: config: { content: "© جميع الحقوق محفوظة", background_color: "#ffffff", color: "#666666", text_align: "center", font_size: "14px" },
+app\(dashboard)\products\[id]\page.tsx:1632: config: { content: selectedStore?.name || "متجرنا", background_color: "#ffffff", color: "#111111", text_align: "right", font_size: "18px" },
+app\(dashboard)\products\[id]\page.tsx:1682: setError("فشل تحميل الصورة. يرجى المحاولة مرة أخرى.");
+app\(dashboard)\products\[id]\page.tsx:1756: if (attrName.includes("لون") || attrName.toLowerCase().includes("color")) optionType = "color";
+app\(dashboard)\products\[id]\page.tsx:1757: else if (attrName.includes("مقاس") || attrName.includes("حجم") || attrName.toLowerCase().includes("size")) optionType = "size";
+app\(dashboard)\products\[id]\page.tsx:1864: else if (detail?.quantity_offers) setError("عروض الكمية: " + JSON.stringify(detail.quantity_offers));
+app\(dashboard)\products\[id]\page.tsx:1866: else setError("فشل حفظ المنتج. يرجى التحقق من صحة البيانات.");
+app\(dashboard)\products\[id]\page.tsx:1875: config.content = sectionType === "footer" ? "© جميع الحقوق محفوظة" : (sectionType === "header" ? selectedStore?.name || "متجرنا" : "");
+app\(dashboard)\products\[id]\page.tsx:1891: setError("فشل إضافة القسم");
+app\(dashboard)\products\[id]\page.tsx:1907: setError("فشل حذف القسم");
+app\(dashboard)\products\[id]\page.tsx:1923: setError("فشل تحديث القسم");
+app\(dashboard)\products\[id]\page.tsx:1941: setError("فشل رفع الصورة");
+app\(dashboard)\products\[id]\page.tsx:1979: <span>جاري تحميل صفحة المنتج...</span>
+app\(dashboard)\products\[id]\page.tsx:2004: {isCreateMode ? "إضافة منتج جديد" : "تعديل المنتج"}
+app\(dashboard)\products\[id]\page.tsx:2007: {isCreateMode ? "قم بإعداد صفحة المنتج الجديد، وتخصيص هيكل صفحة الهبوط." : `تعديل تفاصيل وأقسام: ${title || "المنتج"}`}
+app\(dashboard)\products\[id]\page.tsx:2011: العودة للمنتجات
+app\(dashboard)\products\[id]\page.tsx:2021: <p className="font-bold">تغييرات غير محفوظة مكتشفة</p>
+app\(dashboard)\products\[id]\page.tsx:2022: <p className="text-xs opacity-80">لقد عثرنا على مسودة غير محفوظة لهذا المنتج من جلسة سابقة. هل ترغب في استعادتها؟</p>
+app\(dashboard)\products\[id]\page.tsx:2032: استعادة التغييرات
+app\(dashboard)\products\[id]\page.tsx:2040: تجاهل وحذف
+app\(dashboard)\products\[id]\page.tsx:2065: اختبار تقسيم الزوار نشط
+app\(dashboard)\products\[id]\page.tsx:2069: الاختبار معطل
+app\(dashboard)\products\[id]\page.tsx:2074: اختبار تقسيم الزوار A/B لصفحة الهبوط
+app\(dashboard)\products\[id]\page.tsx:2078: قم بإنشاء وتعديل نسختين مختلفتين من صفحة الهبوط. سيتم تقسيم حركة مرور الزوار بنسبة 50/50 تلقائياً لقياس أي النسختين تحقق أعلى نسبة تحويل ومبيعات.
+app\(dashboard)\products\[id]\page.tsx:2091: تعطيل اختبار A/B
+app\(dashboard)\products\[id]\page.tsx:2101: تفعيل اختبار A/B
+app\(dashboard)\products\[id]\page.tsx:2122: النسخة A (الأساسية)
+app\(dashboard)\products\[id]\page.tsx:2135: النسخة B (البديلة)
+app\(dashboard)\products\[id]\page.tsx:2139: <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 font-medium">غير منشأة</span>
+app\(dashboard)\products\[id]\page.tsx:2147: <span>⚙️ أنت تقوم حالياً بتعديل <strong>الصفحة الأساسية (النسخة A)</strong>.</span>
+app\(dashboard)\products\[id]\page.tsx:2149: <span>⚙️ أنت تقوم حالياً بتعديل <strong>الصفحة البديلة (النسخة B)</strong>.</span>
+app\(dashboard)\products\[id]\page.tsx:2158: <span className="text-[11px] text-muted-foreground">تحديث تلقائي مستمر للنتائج</span>
+app\(dashboard)\products\[id]\page.tsx:2160: 📊 إحصائيات المقارنة والأداء
+app\(dashboard)\products\[id]\page.tsx:2167: <span>جاري تحميل أحدث الإحصائيات...</span>
+app\(dashboard)\products\[id]\page.tsx:2175: <span className="text-[10px] text-muted-foreground">المجموعة A (الأساسية)</span>
+app\(dashboard)\products\[id]\page.tsx:2176: <span className="text-xs font-bold text-white truncate max-w-[180px]">{activeTab === 'A' ? title : "النسخة الأساسية"}</span>
+app\(dashboard)\products\[id]\page.tsx:2180: <div className="text-[10px] text-muted-foreground">الزيارات</div>
+app\(dashboard)\products\[id]\page.tsx:2184: <div className="text-[10px] text-muted-foreground">الطلبات</div>
+app\(dashboard)\products\[id]\page.tsx:2188: <div className="text-[10px] text-muted-foreground">التحويل</div>
+app\(dashboard)\products\[id]\page.tsx:2197: <span className="text-[10px] text-amber-400">المجموعة B (البديلة)</span>
+app\(dashboard)\products\[id]\page.tsx:2199: {abTestProductBId ? (allProducts.find(p => p.id === abTestProductBId)?.title || "النسخة البديلة") : "النسخة البديلة"}
+app\(dashboard)\products\[id]\page.tsx:2204: <div className="text-[10px] text-muted-foreground">الزيارات</div>
+app\(dashboard)\products\[id]\page.tsx:2208: <div className="text-[10px] text-muted-foreground">الطلبات</div>
+app\(dashboard)\products\[id]\page.tsx:2212: <div className="text-[10px] text-muted-foreground">التحويل</div>
+app\(dashboard)\products\[id]\page.tsx:2222: <span className="font-bold flex items-center gap-1">🚀 تفوق النسخة B (البديلة) بنسبة تحسين +{abTestStats.improvement.toFixed(1)}%!</span>
+app\(dashboard)\products\[id]\page.tsx:2223: <span className="text-[10px] opacity-85">ننصح باعتمادها كصفحة أساسية قريباً.</span>
+app\(dashboard)\products\[id]\page.tsx:2228: <span className="font-bold flex items-center gap-1">🚀 تفوق النسخة A (الأساسية) بفارق +{Math.abs(abTestStats.improvement).toFixed(1)}%!</span>
+app\(dashboard)\products\[id]\page.tsx:2229: <span className="text-[10px] opacity-85">ننصح بالإبقاء عليها وإيقاف الاختبار.</span>
+app\(dashboard)\products\[id]\page.tsx:2234: ℹ️ يجرى جمع بيانات التصفح والشراء حالياً لمقارنة دقيقة. لا توجد فروقات ذات دلالة إحصائية واضحة بين النسختين بعد.
+app\(dashboard)\products\[id]\page.tsx:2254: <h2 className="text-xl font-bold text-white">لم يتم إنشاء النسخة البديلة (النسخة B) بعد</h2>
+app\(dashboard)\products\[id]\page.tsx:2256: لتفعيل اختبار الـ A/B، يجب إنشاء صفحة بديلة تحتوي على تعديلات مختلفة في العنوان أو الصور أو الأسعار.
+app\(dashboard)\products\[id]\page.tsx:2266: إنشاء النسخة B الآن
+app\(dashboard)\products\[id]\page.tsx:2277: <Layers className="h-4 w-4 text-primary" /> أقسام صفحة الهبوط
+app\(dashboard)\products\[id]\page.tsx:2280: قم بسحب الأقسام لترتيبها، واضغط على أي قسم لتعديله في المنتصف.
+app\(dashboard)\products\[id]\page.tsx:2286: <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">الأقسام النشطة (اسحب للترتيب)</p>
+app\(dashboard)\products\[id]\page.tsx:2292: return <p className="text-xs text-muted-foreground py-2 text-center border border-dashed border-border rounded-xl">لا توجد أقسام نشطة</p>;
+app\(dashboard)\products\[id]\page.tsx:2358: title="إزالة القسم"
+app\(dashboard)\products\[id]\page.tsx:2375: <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">أقسام جاهزة للإضافة</p>
+app\(dashboard)\products\[id]\page.tsx:2383: <span className="text-xs font-medium flex items-center gap-1.5"><Gift className="h-3.5 w-3.5" /> عروض الكمية والتخفيضات</span>
+app\(dashboard)\products\[id]\page.tsx:2392: <span className="text-xs font-medium flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> قسيمة خصم (Coupon)</span>
+app\(dashboard)\products\[id]\page.tsx:2401: <span className="text-xs font-medium flex items-center gap-1.5"><CheckSquare className="h-3.5 w-3.5" /> استمارة الطلب (Order Form)</span>
+app\(dashboard)\products\[id]\page.tsx:2410: <span className="text-xs font-medium flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" /> ترويسة الصفحة (Header)</span>
+app\(dashboard)\products\[id]\page.tsx:2419: <span className="text-xs font-medium flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" /> تذييل الصفحة (Footer)</span>
+app\(dashboard)\products\[id]\page.tsx:2428: <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">أقسام مخصصة لصفحة الهبوط</p>
+app\(dashboard)\products\[id]\page.tsx:2449: <button type="button" onClick={() => setShowAddSection(false)} className="text-[10px] text-muted-foreground hover:text-foreground block w-full text-center mt-1">إلغاء</button>
+app\(dashboard)\products\[id]\page.tsx:2458: <Plus className="h-3.5 w-3.5" /> إضافة قسم مخصص
+app\(dashboard)\products\[id]\page.tsx:2468: <Shield className="h-4 w-4 text-primary" /> خيارات الأمان والتحقق
+app\(dashboard)\products\[id]\page.tsx:2471: ميزات أمان غير مرئية لحماية استمارات الطلبات والحد من الطلبات الوهمية.
+app\(dashboard)\products\[id]\page.tsx:2483: <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> كابتشا Google reCAPTCHA v3</span>
+app\(dashboard)\products\[id]\page.tsx:2486: <p className="text-[9px] text-amber-500 mr-2 leading-tight">⚠️ لم يتم إعداد مفاتيح الكابتشا في إعدادات المتجر العامة بعد.</p>
+app\(dashboard)\products\[id]\page.tsx:2497: <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> التحقق عبر الهاتف SMS OTP</span>
+app\(dashboard)\products\[id]\page.tsx:2500: <p className="text-[9px] text-amber-500 mr-2 leading-tight">⚠️ لم يتم إدخال إعدادات Firebase في إعدادات المتجر العامة بعد.</p>
+app\(dashboard)\products\[id]\page.tsx:2510: <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> حد أقصى للطلبات اليومية لكل IP</span>
+app\(dashboard)\products\[id]\page.tsx:2519: <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> حظر الطلبات من خارج الجزائر</span>
+app\(dashboard)\products\[id]\page.tsx:2536: <h4 className="text-sm font-bold text-white">الرجاء اختيار قسم للتعديل</h4>
+app\(dashboard)\products\[id]\page.tsx:2538: اختر أحد أقسام صفحة المنتج النشطة من القائمة اليمنى لبدء تحرير المحتوى وتخصيص التفاصيل.
+app\(dashboard)\products\[id]\page.tsx:2552: <h4 className="font-bold text-sm">معلومات المنتج الأساسية والتسعير</h4>
+app\(dashboard)\products\[id]\page.tsx:2556: <label className="text-xs font-bold text-muted-foreground">اسم المنتج</label>
+app\(dashboard)\products\[id]\page.tsx:2557: <Input required placeholder="مثال: ساعة يد ذكية مقاومة للماء" value={title} onChange={(e) => setTitle(e.target.value)} className="pr-3 text-right" />
+app\(dashboard)\products\[id]\page.tsx:2561: <label className="text-xs font-bold text-muted-foreground">فئة / مجموعة المنتج</label>
+app\(dashboard)\products\[id]\page.tsx:2567: <option value="" className="bg-slate-900 text-white">اختر فئة للمنتج (اختياري)</option>
+app\(dashboard)\products\[id]\page.tsx:2578: <label className="text-xs font-bold text-muted-foreground">الرمز المرجعي (SKU)</label>
+app\(dashboard)\products\[id]\page.tsx:2582: <label className="text-xs font-bold text-muted-foreground">المخزون المتوفر</label>
+app\(dashboard)\products\[id]\page.tsx:2589: <label className="text-xs font-bold text-muted-foreground">سعر البيع (DZD)</label>
+app\(dashboard)\products\[id]\page.tsx:2593: <label className="text-xs font-bold text-muted-foreground">السعر الأصلي للمقارنة (DZD)</label>
+app\(dashboard)\products\[id]\page.tsx:2600: <label className="text-xs font-bold text-muted-foreground">حساب التكاليف والأرباح</label>
+app\(dashboard)\products\[id]\page.tsx:2611: <label className="text-xs text-muted-foreground">سعر الشراء / التكلفة (DZD)</label>
+app\(dashboard)\products\[id]\page.tsx:2615: <label className="text-xs text-muted-foreground">تكلفة الإعلان لكل طلب (DZD)</label>
+app\(dashboard)\products\[id]\page.tsx:2623: <label className="text-xs font-bold text-muted-foreground">صور المنتج (اسحب للترتيب، الصورة الأولى هي الرئيسية)</label>
+app\(dashboard)\products\[id]\page.tsx:2649: <div className="text-[10px] text-muted-foreground font-medium animate-pulse">جاري الرفع...</div>
+app\(dashboard)\products\[id]\page.tsx:2653: <span className="text-[9px] text-muted-foreground font-bold leading-tight">تحميل صورة</span>
+app\(dashboard)\products\[id]\page.tsx:2671: placeholder="أو أدخل رابط صورة مباشر (https://...)"
+app\(dashboard)\products\[id]\page.tsx:2681: إضافة رابط
+app\(dashboard)\products\[id]\page.tsx:2692: <SplitSquareHorizontal className="h-4 w-4 text-primary" /> خيارات وتغيرات المنتج (Variants)
+app\(dashboard)\products\[id]\page.tsx:2705: أضف خيارات للمنتج (مثل اللون والمقاس) وسيتم إنشاء قائمة بجميع المتغيرات الممكنة تلقائياً لتتمكن من تحديد سعر وصورة لكل منها.
+app\(dashboard)\products\[id]\page.tsx:2714: <label className="text-[10px] font-bold text-muted-foreground">اسم الخيار (مثال: اللون)</label>
+app\(dashboard)\products\[id]\page.tsx:2716: placeholder="اللون، المقاس، الحجم..."
+app\(dashboard)\products\[id]\page.tsx:2740: <label className="text-[10px] font-bold text-muted-foreground">القيم (مثال: أحمر، أزرق)</label>
+app\(dashboard)\products\[id]\page.tsx:2762: placeholder="أدخل قيمة واضغط إضافة أو Enter..."
+app\(dashboard)\products\[id]\page.tsx:2798: إضافة
+app\(dashboard)\products\[id]\page.tsx:2812: <Plus className="h-3.5 w-3.5" /> إضافة خيار آخر (مثال: المقاس)
+app\(dashboard)\products\[id]\page.tsx:2820: <label className="text-xs font-bold text-muted-foreground block">قائمة المتغيرات والأسعار</label>
+app\(dashboard)\products\[id]\page.tsx:2827: <span className="text-[10px] text-muted-foreground font-semibold">نشط</span>
+app\(dashboard)\products\[id]\page.tsx:2843: <label className="text-[9px] font-bold text-muted-foreground">السعر (DZD)</label>
+app\(dashboard)\products\[id]\page.tsx:2846: placeholder={price || "السعر الرئيسي"}
+app\(dashboard)\products\[id]\page.tsx:2857: <label className="text-[9px] font-bold text-muted-foreground">المخزون</label>
+app\(dashboard)\products\[id]\page.tsx:2871: <label className="text-[9px] font-bold text-muted-foreground">الرمز (SKU)</label>
+app\(dashboard)\products\[id]\page.tsx:2888: <label className="text-[9px] font-bold text-muted-foreground">ربط بصورة للمتغير</label>
+app\(dashboard)\products\[id]\page.tsx:2898: <option value="">-- اختر صورة --</option>
+app\(dashboard)\products\[id]\page.tsx:2901: الصورة {imgIdx + 1} ({img.is_primary ? "الرئيسية" : `رابط...${img.image_url.substring(img.image_url.length - 15)}`})
+app\(dashboard)\products\[id]\page.tsx:2928: <label className="text-xs font-bold text-muted-foreground">وصف المنتج</label>
+app\(dashboard)\products\[id]\page.tsx:2929: <textarea placeholder="اكتب تفاصيل ومواصفات المنتج هنا..." value={description} onChange={(e) => setDescription(e.target.value)} className="flex min-h-[80px] w-full rounded-lg border border-border bg-input px-3 py-2 text-xs text-foreground focus-visible:outline-none text-right" dir="rtl" />
+app\(dashboard)\products\[id]\page.tsx:2934: <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 cursor-pointer"><Palette className="h-3.5 w-3.5 text-primary" /> قالب تصميم صفحة المنتج</label>
+app\(dashboard)\products\[id]\page.tsx:2960: <p className="font-bold text-xs">بدون قالب</p>
+app\(dashboard)\products\[id]\page.tsx:3008: <h4 className="font-bold text-sm">عروض الكمية (تخفيض تدريجي)</h4>
+app\(dashboard)\products\[id]\page.tsx:3011: <button type="button" onClick={() => setShowAddOffer(true)} className="text-xs text-primary hover:underline">+ إضافة عرض</button>
+app\(dashboard)\products\[id]\page.tsx:3018: <label className="text-xs text-muted-foreground">الكمية</label>
+app\(dashboard)\products\[id]\page.tsx:3022: <label className="text-xs text-muted-foreground">السعر الإجمالي (DZD)</label>
+app\(dashboard)\products\[id]\page.tsx:3038: >إضافة</div>
+app\(dashboard)\products\[id]\page.tsx:3039: <button type="button" onClick={() => setShowAddOffer(false)} className="text-xs text-muted-foreground p-2">إلغاء</button>
+app\(dashboard)\products\[id]\page.tsx:3053: {savingPct > 0 && <span className="text-[10px] text-green-400 mr-2">وفر {savingPct}%</span>}
+app\(dashboard)\products\[id]\page.tsx:3055: <button type="button" onClick={() => setQuantityOffers((prev: any[]) => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 text-xs">حذف</button>
+app\(dashboard)\products\[id]\page.tsx:3061: <p className="text-xs text-muted-foreground">لا توجد عروض كمية. أضف عروضًا لتشجيع الشراء بكميات أكبر.</p>
+app\(dashboard)\products\[id]\page.tsx:3074: <h4 className="font-bold text-sm">حماية كابتشا Google reCAPTCHA v3</h4>
+app\(dashboard)\products\[id]\page.tsx:3076: <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">حذف</Button>
+app\(dashboard)\products\[id]\page.tsx:3081: <span>تنبيه: لم تقم بإعداد مفاتيح Google reCAPTCHA في إعدادات المتجر بعد. يرجى تهيئتها لضمان عمل الخدمة.</span>
+app\(dashboard)\products\[id]\page.tsx:3086: يحمي هذا القسم استمارة الطلب من الروبوتات والسبام باستخدام كابتشا Google غير المرئية.
+app\(dashboard)\products\[id]\page.tsx:3089: 💡 يتم إعداد المفاتيح السرية في إعدادات الأمان العامة للمتجر. يمكنك سحب البطاقة لتغيير موضع شعار/إشعار الحماية على صفحة الهبوط.
+app\(dashboard)\products\[id]\page.tsx:3103: <h4 className="font-bold text-sm">التحقق عبر رسائل الهاتف SMS OTP</h4>
+app\(dashboard)\products\[id]\page.tsx:3105: <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">حذف</Button>
+app\(dashboard)\products\[id]\page.tsx:3110: <span>تنبيه: لم تقم بتهيئة إعدادات Firebase لرسائل OTP في إعدادات المتجر بعد. يرجى تهيئتها لضمان عمل الخدمة.</span>
+app\(dashboard)\products\[id]\page.tsx:3115: يفرض هذا القسم إرسال رمز تحقق مؤقت (OTP) عبر رسائل الـ SMS للتحقق من هوية المشتري قبل إتمام الشراء.
+app\(dashboard)\products\[id]\page.tsx:3118: 💡 يتطلب ربط وتهيئة إعدادات Firebase في لوحة التحكم العامة للمتجر. يمكنك تغيير موضع صندوق التحقق بسحب البطاقة.
+app\(dashboard)\products\[id]\page.tsx:3130: <h4 className="font-bold text-sm">تحديد الطلبات اليومية لكل IP</h4>
+app\(dashboard)\products\[id]\page.tsx:3134: يمنع نفس المستخدم أو الجهاز من إرسال أكثر من الحد الأقصى من الطلبات يومياً للحد من التلاعب.
+app\(dashboard)\products\[id]\page.tsx:3137: 💡 يمكنك تحديد الحد اليومي للطلبات من الإعدادات العامة للأمان في المتجر. يمكنك سحب البطاقة لتغيير موضع الإشعار.
+app\(dashboard)\products\[id]\page.tsx:3150: <h4 className="font-bold text-sm">حظر الطلبات من خارج الجزائر (Algerian IPs Only)</h4>
+app\(dashboard)\products\[id]\page.tsx:3152: <Button type="button" onClick={() => toggleLayoutSection(section.section_type, section.id)} size="sm" variant="destructive" className="text-xs px-2 h-7">حذف</Button>
+app\(dashboard)\products\[id]\page.tsx:3156: يتحقق من بلد المشتري عبر عنوان الـ IP ويمنع تسجيل الطلب إذا كان من خارج الجزائر.
+app\(dashboard)\products\[id]\page.tsx:3159: 💡 يعمل تلقائياً لتفادي النقرات والطلبات الوهمية من الخارج. يمكنك سحب البطاقة لتغيير موضع إشعار البلد المتاح.
+app\(dashboard)\products\[id]\page.tsx:3203: {isEditing ? "إغلاق التعديل" : "تعديل المحتوى"}
+app\(dashboard)\products\[id]\page.tsx:3207: حذف
+app\(dashboard)\products\[id]\page.tsx:3217: <button type="button" onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold'); }} className="p-1.5 rounded hover:bg-muted/20 font-bold text-sm min-w-[28px]" title="عريض">B</button>
+app\(dashboard)\products\[id]\page.tsx:3218: <button type="button" onMouseDown={(e) => { e.preventDefault(); document.execCommand('italic'); }} className="p-1.5 rounded hover:bg-muted/20 italic text-sm min-w-[28px]" title="مائل">I</button>
+app\(dashboard)\products\[id]\page.tsx:3221: <option value="">الخط</option>
+app\(dashboard)\products\[id]\page.tsx:3228: <option value="" disabled>الحجم</option>
+app\(dashboard)\products\[id]\page.tsx:3229: <option value="1">صغير جداً</option>
+app\(dashboard)\products\[id]\page.tsx:3230: <option value="3">صغير</option>
+app\(dashboard)\products\[id]\page.tsx:3231: <option value="5">وسط</option>
+app\(dashboard)\products\[id]\page.tsx:3232: <option value="7">كبير</option>
+app\(dashboard)\products\[id]\page.tsx:3235: <label className="p-1.5 rounded hover:bg-muted/20 cursor-pointer text-xs min-w-[28px] text-center relative" title="لون النص">
+app\(dashboard)\products\[id]\page.tsx:3257: <Button type="button" onClick={() => handleUpdateSection(section.id, { config: editingSection.config })} size="sm" variant="glow" className="text-xs">حفظ التغييرات</Button>
+app\(dashboard)\products\[id]\page.tsx:3258: <Button type="button" onClick={() => setEditingSection(null)} size="sm" variant="outline" className="text-xs">إلغاء</Button>
+app\(dashboard)\products\[id]\page.tsx:3272: <button type="button" onClick={() => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, [field.key]: "" } } : prev)} className="absolute top-1 right-1 bg-black/70 text-red-400 text-xs px-2 py-0.5 rounded">إزالة</button>
+app\(dashboard)\products\[id]\page.tsx:3276: <span className="text-xs text-muted-foreground">{sectionUploading === field.key ? "جاري الرفع..." : "اضغط لرفع صورة"}</span>
+app\(dashboard)\products\[id]\page.tsx:3311: <Button type="button" onClick={() => handleUpdateSection(section.id, { config: editingSection.config })} size="sm" variant="glow" className="text-xs">حفظ التغييرات</Button>
+app\(dashboard)\products\[id]\page.tsx:3312: <Button type="button" onClick={() => setEditingSection(null)} size="sm" variant="outline" className="text-xs">إلغاء</Button>
+app\(dashboard)\products\[id]\page.tsx:3317: <div className="text-xs text-muted-foreground">اضغط على "تعديل المحتوى" لإدخال التفاصيل.</div>
+app\(dashboard)\products\[id]\page.tsx:3334: <span>معاينة حية لصفحة المنتج ({viewport === 'mobile' ? 'هاتف' : viewport === 'tablet' ? 'تابلت' : 'شاشة'})</span>
+app\(dashboard)\products\[id]\page.tsx:3341: title="معاينة الهاتف"
+app\(dashboard)\products\[id]\page.tsx:3349: title="معاينة التابلت"
+app\(dashboard)\products\[id]\page.tsx:3357: title="معاينة الشاشة"
+app\(dashboard)\products\[id]\page.tsx:3374: <h4 className="font-bold text-xs text-foreground mb-1">المعاينة فارغة حالياً</h4>
+app\(dashboard)\products\[id]\page.tsx:3376: ابدأ بإدخال اسم المنتج، السعر، أو تفعيل أقسام صفحة الهبوط لرؤية المعاينة الحية هنا فوراً.
+app\(dashboard)\products\[id]\page.tsx:3443: title: 'انقر لتعديل هذا القسم',
+app\(dashboard)\products\[id]\page.tsx:3453: const title = config.title ?? "تقديم طلب شراء (ملء البيانات أدناه)";
+app\(dashboard)\products\[id]\page.tsx:3454: const button_text = config.button_text ?? "تأكيد طلب الشراء والدفع عند الاستلام";
+app\(dashboard)\products\[id]\page.tsx:3499: <User className="h-3.5 w-3.5" style={{ color: labels_text_color }} /> الاسم الكامل
+app\(dashboard)\products\[id]\page.tsx:3509: الاسم واللقب
+app\(dashboard)\products\[id]\page.tsx:3516: <Phone className="h-3.5 w-3.5" style={{ color: labels_text_color }} /> رقم الهاتف
+app\(dashboard)\products\[id]\page.tsx:3537: إرسال رمز SMS
+app\(dashboard)\products\[id]\page.tsx:3547: <Phone className="h-3.5 w-3.5" style={{ color: labels_text_color }} /> رقم هاتف إضافي (اختياري)
+app\(dashboard)\products\[id]\page.tsx:3557: رقم الهاتف البديل
+app\(dashboard)\products\[id]\page.tsx:3565: <MapPin className="h-3.5 w-3.5" style={{ color: labels_text_color }} /> الولاية
+app\(dashboard)\products\[id]\page.tsx:3575: <span>اختر الولاية المتواجد بها</span>
+app\(dashboard)\products\[id]\page.tsx:3582: <label className="block text-[10px] font-extrabold" style={{ color: labels_text_color }}>البلدية / المدينة</label>
+app\(dashboard)\products\[id]\page.tsx:3591: <span>-- اختر البلدية --</span>
+app\(dashboard)\products\[id]\page.tsx:3598: <label className="block text-[10px] font-extrabold" style={{ color: labels_text_color }}>طريقة الاستلام والتوصيل</label>
+app\(dashboard)\products\[id]\page.tsx:3610: <span className="flex items-center gap-1"><Truck className="h-3.5 w-3.5" /> توصيل للمنزل</span>
+app\(dashboard)\products\[id]\page.tsx:3623: <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> استلام من المكتب</span>
+app\(dashboard)\products\[id]\page.tsx:3632: <label className="block text-[10px] font-extrabold" style={{ color: labels_text_color }}>العنوان بالتفصيل (اختياري)</label>
+app\(dashboard)\products\[id]\page.tsx:3641: اسم الشارع، الحي، رقم المنزل
+app\(dashboard)\products\[id]\page.tsx:3648: <label className="block text-[10px] font-extrabold" style={{ color: labels_text_color }}>الكمية المطلوبة</label>
+app\(dashboard)\products\[id]\page.tsx:3673: <span className="font-medium font-cairo" style={{ color: labels_text_color, opacity: 0.7 }}>سعر الوحدة</span>
+app\(dashboard)\products\[id]\page.tsx:3677: <span className="font-medium font-cairo" style={{ color: labels_text_color, opacity: 0.7 }}>تكلفة التوصيل</span>
+app\(dashboard)\products\[id]\page.tsx:3681: <span className="font-black font-cairo" style={{ color: labels_text_color }}>المجموع الإجمالي</span>
+app\(dashboard)\products\[id]\page.tsx:3692: <span>محمي بكابتشا ضد الطلبات العشوائية</span>
+app\(dashboard)\products\[id]\page.tsx:3698: <span>محدد بطلب واحد لكل جهاز يومياً</span>
+app\(dashboard)\products\[id]\page.tsx:3704: <span>الطلب متاح حصرياً للجزائر فقط 🇩🇿</span>
+app\(dashboard)\products\[id]\page.tsx:3727: {isSelectedPreview && <div className="absolute top-1 left-1 z-10 bg-primary text-primary-foreground text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">جاري التعديل</div>}
+app\(dashboard)\products\[id]\page.tsx:3737: {title || "عنوان المنتج..."}
+app\(dashboard)\products\[id]\page.tsx:3754: <div className="font-bold text-[10px]" style={{ color: previewTheme['--theme-text'] }}>عروض الكمية</div>
+app\(dashboard)\products\[id]\page.tsx:3759: <div className="text-[8px] text-slate-400">{o.quantity} قطع</div>
+app\(dashboard)\products\[id]\page.tsx:3779: dangerouslySetInnerHTML={{ __html: config.content || 'نص مخصص...' }}
+app\(dashboard)\products\[id]\page.tsx:3789: dangerouslySetInnerHTML={{ __html: config.content || '© جميع الحقوق محفوظة' }}
+app\(dashboard)\products\[id]\page.tsx:3800: dangerouslySetInnerHTML={{ __html: config.content || 'متجرنا' }}
+app\(dashboard)\products\[id]\page.tsx:3811: قسم صورة
+app\(dashboard)\products\[id]\page.tsx:3821: <h4 className="text-[10px] font-bold" style={{ color: previewTheme['--theme-text'] }}>آراء العملاء</h4>
+app\(dashboard)\products\[id]\page.tsx:3823: <div><strong>محمد ب.</strong>: منتج رائع جداً</div>
+app\(dashboard)\products\[id]\page.tsx:3824: <div><strong>سارة م.</strong>: توصيل سريع</div>
+app\(dashboard)\products\[id]\page.tsx:3834: <div className="opacity-60 mb-0.5">قبل</div>
+app\(dashboard)\products\[id]\page.tsx:3835: <div className="h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">صورة</div>
+app\(dashboard)\products\[id]\page.tsx:3838: <div className="opacity-60 mb-0.5">بعد</div>
+app\(dashboard)\products\[id]\page.tsx:3839: <div className="h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">صورة</div>
+app\(dashboard)\products\[id]\page.tsx:3848: <div className="font-bold">مميزات المنتج</div>
+app\(dashboard)\products\[id]\page.tsx:3850: <li>✓ ميزة أولى للمنتج</li>
+app\(dashboard)\products\[id]\page.tsx:3851: <li>✓ ميزة ثانية للمنتج</li>
+app\(dashboard)\products\[id]\page.tsx:3862: خصم {config.discount_percent || 0}%
+app\(dashboard)\products\[id]\page.tsx:3866: <span className="text-[8px] text-slate-500">رمز الخصم المفعل</span>
+app\(dashboard)\products\[id]\page.tsx:3873: <span>لم يتم تعيين رمز الخصم بعد</span>
+app\(dashboard)\products\[id]\page.tsx:3892: const stickyLabel = chkCfg.sticky_cta_text || chkCfg.button_text || 'اطلب الآن';
+app\(dashboard)\settings\page.tsx:53: const [announcementText, setAnnouncementText] = useState("الدفع عند الاستلام في 58 ولاية!");
+app\(dashboard)\settings\page.tsx:56: const [badge1Title, setBadge1Title] = useState("توصيل سريع");
+app\(dashboard)\settings\page.tsx:57: const [badge1Desc, setBadge1Desc] = useState("التوصيل لجميع الولايات بأسعار مدروسة.");
+app\(dashboard)\settings\page.tsx:58: const [badge2Title, setBadge2Title] = useState("الدفع عند الاستلام");
+app\(dashboard)\settings\page.tsx:59: const [badge2Desc, setBadge2Desc] = useState("لا تدفع أي شيء حتى تستلم منتجك بين يديك.");
+app\(dashboard)\settings\page.tsx:60: const [badge3Title, setBadge3Title] = useState("دعم العملاء");
+app\(dashboard)\settings\page.tsx:61: const [badge3Desc, setBadge3Desc] = useState("فريق عملنا متواجد للرد على اتصالاتكم وتأكيد الطلبييات.");
+app\(dashboard)\settings\page.tsx:117: setAnnouncementText(s.announcement_text || "الدفع عند الاستلام في 58 ولاية!");
+app\(dashboard)\settings\page.tsx:120: setBadge1Title(s.badge_1_title || "توصيل سريع");
+app\(dashboard)\settings\page.tsx:121: setBadge1Desc(s.badge_1_desc || "التوصيل لجميع الولايات بأسعار مدروسة.");
+app\(dashboard)\settings\page.tsx:122: setBadge2Title(s.badge_2_title || "الدفع عند الاستلام");
+app\(dashboard)\settings\page.tsx:123: setBadge2Desc(s.badge_2_desc || "لا تدفع أي شيء حتى تستلم منتجك بين يديك.");
+app\(dashboard)\settings\page.tsx:124: setBadge3Title(s.badge_3_title || "دعم العملاء");
+app\(dashboard)\settings\page.tsx:125: setBadge3Desc(s.badge_3_desc || "فريق عملنا متواجد للرد على اتصالاتكم وتأكيد الطلبيات.");
+app\(dashboard)\settings\page.tsx:292: <span className="text-[11px] font-bold text-slate-400 px-3 uppercase tracking-wider block mb-3">{t("settingsTabTitle", "أقسام الإعدادات")}</span>
+app\(dashboard)\settings\page.tsx:434: <option value="ar" className="bg-card text-foreground">العربية (Arabic)</option>
+app\(dashboard)\settings\page.tsx:626: placeholder="Site Key الخاص بـ Google reCAPTCHA"
+app\(dashboard)\settings\page.tsx:639: placeholder="Secret Key الخاص بـ Google reCAPTCHA"
+app\(dashboard)\settings\page.tsx:673: placeholder={`مثال:\n{\n  "apiKey": "AIzaSy...",\n  "authDomain": "...",\n  "projectId": "...",\n  "storageBucket": "...",\n  "messagingSenderId": "...",\n  "appId": "..."\n}`}
+app\(dashboard)\settings\page.tsx:745: placeholder="مثال: الدفع عند الاستلام في 58 ولاية!"
+app\(dashboard)\settings\page.tsx:775: <span className="text-sm font-bold block">تفعيل زر WhatsApp العائم</span>
+app\(dashboard)\settings\page.tsx:777: عرض أيقونة WhatsApp عائمة باستمرار في أسفل واجهة المتجر لتشجيع العميل على التواصل المباشر.
+app\(dashboard)\settings\page.tsx:793: <h4 className="text-md font-bold text-right text-slate-200">تعديل نصوص بطاقات الثقة والضمانات</h4>
+app\(dashboard)\settings\page.tsx:795: قم بتعديل العناوين والشروح للبطاقات الثلاث المخصصة لعرض الضمانات في متجرك.
+app\(dashboard)\settings\page.tsx:882: {announcementText || "نص الإعلان سيظهر هنا"}
+components\LanguageToggle.tsx:37: ar: { label: "العربية", flag: "🇩🇿" },
+components\SubscriptionCountdownBanner.tsx:87: ? `تنبيه: ينتهي اشتراك متجرك في خطة (${planName}) خلال ${hours} ساعة و ${minutes} دقيقة.`
+components\SubscriptionCountdownBanner.tsx:93: ? "جدد اشتراكك الآن"
+components\ThemeToggle.tsx:43: title={theme === "dark" ? "الوضع المضيء" : "الوضع المظلم"}
+components\pixels\pixel-health-badge.tsx:23: title="التحقق من صحة Pixel ID"
