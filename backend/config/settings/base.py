@@ -110,7 +110,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # =============================================================================
 RUNNING_IN_DOCKER = os.environ.get('RUNNING_IN_DOCKER', 'False') == 'True'
 
-if RUNNING_IN_DOCKER:
+if RUNNING_IN_DOCKER or 'POSTGRES_HOST' in os.environ:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
