@@ -44,6 +44,66 @@ def get_store_or_404(subdomain):
         return None
 
 
+import hashlib
+import time
+import requests
+import threading
+
+def hash_data(val):
+    if not val:
+        return None
+    val = val.strip().lower()
+    return hashlib.sha256(val.encode('utf-8')).hexdigest()
+
+def normalize_phone(phone):
+    if not phone:
+        return None
+    clean = ''.join(c for c in phone if c.isdigit())
+    if clean.startswith('0'):
+        clean = '213' + clean[1:]
+    elif not clean.startswith('213'):
+        clean = '213' + clean
+    return clean
+
+def send_capi_event_thread(pixel_id, access_token, event_name, event_id, user_data, custom_data, source_url):
+    url = f"https://graph.facebook.com/v19.0/{pixel_id}/events"
+    payload = {
+        "data": [
+            {
+                "event_name": event_name,
+                "event_time": int(time.time()),
+                "event_id": event_id,
+                "user_data": user_data,
+                "custom_data": custom_data,
+                "event_source_url": source_url,
+                "action_source": "website"
+            }
+        ],
+        "access_token": access_token
+    }
+    try:
+        requests.post(url, json=payload, timeout=8)
+    except Exception:
+        pass
+
+def trigger_capi_events(pixels, event_name, event_id, user_data, custom_data, source_url):
+    for pixel in pixels:
+        if pixel.access_token:
+            threading.Thread(
+                target=send_capi_event_thread,
+                args=(
+                    pixel.pixel_id,
+                    pixel.access_token,
+                    event_name,
+                    event_id,
+                    user_data,
+                    custom_data,
+                    source_url
+                ),
+                daemon=True
+            ).start()
+
+
 class StorefrontInfoView(APIView):
     """Public store info."""
     permission_classes = [permissions.AllowAny]
@@ -122,6 +182,7 @@ class StorefrontProductDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain, slug):
+        import uuid
         store = get_store_or_404(subdomain)
         if not store:
             return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -133,11 +194,59 @@ class StorefrontProductDetailView(APIView):
             )
             data = ProductSerializer(product).data
             
-            # Include product-specific active pixels
+            # Include active pixels (both product-specific and global)
             from apps.pixels.models import PixelConfig
             from apps.pixels.serializers import PixelConfigSerializer
-            pixels = PixelConfig.objects.filter(store=store, is_active=True, product=product)
+            from django.db.models import Q
+            pixels = PixelConfig.objects.filter(
+                Q(product=product) | Q(product__isnull=True),
+                store=store,
+                is_active=True
+            )
             data['pixels'] = PixelConfigSerializer(pixels, many=True).data
+
+            # Generate deduplication event ID for ViewContent
+            view_content_event_id = f"vc-{uuid.uuid4()}"
+            data['view_content_event_id'] = view_content_event_id
+
+            # Trigger Conversions API (CAPI) ViewContent event
+            capi_pixels = pixels.filter(platform='meta', access_token__isnull=False).exclude(access_token='')
+            if capi_pixels.exists():
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                fbp = request.COOKIES.get('_fbp')
+                fbc = request.COOKIES.get('_fbc')
+
+                user_data = {
+                    "client_ip_address": ip,
+                    "client_user_agent": user_agent,
+                }
+                if fbp:
+                    user_data["fbp"] = fbp
+                if fbc:
+                    user_data["fbc"] = fbc
+
+                custom_data = {
+                    "content_name": product.title,
+                    "content_ids": [str(product.id)],
+                    "content_type": "product",
+                    "value": float(product.price or 0.0),
+                    "currency": "DZD"
+                }
+
+                scheme = 'https' if request.is_secure() else 'http'
+                source_url = f"{scheme}://{request.get_host()}"
+
+                trigger_capi_events(
+                    pixels=capi_pixels,
+                    event_name="ViewContent",
+                    event_id=view_content_event_id,
+                    user_data=user_data,
+                    custom_data=custom_data,
+                    source_url=source_url
+                )
+
             return Response(data)
         except Product.DoesNotExist:
             return Response({'error': 'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -198,109 +307,61 @@ class StorefrontCheckoutView(APIView):
             from django.db.models import Q
             from apps.pixels.models import PixelConfig
             product_ids = [item.product.id for item in order.items.all()]
-            pixels = PixelConfig.objects.filter(
+            capi_pixels = PixelConfig.objects.filter(
                 store=store,
                 platform='meta',
-                is_active=True
-            ).filter(
+                is_active=True,
+                access_token__isnull=False
+            ).exclude(access_token='').filter(
                 Q(product__isnull=True) | Q(product__id__in=product_ids)
             )
 
-            import hashlib
-            import time
-            import requests
-            import threading
+            if capi_pixels.exists():
+                names = order.full_name.strip().split(' ', 1)
+                first_name = names[0] if names else ''
+                last_name = names[1] if len(names) > 1 else ''
 
-            def hash_data(val):
-                if not val:
-                    return None
-                val = val.strip().lower()
-                return hashlib.sha256(val.encode('utf-8')).hexdigest()
+                h_fn = hash_data(first_name)
+                h_ln = hash_data(last_name)
+                h_ph = hash_data(normalize_phone(order.phone))
 
-            def normalize_phone(phone):
-                if not phone:
-                    return None
-                clean = ''.join(c for c in phone if c.isdigit())
-                if clean.startswith('0'):
-                    clean = '213' + clean[1:]
-                elif not clean.startswith('213'):
-                    clean = '213' + clean
-                return clean
+                frontend_event_id = request.data.get('event_id', str(order.id))
 
-            names = order.full_name.strip().split(' ', 1)
-            first_name = names[0] if names else ''
-            last_name = names[1] if len(names) > 1 else ''
+                user_data = {
+                    "ph": [h_ph] if h_ph else [],
+                    "fn": [h_fn] if h_fn else [],
+                    "ln": [h_ln] if h_ln else [],
+                    "client_ip_address": ip,
+                    "client_user_agent": user_agent
+                }
 
-            h_fn = hash_data(first_name)
-            h_ln = hash_data(last_name)
-            h_ph = hash_data(normalize_phone(order.phone))
-
-            # Get event_id from browser pixel for deduplication (#4)
-            frontend_event_id = request.data.get('event_id', str(order.id))
-
-            # Build proper event source URL dynamically from incoming request
-            scheme = 'https' if request.is_secure() else 'http'
-            source_url = f"{scheme}://{request.get_host()}"
-
-            def send_capi_event(pixel_id, access_token, o, client_ip, client_ua, fn, ln, ph, event_id, src_url):
-                url = f"https://graph.facebook.com/v19.0/{pixel_id}/events"
                 contents = []
-                for item in o.items.all():
+                for item in order.items.all():
                     contents.append({
                         'id': str(item.product.id),
                         'quantity': item.quantity,
                         'item_price': float(item.price)
                     })
 
-                payload = {
-                    "data": [
-                        {
-                            "event_name": "Purchase",
-                            "event_time": int(time.time()),
-                            "event_id": event_id,  # Matches browser pixel event_id for deduplication
-                            "user_data": {
-                                "ph": [ph] if ph else [],
-                                "fn": [fn] if fn else [],
-                                "ln": [ln] if ln else [],
-                                "client_ip_address": client_ip,
-                                "client_user_agent": client_ua
-                            },
-                            "custom_data": {
-                                "currency": "DZD",
-                                "value": float(o.total),
-                                "content_type": "product",
-                                "contents": contents,
-                                "num_items": sum(c['quantity'] for c in contents),
-                            },
-                            "event_source_url": src_url,
-                            "action_source": "website"
-                        }
-                    ],
-                    "access_token": access_token
+                custom_data = {
+                    "currency": "DZD",
+                    "value": float(order.total),
+                    "content_type": "product",
+                    "contents": contents,
+                    "num_items": sum(c['quantity'] for c in contents),
                 }
-                try:
-                    requests.post(url, json=payload, timeout=8)
-                except Exception:
-                    pass
 
-            for pixel in pixels:
-                if pixel.access_token:
-                    threading.Thread(
-                        target=send_capi_event,
-                        args=(
-                            pixel.pixel_id,
-                            pixel.access_token,
-                            order,
-                            ip,
-                            user_agent,
-                            h_fn,
-                            h_ln,
-                            h_ph,
-                            frontend_event_id,
-                            source_url,
-                        ),
-                        daemon=True
-                    ).start()
+                scheme = 'https' if request.is_secure() else 'http'
+                source_url = f"{scheme}://{request.get_host()}"
+
+                trigger_capi_events(
+                    pixels=capi_pixels,
+                    event_name="Purchase",
+                    event_id=frontend_event_id,
+                    user_data=user_data,
+                    custom_data=custom_data,
+                    source_url=source_url
+                )
 
             # Create local ConversionEvent records for internal analytics
             try:

@@ -471,13 +471,14 @@ export default function StorefrontProductDetail() {
         console.log("[Sovi Pixels] Initializing active pixels...");
         initializePixels(allPixels);
         console.log("[Sovi Pixels] Firing ViewContent event...");
+        const eventId = rawProduct?.view_content_event_id || generateEventId();
         trackPixelEvent(allPixels, 'ViewContent', {
           content_name: product.title,
           content_ids: [product.id],
           content_type: 'product',
           value: parseFloat(product.price || 0),
           currency: 'DZD',
-        });
+        }, eventId);
       } catch (e) {
         console.error("[Sovi Pixels] Error running storefront pixels:", e);
       }
