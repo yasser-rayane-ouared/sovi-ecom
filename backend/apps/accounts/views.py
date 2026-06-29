@@ -148,8 +148,8 @@ class GoogleLoginView(APIView):
                 return Response({'error': 'Email field not present in Google response.'}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            # Dev mock fallback to allow testing without client id in development mode
-            if settings.DEBUG and token.startswith("mock-google-token-"):
+            # Dev mock fallback to allow testing without client id in development or demo mode
+            if token.startswith("mock-google-token-") and (settings.DEBUG or not settings.GOOGLE_CLIENT_ID or "mock" in settings.GOOGLE_CLIENT_ID):
                 email = token.replace("mock-google-token-", "")
                 first_name = "Test"
                 last_name = "User"

@@ -191,7 +191,13 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                if ((window as any).google) {
+                const isMock = !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.includes("mock");
+                if (isMock) {
+                  const testEmail = prompt(isRtl ? "أدخل البريد الإلكتروني للتجربة (Google):" : "Enter email for testing (Google):", "demo@sovi.com");
+                  if (testEmail) {
+                    handleGoogleSignIn({ credential: `mock-google-token-${testEmail}` });
+                  }
+                } else if ((window as any).google) {
                   (window as any).google.accounts.id.prompt();
                 }
               }}
