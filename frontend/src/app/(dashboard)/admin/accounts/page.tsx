@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import api from "../../../../lib/api";
 import { useLanguageStore } from "../../../../stores/language";
 import { useAuthStore } from "../../../../stores/auth";
+import { getRootDomain } from "../../../../lib/utils";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
@@ -290,7 +291,7 @@ export default function AdminAccountsPage() {
                       <tr key={acc.store_id} className="border-b border-border/50 hover:bg-muted/10 transition-colors duration-150">
                         <td className="p-4">
                           <div className="font-bold text-foreground">{acc.name}</div>
-                          <span className="text-[10px] text-muted-foreground font-outfit">{acc.subdomain}.sovi.localhost</span>
+                          <span className="text-[10px] text-muted-foreground font-outfit">{acc.subdomain}.{getRootDomain()}</span>
                         </td>
                         <td className="p-4">
                           <div className="font-bold text-foreground text-xs">{acc.owner_name}</div>

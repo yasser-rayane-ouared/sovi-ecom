@@ -6,6 +6,7 @@ import { useDashboardStore } from "../../../stores/dashboard";
 import { Button } from "../../../components/ui/button";
 import { Trash2, CheckCircle, XCircle, MessageSquare, AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
 import { useLanguageStore } from "../../../stores/language";
+import { getRootDomain } from "../../../lib/utils";
 
 export default function GlobalReviewsDashboard() {
   const { selectedStore } = useDashboardStore();
@@ -230,7 +231,8 @@ export default function GlobalReviewsDashboard() {
 
 function LinkToStorefront({ subdomain, slug, title, t }: { subdomain?: string; slug?: string; title?: string; t: any }) {
   if (!subdomain || !slug) return <span className="text-muted-foreground font-bold">{title || t('unknown')}</span>;
-  const storeUrl = `http://${subdomain}.sovi.localhost:3000/products/${slug}`;
+  const protocol = typeof window !== 'undefined' && window.location.protocol ? window.location.protocol : 'http:';
+  const storeUrl = `${protocol}//${subdomain}.${getRootDomain()}/products/${slug}`;
   return (
     <a
       href={storeUrl}

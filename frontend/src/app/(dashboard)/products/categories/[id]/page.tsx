@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useDashboardStore } from "@/stores/dashboard";
 import { useLanguageStore } from "@/stores/language";
+import { getRootDomain } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -524,7 +525,7 @@ export default function CategoryEditorPage() {
                     className="border-white/5 bg-white/5 text-white font-mono text-left"
                     dir="ltr"
                   />
-                  <span className="text-[10px] text-muted block">{t("categoryInfoSlugDesc")} subdomain.sovi.localhost/categories/{slug || "smart-watches"}</span>
+                  <span className="text-[10px] text-muted block">{t("categoryInfoSlugDesc")} subdomain.{getRootDomain()}/categories/{slug || "smart-watches"}</span>
                 </div>
 
                 <div className="space-y-2">

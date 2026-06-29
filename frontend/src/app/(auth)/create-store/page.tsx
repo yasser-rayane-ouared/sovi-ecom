@@ -10,6 +10,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
 import { Sparkles, Store, Layers, AlertCircle, Mail, Key, CheckCircle } from "lucide-react";
+import { getRootDomain } from "../../../lib/utils";
 
 export default function CreateStoreWizard() {
   const router = useRouter();
@@ -399,7 +400,7 @@ export default function CreateStoreWizard() {
                   <div className="p-4 rounded-xl border border-border bg-secondary text-right text-sm space-y-1 animate-fade-in-up text-foreground">
                     <div className="flex justify-between items-center flex-row-reverse">
                       <span className="text-muted-foreground flex items-center gap-1"><Layers className="h-4 w-4" /> الرابط التلقائي المولد:</span>
-                      <span className="font-semibold text-accent font-outfit">{subdomainPreview}.sovi.localhost:3000</span>
+                      <span className="font-semibold text-accent font-outfit">{subdomainPreview}.{getRootDomain()}</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground text-right mt-1.5">سيتم حجز هذا النطاق الفرعي لمتجرك بشكل تلقائي.</p>
                   </div>

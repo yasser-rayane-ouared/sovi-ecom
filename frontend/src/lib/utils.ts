@@ -30,3 +30,14 @@ export function getStorefrontLink(subdomain: string, path: string) {
     return path;
   }
 }
+
+export function getRootDomain() {
+  if (typeof window !== "undefined") {
+    if (process.env.NEXT_PUBLIC_ROOT_DOMAIN) {
+      return process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    }
+    // Fallback: If on local/IP/etc, return active host
+    return window.location.host;
+  }
+  return process.env.NEXT_PUBLIC_ROOT_DOMAIN || "sovi.localhost:3000";
+}

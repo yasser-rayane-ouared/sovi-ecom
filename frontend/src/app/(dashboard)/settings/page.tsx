@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../../lib/api";
 import { useLanguageStore } from "../../../stores/language";
 import { useDashboardStore } from "../../../stores/dashboard";
+import { getRootDomain } from "../../../lib/utils";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
@@ -568,7 +569,7 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                         <div className="flex justify-between bg-muted/20 p-2 rounded-lg border border-border">
                           <span className="text-muted-foreground">Type: <strong className="text-foreground">CNAME</strong></span>
                           <span className="text-muted-foreground">Host: <strong className="text-foreground">www</strong></span>
-                          <span className="text-muted-foreground">Target: <strong className="text-foreground">sovi.localhost</strong></span>
+                          <span className="text-muted-foreground">Target: <strong className="text-foreground">{getRootDomain().split(':')[0]}</strong></span>
                         </div>
                         <div className="flex justify-between bg-muted/20 p-2 rounded-lg border border-border">
                           <span className="text-muted-foreground">Type: <strong className="text-foreground">A</strong></span>
