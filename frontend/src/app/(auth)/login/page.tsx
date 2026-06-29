@@ -71,6 +71,22 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+      const cleanRoot = rootDomain.split(':')[0];
+      const isMainDomain = hostname === cleanRoot || hostname === `www.${cleanRoot}`;
+      
+      if (!isMainDomain && !hostname.includes("localhost") && !hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+        const port = window.location.port ? `:${window.location.port}` : '';
+        const protocol = window.location.protocol;
+        const targetUrl = `${protocol}//${cleanRoot}${port}${window.location.pathname}${window.location.search}`;
+        window.location.replace(targetUrl);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const isMockClient = !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.includes("mock");
     setIsMock(isMockClient);
     initializeGoogleBtn();
