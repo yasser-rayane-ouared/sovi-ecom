@@ -1381,14 +1381,22 @@ export default function HomepageCustomizer() {
             </div>
 
             {/* Simulated Smartphone Screen */}
-            <div className="aspect-[9/18.5] w-full bg-slate-900 border-4 border-slate-950 rounded-[2rem] overflow-hidden relative shadow-2xl flex flex-col justify-start">
-              {/* Phone Speaker & Camera Bar */}
-              <div className="absolute top-0 inset-x-0 h-4 bg-slate-950 flex items-center justify-center z-50">
-                <div className="h-1.5 w-12 bg-slate-800 rounded-full"></div>
+            <div className="aspect-[9/18.5] w-full bg-slate-950 border-[12px] border-slate-900 rounded-[2.8rem] overflow-hidden relative shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] flex flex-col justify-start ring-1 ring-white/10">
+              {/* Phone Dynamic Island */}
+              <div className="absolute top-2.5 left-1/2 -translate-x-1/2 h-5.5 w-24 bg-slate-950 rounded-full flex items-center justify-between px-2.5 z-50 shadow-inner">
+                {/* Camera lens reflection */}
+                <div className="h-2 w-2 rounded-full bg-indigo-950/80 border border-indigo-900 flex items-center justify-center shrink-0">
+                  <div className="h-0.5 w-0.5 rounded-full bg-blue-400/40"></div>
+                </div>
+                {/* Speaker grille */}
+                <div className="h-1 w-10 bg-slate-900 rounded-full shrink-0"></div>
               </div>
 
+              {/* Glass Reflection Glare Overlay */}
+              <div className="absolute inset-0 pointer-events-none z-40 bg-gradient-to-tr from-white/[0.01] via-transparent to-white/[0.08]" />
+
               {/* Scrollable Viewport */}
-              <div className="flex-1 overflow-y-auto pt-4 pb-8 space-y-0.5 bg-[#f8fafc] text-slate-900 scrollbar-thin scrollbar-thumb-slate-300" dir={isRtl ? 'rtl' : 'ltr'}>
+              <div className="flex-1 overflow-y-auto pt-9 pb-10 space-y-0.5 bg-[#f8fafc] text-slate-900 scrollbar-thin scrollbar-thumb-slate-300 relative z-10" dir={isRtl ? 'rtl' : 'ltr'}>
                 {sections.map((section) => {
                   const config = section.config || {};
                   
