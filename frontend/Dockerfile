@@ -9,4 +9,4 @@ COPY frontend/ .
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npm run build && npm run start"]
+CMD ["sh", "-c", "NODE_OPTIONS=\"--max-old-space-size=450\" npm run build && npm run start"]
