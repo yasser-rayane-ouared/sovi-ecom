@@ -465,9 +465,12 @@ export default function StorefrontProductDetail() {
       ...(product?.pixels || []),
     ]);
 
+    console.log("[Sovi Pixels] Found active pixels:", allPixels);
     if (allPixels.length > 0) {
       try {
+        console.log("[Sovi Pixels] Initializing active pixels...");
         initializePixels(allPixels);
+        console.log("[Sovi Pixels] Firing ViewContent event...");
         trackPixelEvent(allPixels, 'ViewContent', {
           content_name: product.title,
           content_ids: [product.id],
@@ -476,7 +479,7 @@ export default function StorefrontProductDetail() {
           currency: 'DZD',
         });
       } catch (e) {
-        console.error("Error running storefront pixels:", e);
+        console.error("[Sovi Pixels] Error running storefront pixels:", e);
       }
     }
   }, [product, store]);
