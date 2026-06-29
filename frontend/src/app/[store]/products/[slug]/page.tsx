@@ -433,20 +433,6 @@ export default function StorefrontProductDetail() {
     }
     setAbGroup(assignedGroup);
 
-    // Initialize custom active pixels for the assigned layout/variant
-    const activeProductForPixels = (rawProduct.enable_ab_test && rawProduct.ab_test_product_b_detail && assignedGroup === 'B')
-      ? rawProduct.ab_test_product_b_detail
-      : rawProduct;
-
-    if (activeProductForPixels?.pixels) {
-      try {
-        const { initializePixels } = require("../../../../components/pixels");
-        initializePixels(activeProductForPixels.pixels);
-      } catch (e) {
-        console.error("Error loading pixels:", e);
-      }
-    }
-
     // Generate or get session ID
     let sessionId = localStorage.getItem('ab_session_id');
     if (!sessionId) {
@@ -468,6 +454,33 @@ export default function StorefrontProductDetail() {
     }).catch(() => {});
 
   }, [rawProduct, subdomain]);
+
+  // Initialize pixels and track ViewContent on page view
+  useEffect(() => {
+    if (!product || !store) return;
+
+    // Collect all relevant pixels (store-level + product-specific)
+    const allPixels = deduplicatePixels([
+      ...(store?.pixels || []),
+      ...(product?.pixels || []),
+    ]);
+
+    if (allPixels.length > 0) {
+      try {
+        const { initializePixels, trackPixelEvent } = require("../../../../components/pixels");
+        initializePixels(allPixels);
+        trackPixelEvent(allPixels, 'ViewContent', {
+          content_name: product.title,
+          content_ids: [product.id],
+          content_type: 'product',
+          value: parseFloat(product.price || 0),
+          currency: 'DZD',
+        });
+      } catch (e) {
+        console.error("Error running storefront pixels:", e);
+      }
+    }
+  }, [product, store]);
 
   // Section interaction tracking (impressions & clicks)
   useEffect(() => {
