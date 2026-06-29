@@ -238,7 +238,11 @@ class StorefrontCheckoutView(APIView):
             # Get event_id from browser pixel for deduplication (#4)
             frontend_event_id = request.data.get('event_id', str(order.id))
 
-            def send_capi_event(pixel_id, access_token, o, client_ip, client_ua, fn, ln, ph, event_id):
+            # Build proper event source URL dynamically from incoming request
+            scheme = 'https' if request.is_secure() else 'http'
+            source_url = f"{scheme}://{request.get_host()}"
+
+            def send_capi_event(pixel_id, access_token, o, client_ip, client_ua, fn, ln, ph, event_id, src_url):
                 url = f"https://graph.facebook.com/v19.0/{pixel_id}/events"
                 contents = []
                 for item in o.items.all():
@@ -247,9 +251,6 @@ class StorefrontCheckoutView(APIView):
                         'quantity': item.quantity,
                         'item_price': float(item.price)
                     })
-
-                # Build proper event source URL using store subdomain or custom domain
-                source_url = f"https://{store.custom_domain}" if store.custom_domain else f"http://{store.subdomain}.localhost:3000"
 
                 payload = {
                     "data": [
@@ -271,7 +272,7 @@ class StorefrontCheckoutView(APIView):
                                 "contents": contents,
                                 "num_items": sum(c['quantity'] for c in contents),
                             },
-                            "event_source_url": source_url,
+                            "event_source_url": src_url,
                             "action_source": "website"
                         }
                     ],
@@ -296,6 +297,7 @@ class StorefrontCheckoutView(APIView):
                             h_ln,
                             h_ph,
                             frontend_event_id,
+                            source_url,
                         ),
                         daemon=True
                     ).start()
