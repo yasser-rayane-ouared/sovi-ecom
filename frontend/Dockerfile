@@ -8,10 +8,12 @@ RUN npm install
 # Declare build arguments (Railway automatically passes environment variables as ARGs)
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_ROOT_DOMAIN
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
 # Convert build arguments to environment variables so Next.js can read them during build
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_ROOT_DOMAIN=$NEXT_PUBLIC_ROOT_DOMAIN
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
 COPY frontend/ .
 RUN npm run build
