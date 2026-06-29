@@ -19,8 +19,16 @@ class PlanListView(generics.ListAPIView):
     """List all active subscription plans."""
     serializer_class = PlanSerializer
     permission_classes = [permissions.AllowAny]
-    queryset = Plan.objects.filter(is_active=True).order_by('price_da')
     pagination_class = None
+
+    def get_queryset(self):
+        if not Plan.objects.exists():
+            from django.core.management import call_command
+            try:
+                call_command('seed_plans')
+            except Exception:
+                pass
+        return Plan.objects.filter(is_active=True).order_by('price_da')
 
 
 class StartTrialView(APIView):
