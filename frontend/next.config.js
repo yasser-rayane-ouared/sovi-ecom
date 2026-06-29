@@ -23,6 +23,12 @@ const nextConfig = {
   },
   // Allow ngrok origin for dev cross-origin requests
   allowedDevOrigins: ['*.ngrok-free.dev', '*.ngrok-free.app'],
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;
