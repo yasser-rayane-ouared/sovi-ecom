@@ -230,7 +230,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div id="google-signin-btn-hidden" className="hidden" />
+            <div id="google-signin-btn-hidden" style={{ position: 'absolute', top: -10000, left: -10000, opacity: 0, pointerEvents: 'none' }} />
             <button
               type="button"
               onClick={() => {
@@ -240,8 +240,13 @@ export default function RegisterPage() {
                   if (testEmail) {
                     handleGoogleSignIn({ credential: `mock-google-token-${testEmail}` });
                   }
-                } else if ((window as any).google) {
-                  (window as any).google.accounts.id.prompt();
+                } else {
+                  const googleBtn = document.querySelector("#google-signin-btn-hidden div[role='button']") as HTMLElement;
+                  if (googleBtn) {
+                    googleBtn.click();
+                  } else if ((window as any).google) {
+                    (window as any).google.accounts.id.prompt();
+                  }
                 }
               }}
               className="w-full group relative flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border border-border bg-card/80 hover:bg-card text-foreground font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
