@@ -111,14 +111,20 @@ WSGI_APPLICATION = 'config.wsgi.application'
 RUNNING_IN_DOCKER = os.environ.get('RUNNING_IN_DOCKER', 'False') == 'True'
 
 if RUNNING_IN_DOCKER or 'POSTGRES_HOST' in os.environ:
+    db_name = os.environ.get('POSTGRES_DB') or os.environ.get('PGDATABASE') or 'sovi_platform'
+    db_user = os.environ.get('POSTGRES_USER') or os.environ.get('PGUSER') or 's_user'
+    db_pass = os.environ.get('POSTGRES_PASSWORD') or os.environ.get('PGPASSWORD') or 's_password'
+    db_host = os.environ.get('POSTGRES_HOST') or os.environ.get('PGHOST') or 'localhost'
+    db_port = os.environ.get('POSTGRES_PORT') or os.environ.get('PGPORT') or '5432'
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB', 'sovi_platform'),
-            'USER': os.environ.get('POSTGRES_USER', 's_user'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 's_password'),
-            'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            'NAME': db_name,
+            'USER': db_user,
+            'PASSWORD': db_pass,
+            'HOST': db_host,
+            'PORT': db_port,
         }
     }
     CACHES = {
