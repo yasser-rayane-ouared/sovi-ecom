@@ -467,7 +467,6 @@ export default function StorefrontProductDetail() {
 
     if (allPixels.length > 0) {
       try {
-        const { initializePixels, trackPixelEvent } = require("../../../../components/pixels");
         initializePixels(allPixels);
         trackPixelEvent(allPixels, 'ViewContent', {
           content_name: product.title,
