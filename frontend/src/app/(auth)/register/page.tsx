@@ -54,12 +54,13 @@ export default function RegisterPage() {
       });
       const container = document.getElementById("google-signin-btn");
       if (container) {
+        const isMobile = window.innerWidth < 420;
         (window as any).google.accounts.id.renderButton(
           container,
           { 
             theme: "filled_black", 
             size: "large", 
-            width: 380,
+            width: isMobile ? 280 : 380,
             text: "signup_with",
             shape: "pill"
           }
@@ -259,7 +260,7 @@ export default function RegisterPage() {
               </button>
             ) : (
               <div className="w-full rounded-full p-[1px] bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 shadow-md hover:shadow-lg transition-all duration-300">
-                <div id="google-signin-btn" className="w-full flex justify-center min-h-[46px] overflow-hidden rounded-full" />
+                <div id="google-signin-btn" className="w-full flex justify-center min-h-[46px]" />
               </div>
             )}
             <Script
