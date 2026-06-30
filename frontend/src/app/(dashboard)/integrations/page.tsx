@@ -27,15 +27,15 @@ This skill guide provides the necessary knowledge and tools reference to perform
 ## 1. Product Catalog Management
 
 ### Product Creation and Editing
-*   **Listing Products:** Use \\`list_products\\` to review current items. Always double-check existing SKUs and titles to avoid duplicate creations.
-*   **Creating Products:** Use \\`create_product\\`. Ensure:
-    *   \\`title\\` is descriptive (under 80 characters for optimal rendering).
-    *   \\`price\\` is defined correctly. For discount structures, set \\`compare_price\\` higher than \\`price\\`.
-    *   \\`status\\` defaults to \\`draft\\` so the merchant can review details before publishing.
-    *   \\`track_inventory\\`: If set to \\`true\\`, ensure a valid \\`stock_quantity\\` is defined.
+*   **Listing Products:** Use \`list_products\` to review current items. Always double-check existing SKUs and titles to avoid duplicate creations.
+*   **Creating Products:** Use \`create_product\`. Ensure:
+    *   \`title\` is descriptive (under 80 characters for optimal rendering).
+    *   \`price\` is defined correctly. For discount structures, set \`compare_price\` higher than \`price\`.
+    *   \`status\` defaults to \`draft\` so the merchant can review details before publishing.
+    *   \`track_inventory\`: If set to \`true\`, ensure a valid \`stock_quantity\` is defined.
 
 ### Optimized Layout Structures
-*   Sovi landing pages are built using modular section blocks (configured in \\`ProductSection\\`).
+*   Sovi landing pages are built using modular section blocks (configured in \`ProductSection\`).
 *   **Conversion-Optimized Layout Flow:**
     1.  **Header:** Clean, lightweight navigation.
     2.  **Hero Block:** Rich graphic header with a bold visual headline and sub-headline.
@@ -49,12 +49,12 @@ This skill guide provides the necessary knowledge and tools reference to perform
 ## 2. Store Theme & Layout Customization
 
 ### Editing Themes
-*   Use \\`get_theme_settings\\` to retrieve the current visual configurations.
-*   Use \\`update_theme_settings\\` to adjust styling properties.
+*   Use \`get_theme_settings\` to retrieve the current visual configurations.
+*   Use \`update_theme_settings\` to adjust styling properties.
 *   **Branding Guidelines:**
     *   **Cairo Font:** Used by default for Arabic elements. Make sure typography aligns correctly (Arabic reads RTL; French/English read LTR).
-    *   Avoid plain/generic HTML colors. Use luxury palettes (e.g., deep amber \\`#d97706\\`, elegant green \\`#047857\\`, and modern slate accents).
-    *   Keep mobile grids responsive. Always favor stacked grids (\\`grid-cols-1 sm:grid-cols-2\\`) on mobile layout settings.
+    *   Avoid plain/generic HTML colors. Use luxury palettes (e.g., deep amber \`#d97706\`, elegant green \`#047857\`, and modern slate accents).
+    *   Keep mobile grids responsive. Always favor stacked grids (\`grid-cols-1 sm:grid-cols-2\`) on mobile layout settings.
 `;
 
 const MARKETING_ANALYTICS_SKILL = `---
@@ -72,18 +72,18 @@ This guide details how to help merchants maximize their sales conversion rates, 
 
 ### Meta CAPI Payload Matching
 To maximize the Meta Event Match Quality Score (aiming for 8.5+ out of 10), CAPI events must send enriched, hashed user details.
-*   **Browser/Server Deduplication:** Always ensure the browser pixel event and the server-side Conversions API event carry the exact same \\`event_id\\` payload.
+*   **Browser/Server Deduplication:** Always ensure the browser pixel event and the server-side Conversions API event carry the exact same \`event_id\` payload.
 *   **Hashed Parameters Checklist:**
-    *   \\`ph\\`: Hashed Phone Number (always normalized to standard Algerian format: prepend country code \\`213\\` and drop leading \\`0\\`).
-    *   \\`fn\\`: Hashed First Name.
-    *   \\`ln\\`: Hashed Last Name.
-    *   \\`ct\\`: Hashed City (Wilaya name in Arabic or French).
-    *   \\`st\\`: Hashed State/Province (Wilaya name).
-    *   \\`country\\`: Hashed country (always \\`dz\\` for Algerian stores).
+    *   \`ph\`: Hashed Phone Number (always normalized to standard Algerian format: prepend country code \`213\` and drop leading \`0\`).
+    *   \`fn\`: Hashed First Name.
+    *   \`ln\`: Hashed Last Name.
+    *   \`ct\`: Hashed City (Wilaya name in Arabic or French).
+    *   \`st\`: Hashed State/Province (Wilaya name).
+    *   \`country\`: Hashed country (always \`dz\` for Algerian stores).
 
 ### Pixel Management
 *   Pixels can be set globally (whole storefront) or customized to trigger only on specific product pages.
-*   Support Platforms: \\`meta\\` (Meta/Facebook), \\`tiktok\\` (TikTok Pixel), \\`snapchat\\` (Snapchat Pixel).
+*   Support Platforms: \`meta\` (Meta/Facebook), \`tiktok\` (TikTok Pixel), \`snapchat\` (Snapchat Pixel).
 
 ---
 
@@ -101,7 +101,7 @@ To maximize the Meta Event Match Quality Score (aiming for 8.5+ out of 10), CAPI
 
 ## 3. Analytics & Statistics
 *   Explain the order conversion funnel to merchants:
-    \\`Landings -> ViewContent -> InitiateCheckout (Lead) -> Purchase (COD Order) -> Delivered\\`
+    \`Landings -> ViewContent -> InitiateCheckout (Lead) -> Purchase (COD Order) -> Delivered\`
 *   Assess Wilaya-specific performance. Help merchants determine which Algerian Wilayas yield the highest delivery ratios so they can optimize ad target locations.
 `;
 
@@ -120,15 +120,15 @@ This guide describes standard operational workflows, shipment tracking automatio
 
 ### COD Order Statuses
 Merchants process Cash on Delivery (COD) orders via the following standard statuses:
-*   \\`new\\`: Order newly created.
-*   \\`no_answer\\`, \\`no_answer_1\\`, \\`no_answer_2\\`, \\`no_answer_3\\`: Client did not answer phone confirmation calls.
-*   \\`postponed\\`: Client requested to postpone delivery.
-*   \\`confirmed\\`: Order confirmed by call center agent.
-*   \\`prepared\\`: Order packed and ready for shipping.
-*   \\`shipped\\`: Handed over to Yalidine or ZR Express.
-*   \\`delivered\\`: Package successfully delivered and paid.
-*   \\`returned\\`: Package returned back to store inventory (*Retour*).
-*   \\`cancelled\\`: Order cancelled by customer/merchant.
+*   \`new\`: Order newly created.
+*   \`no_answer\`, \`no_answer_1\`, \`no_answer_2\`, \`no_answer_3\`: Client did not answer phone confirmation calls.
+*   \`postponed\`: Client requested to postpone delivery.
+*   \`confirmed\`: Order confirmed by call center agent.
+*   \`prepared\`: Order packed and ready for shipping.
+*   \`shipped\`: Handed over to Yalidine or ZR Express.
+*   \`delivered\`: Package successfully delivered and paid.
+*   \`returned\`: Package returned back to store inventory (*Retour*).
+*   \`cancelled\`: Order cancelled by customer/merchant.
 
 ### Automatic Yalidine Status Sync
 *   Sovi has a built-in background sync worker that polls Yalidine status updates automatically every 2 hours.
@@ -139,7 +139,7 @@ Merchants process Cash on Delivery (COD) orders via the following standard statu
 ## 2. Store Security & Anti-Fraud Settings
 
 To prevent fake orders and spam from competitor bots, Sovi provides several security tools:
-*   **Phone Number Format Validation:** Automatically checks that the input is a valid Algerian mobile number format (\\`05\\`, \\`06\\`, \\`07\\`, or \\`213\\` prefix).
+*   **Phone Number Format Validation:** Automatically checks that the input is a valid Algerian mobile number format (\`05\`, \`06\`, \`07\`, or \`213\` prefix).
 *   **Firebase SMS OTP Verification:** Requires verification code authentication before checkout is submitted.
 *   **Google reCAPTCHA v3:** Blocks automated bots by analyzing user interaction scores.
 *   **IP-Based Rate Limiting:** Limits the number of checkout orders allowed per day from a single IP address.
