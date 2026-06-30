@@ -51,6 +51,7 @@ export default function RegisterPage() {
       (window as any).google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "1027116843477-mockclientid.apps.googleusercontent.com",
         callback: handleGoogleSignIn,
+        itp_support: true
       });
       const container = document.getElementById("google-signin-btn");
       if (container) {
@@ -66,6 +67,13 @@ export default function RegisterPage() {
           }
         );
       }
+
+      // Trigger Google One Tap native sign-in prompt for mobile/Safari support
+      (window as any).google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          console.log("Google One Tap prompt skipped/not displayed:", notification.getNotDisplayedReason());
+        }
+      });
     }
   };
 
