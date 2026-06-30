@@ -494,12 +494,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile Sidebar overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden flex">
-            <div className={`w-72 bg-card h-full p-6 flex flex-col justify-between text-foreground ${isRtl ? 'border-l border-border' : 'border-r border-border'}`}>
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-outfit">Sovi</span>
-                  <button onClick={() => setSidebarOpen(false)} className="p-1 rounded-lg bg-secondary text-foreground"><X className="h-5 w-5" /></button>
-                </div>
+            <div className={`w-72 bg-card h-full p-6 flex flex-col text-foreground ${isRtl ? 'border-l border-border' : 'border-r border-border'}`}>
+              {/* Mobile Sidebar Header */}
+              <div className="flex justify-between items-center pb-4 border-b border-border flex-shrink-0">
+                <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-outfit">Sovi</span>
+                <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg bg-secondary text-foreground">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Navigation Area */}
+              <div className="flex-grow overflow-y-auto my-4 py-2 pr-1 -mr-1">
                 <nav className="space-y-1 font-cairo">
                   {menuItems.map((item, idx) => (
                     <Link key={idx} href={item.path} onClick={() => setSidebarOpen(false)} className="block">
@@ -509,10 +514,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </div>
                     </Link>
                   ))}
-
                 </nav>
               </div>
-              <button onClick={handleLogout} className="flex items-center gap-3 text-red-500 font-cairo px-4 py-2 hover:bg-red-500/10 rounded-xl transition-all"><LogOut className="h-5 w-5" /> {t('logout')}</button>
+
+              {/* Mobile Sidebar Footer */}
+              <div className="pt-4 border-t border-border flex-shrink-0">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 text-red-500 font-cairo w-full px-4 py-2.5 hover:bg-red-500/10 rounded-xl transition-all"
+                >
+                  <LogOut className="h-5 w-5" />
+                  {t('logout')}
+                </button>
+              </div>
             </div>
           </div>
         )}
