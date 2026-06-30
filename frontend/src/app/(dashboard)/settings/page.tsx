@@ -83,7 +83,21 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
           "Content-Type": "multipart/form-data",
         },
       });
-      setLogo(res.data.image_url);
+      const newLogo = res.data.image_url;
+      setLogo(newLogo);
+
+      // Save logo to backend database immediately
+      await api.patch(`/stores/${currentStoreId}/`, {
+        logo: newLogo,
+      });
+
+      // Update global context/sidebar state instantly
+      if (selectedStore && selectedStore.id === currentStoreId) {
+        setSelectedStore({
+          ...selectedStore,
+          logo: newLogo,
+        });
+      }
     } catch (err: any) {
       setError(t("settingsIdentityLogoUploadError"));
     } finally {
@@ -383,7 +397,20 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                             <img src={getFullImageUrl(logo)} alt="Logo Preview" className="h-full w-auto object-contain" />
                             <button
                               type="button"
-                              onClick={() => setLogo("")}
+                              onClick={async () => {
+                                setLogo("");
+                                try {
+                                  await api.patch(`/stores/${currentStoreId}/`, {
+                                    logo: "",
+                                  });
+                                  if (selectedStore && selectedStore.id === currentStoreId) {
+                                    setSelectedStore({
+                                      ...selectedStore,
+                                      logo: "",
+                                    });
+                                  }
+                                } catch (e) {}
+                              }}
                               className="absolute inset-0 bg-background/95 opacity-0 group-hover:opacity-100 flex items-center justify-center text-rose-500 font-bold text-xs transition-opacity rounded-2xl font-cairo"
                             >
                               {t("settingsIdentityLogoRemove")}
