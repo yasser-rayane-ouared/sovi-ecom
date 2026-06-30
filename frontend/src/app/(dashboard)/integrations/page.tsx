@@ -10,8 +10,147 @@ import { Input } from "../../../components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
 import {
   FileSpreadsheet, Play, CheckCircle2, AlertCircle, Save, Sparkles, ArrowRight, Copy, Check, Info,
-  Truck, Key, Loader2, ShieldCheck, DollarSign
+  Truck, Key, Loader2, ShieldCheck, DollarSign, Download
 } from "lucide-react";
+
+const STORE_MANAGEMENT_SKILL = `---
+name: Store Customization & Setup
+description: Assists in modifying store details, creating and editing products, setting up landing pages and page sections, and adjusting theme settings.
+---
+
+# Store Customization & Setup Skill Guide
+
+This skill guide provides the necessary knowledge and tools reference to perform store customizations, design optimization, and catalog management for the Sovi e-commerce platform.
+
+---
+
+## 1. Product Catalog Management
+
+### Product Creation and Editing
+*   **Listing Products:** Use \\`list_products\\` to review current items. Always double-check existing SKUs and titles to avoid duplicate creations.
+*   **Creating Products:** Use \\`create_product\\`. Ensure:
+    *   \\`title\\` is descriptive (under 80 characters for optimal rendering).
+    *   \\`price\\` is defined correctly. For discount structures, set \\`compare_price\\` higher than \\`price\\`.
+    *   \\`status\\` defaults to \\`draft\\` so the merchant can review details before publishing.
+    *   \\`track_inventory\\`: If set to \\`true\\`, ensure a valid \\`stock_quantity\\` is defined.
+
+### Optimized Layout Structures
+*   Sovi landing pages are built using modular section blocks (configured in \\`ProductSection\\`).
+*   **Conversion-Optimized Layout Flow:**
+    1.  **Header:** Clean, lightweight navigation.
+    2.  **Hero Block:** Rich graphic header with a bold visual headline and sub-headline.
+    3.  **Features Block:** Illustrates primary product benefits.
+    4.  **Before/After Slider:** Crucial for cosmetic, skin care, or home cleaning products.
+    5.  **Quantity Offers / Bundles:** Incentivizes higher average order value (e.g., *"Buy 2, Get 1 Free"*).
+    6.  **Checkout Form:** Embedded order form at the bottom to maximize convenience.
+
+---
+
+## 2. Store Theme & Layout Customization
+
+### Editing Themes
+*   Use \\`get_theme_settings\\` to retrieve the current visual configurations.
+*   Use \\`update_theme_settings\\` to adjust styling properties.
+*   **Branding Guidelines:**
+    *   **Cairo Font:** Used by default for Arabic elements. Make sure typography aligns correctly (Arabic reads RTL; French/English read LTR).
+    *   Avoid plain/generic HTML colors. Use luxury palettes (e.g., deep amber \\`#d97706\\`, elegant green \\`#047857\\`, and modern slate accents).
+    *   Keep mobile grids responsive. Always favor stacked grids (\\`grid-cols-1 sm:grid-cols-2\\`) on mobile layout settings.
+`;
+
+const MARKETING_ANALYTICS_SKILL = `---
+name: Storefront Conversion & Analytics Integration
+description: Guides integrating tracking pixels (Facebook/TikTok/Snapchat), managing Conversions API (CAPI) events, configuring Google Sheets sync, setting up high-converting product copies, and providing analytics.
+---
+
+# Storefront Conversion & Analytics Integration Guide
+
+This guide details how to help merchants maximize their sales conversion rates, set up ad tracking (Pixels/CAPI), and generate/analyze store performance stats.
+
+---
+
+## 1. Pixel and Conversions API (CAPI) Tracking
+
+### Meta CAPI Payload Matching
+To maximize the Meta Event Match Quality Score (aiming for 8.5+ out of 10), CAPI events must send enriched, hashed user details.
+*   **Browser/Server Deduplication:** Always ensure the browser pixel event and the server-side Conversions API event carry the exact same \\`event_id\\` payload.
+*   **Hashed Parameters Checklist:**
+    *   \\`ph\\`: Hashed Phone Number (always normalized to standard Algerian format: prepend country code \\`213\\` and drop leading \\`0\\`).
+    *   \\`fn\\`: Hashed First Name.
+    *   \\`ln\\`: Hashed Last Name.
+    *   \\`ct\\`: Hashed City (Wilaya name in Arabic or French).
+    *   \\`st\\`: Hashed State/Province (Wilaya name).
+    *   \\`country\\`: Hashed country (always \\`dz\\` for Algerian stores).
+
+### Pixel Management
+*   Pixels can be set globally (whole storefront) or customized to trigger only on specific product pages.
+*   Support Platforms: \\`meta\\` (Meta/Facebook), \\`tiktok\\` (TikTok Pixel), \\`snapchat\\` (Snapchat Pixel).
+
+---
+
+## 2. Marketing & Sales Conversion Copywriting
+
+### Copywriting Hooks & Branding
+*   **The Hook:** Start landing pages with a clear pain-point resolution (e.g., *"Say goodbye to back pain while sleeping"*).
+*   **Urgency & Trust Elements:**
+    *   Incorporate trust badges (e.g., *Free delivery in Algiers*, *Cash on delivery in 58 Wilayas*, *100% money back guarantee*).
+    *   Include bundle offers with automatic pricing calculations.
+*   **Pre-Submit Lead Capture:**
+    *   Explain to merchants how Sovi automatically captures customer phone numbers the moment they enter them in the form—even if they abandon checkout. This data is stored as an **Abandoned Lead** to allow immediate follow-ups.
+
+---
+
+## 3. Analytics & Statistics
+*   Explain the order conversion funnel to merchants:
+    \\`Landings -> ViewContent -> InitiateCheckout (Lead) -> Purchase (COD Order) -> Delivered\\`
+*   Assess Wilaya-specific performance. Help merchants determine which Algerian Wilayas yield the highest delivery ratios so they can optimize ad target locations.
+`;
+
+const OPERATIONS_SECURITY_SKILL = `---
+name: Store Operations & Fraud Prevention
+description: Instructions on managing orders, tracking shipments (Yalidine/ZR), configuring security rate limits, OTP checkouts, and managing team workers permissions.
+---
+
+# Store Operations & Fraud Prevention Guide
+
+This guide describes standard operational workflows, shipment tracking automation, and security setup for store protection.
+
+---
+
+## 1. Order Lifecycle & Status Management
+
+### COD Order Statuses
+Merchants process Cash on Delivery (COD) orders via the following standard statuses:
+*   \\`new\\`: Order newly created.
+*   \\`no_answer\\`, \\`no_answer_1\\`, \\`no_answer_2\\`, \\`no_answer_3\\`: Client did not answer phone confirmation calls.
+*   \\`postponed\\`: Client requested to postpone delivery.
+*   \\`confirmed\\`: Order confirmed by call center agent.
+*   \\`prepared\\`: Order packed and ready for shipping.
+*   \\`shipped\\`: Handed over to Yalidine or ZR Express.
+*   \\`delivered\\`: Package successfully delivered and paid.
+*   \\`returned\\`: Package returned back to store inventory (*Retour*).
+*   \\`cancelled\\`: Order cancelled by customer/merchant.
+
+### Automatic Yalidine Status Sync
+*   Sovi has a built-in background sync worker that polls Yalidine status updates automatically every 2 hours.
+*   The worker moves packages through (*In Transit -> Out for Delivery -> Delivered / Returned*) and instantly updates the status column in the merchant's **Google Sheet**.
+
+---
+
+## 2. Store Security & Anti-Fraud Settings
+
+To prevent fake orders and spam from competitor bots, Sovi provides several security tools:
+*   **Phone Number Format Validation:** Automatically checks that the input is a valid Algerian mobile number format (\\`05\\`, \\`06\\`, \\`07\\`, or \\`213\\` prefix).
+*   **Firebase SMS OTP Verification:** Requires verification code authentication before checkout is submitted.
+*   **Google reCAPTCHA v3:** Blocks automated bots by analyzing user interaction scores.
+*   **IP-Based Rate Limiting:** Limits the number of checkout orders allowed per day from a single IP address.
+*   **Algerian IP Lock:** Blocks non-Algerian IP addresses from placing orders.
+
+---
+
+## 3. Team Workers & Access Permissions
+*   Merchants can create worker profiles (call center, packagers, admins) to delegate tasks.
+*   Ensure workers are granted limited scopes (e.g., call centers can only view orders and update statuses; they shouldn't edit product prices or delete theme layouts).
+`;
 
 interface IntegrationsProps {
   storeId?: string;
@@ -22,6 +161,17 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
   const { selectedStore } = useDashboardStore();
   const { t, isRtl } = useLanguageStore();
   const currentStoreId = storeId || selectedStore?.id;
+
+  const downloadSkill = (name: string, content: string) => {
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${name}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"sheets" | "telegram" | "claude" | "delivery">("sheets");
@@ -90,7 +240,8 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
     step1: isRtl ? "1. افتح حسابك في Claude.ai واذهب إلى الإعدادات (Settings)." : "1. Open your Claude.ai account and go to Settings.",
     step2: isRtl ? "2. ضمن قسم 'Connectors'، اضغط على 'Add custom connector'." : "2. Under 'Connectors', click on 'Add custom connector'.",
     step3: isRtl ? "3. أدخل اسماً مناسباً (مثال: Sovi Store) والصق رابط خادم MCP أعلاه." : "3. Enter a name (e.g., 'Sovi Store') and paste the Remote MCP server URL above.",
-    step4: isRtl ? "4. اضغط على حفظ (Save) ليقوم كلوود بالاتصال بمنتجاتك وطلبياتك وأدوات متجرك!" : "4. Click Save to allow Claude to query products, analyze orders, and run management tools."
+    step4: isRtl ? "4. اضغط على حفظ (Save) ليتم ربط كلوود بنجاح بمنتجاتك وأدوات متجرك." : "4. Click Save to successfully link Claude with your store tools.",
+    step5: isRtl ? "5. قم بتحميل ملفات المهارات (Claude Skills) أدناه وارفعها في قسم 'Custom Instructions' أو ملف تعريف المشروع (Project Custom Instructions) في Claude ليصبح ذكياً ومحترفاً في إدارة متجرك." : "5. Download the custom Claude Skill files below and upload them to your Claude Project's custom instructions to train the AI to handle your store operations perfectly."
   };
 
   const telegramLabels = {
@@ -864,7 +1015,49 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
                       <li>{claudeLabels.step2}</li>
                       <li>{claudeLabels.step3}</li>
                       <li>{claudeLabels.step4}</li>
+                      <li className="font-semibold text-accent">{claudeLabels.step5}</li>
                     </ul>
+                  </div>
+
+                  <div className={`p-5 rounded-xl bg-accent/5 border border-border space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
+                    <h4 className="text-sm font-extrabold flex items-center gap-2 text-foreground">
+                      <Sparkles className="h-4.5 w-4.5 text-accent flex-shrink-0 animate-pulse" />
+                      <span>{isRtl ? "تحميل مهارات كلوود المخصصة (Claude Skills)" : "Download Claude Custom Skills"}</span>
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {isRtl 
+                        ? "قم بتحميل هذه الملفات ورفعها إلى مشروع كلوود الخاص بك (Claude Projects) لتوجيه المساعد الذكي حول كيفية إدارة المخزون والتسويق وتحليل الطلبيات بدقة عالية."
+                        : "Download these skill files and upload them to your Claude Project or custom instructions to guide the AI assistant on managing inventory, marketing, and order lifecycle logistics."}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="text-[11px] font-bold py-2 h-auto flex items-center gap-1.5 justify-center hover:bg-primary/10 border-border"
+                        onClick={() => downloadSkill("store_management", STORE_MANAGEMENT_SKILL)}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span>{isRtl ? "مهارة إدارة المتجر والمنتجات" : "Store Management Skill"}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="text-[11px] font-bold py-2 h-auto flex items-center gap-1.5 justify-center hover:bg-primary/10 border-border"
+                        onClick={() => downloadSkill("marketing_analytics", MARKETING_ANALYTICS_SKILL)}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span>{isRtl ? "مهارة التسويق وحسابات بكسل" : "Marketing & Pixels Skill"}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="text-[11px] font-bold py-2 h-auto flex items-center gap-1.5 justify-center hover:bg-primary/10 border-border"
+                        onClick={() => downloadSkill("operations_security", OPERATIONS_SECURITY_SKILL)}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span>{isRtl ? "مهارة العمليات واللوجستيات" : "Operations & Security Skill"}</span>
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
