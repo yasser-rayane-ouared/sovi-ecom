@@ -3,9 +3,8 @@ from celery import shared_task
 import requests
 import logging
 from django.utils import timezone
-from apps.delivery.models import Shipment
+from apps.delivery.models import Shipment, StoreDeliveryConfig
 from apps.orders.models import Order, OrderStatusHistory
-from apps.stores.models import StoreDeliveryConfig
 from apps.integrations.tasks import sync_order_to_google_sheet
 
 logger = logging.getLogger(__name__)
