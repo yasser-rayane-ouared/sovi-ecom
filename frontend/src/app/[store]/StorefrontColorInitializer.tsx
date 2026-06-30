@@ -4,9 +4,14 @@ import { useEffect } from "react";
 
 const getFullImageUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) return url;
+  let cleanUrl = url;
+  if (cleanUrl.startsWith("http://localhost:8000") || cleanUrl.startsWith("http://127.0.0.1:8000")) {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
+    cleanUrl = cleanUrl.replace("http://localhost:8000", baseUrl).replace("http://127.0.0.1:8000", baseUrl);
+  }
+  if (cleanUrl.startsWith("http") || cleanUrl.startsWith("data:") || cleanUrl.startsWith("blob:")) return cleanUrl;
   const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-  return `${baseUrl}${url}`;
+  return `${baseUrl}${cleanUrl}`;
 };
 
 export default function StorefrontColorInitializer({ primaryColor, logo }: { primaryColor?: string; logo?: string }) {

@@ -41,3 +41,16 @@ export function getRootDomain() {
   }
   return process.env.NEXT_PUBLIC_ROOT_DOMAIN || "sovi.localhost:3000";
 }
+
+export function getFullImageUrl(url: string) {
+  if (!url) return "";
+  let cleanUrl = url;
+  // If the url points to localhost but we are in production, rewrite it to the api base url
+  if (cleanUrl.startsWith("http://localhost:8000") || cleanUrl.startsWith("http://127.0.0.1:8000")) {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
+    cleanUrl = cleanUrl.replace("http://localhost:8000", baseUrl).replace("http://127.0.0.1:8000", baseUrl);
+  }
+  if (cleanUrl.startsWith("http")) return cleanUrl;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
+  return `${baseUrl}${cleanUrl}`;
+}

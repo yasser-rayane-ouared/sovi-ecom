@@ -9,7 +9,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
 import { Truck, CheckCircle2, ChevronRight, AlertCircle, ShoppingCart } from "lucide-react";
-import { formatCurrency, getStorefrontLink } from "../../../lib/utils";
+import { formatCurrency, getStorefrontLink, getFullImageUrl } from "../../../lib/utils";
 import { initializePixels, trackPixelEvent, deduplicatePixels, generateEventId } from "../../../components/pixels";
 
 export default function StorefrontCheckout() {
@@ -507,7 +507,7 @@ export default function StorefrontCheckout() {
           </Link>
           {store?.logo ? (
             <img 
-              src={store.logo.startsWith('http') ? store.logo : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${store.logo}`} 
+              src={getFullImageUrl(store.logo)} 
               alt={store.name} 
               className="h-9 w-auto object-contain flex-shrink-0" 
             />

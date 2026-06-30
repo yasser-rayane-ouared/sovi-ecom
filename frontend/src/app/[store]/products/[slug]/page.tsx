@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import api from "../../../../lib/api";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
-import { formatCurrency, getStorefrontLink } from "../../../../lib/utils";
+import { formatCurrency, getStorefrontLink, getFullImageUrl } from "../../../../lib/utils";
 import {
   Search, ChevronDown, Check, MapPin, Truck, ShoppingCart, User, Phone, CheckCircle2, AlertCircle, ShoppingBag, Shield, Tag
 } from "lucide-react";
@@ -2218,7 +2218,7 @@ export default function StorefrontProductDetail() {
                   {store?.logo ? (
                     <Link href={getStorefrontLink(subdomain, "/")}>
                       <img 
-                        src={store.logo.startsWith('http') ? store.logo : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${store.logo}`} 
+                        src={getFullImageUrl(store.logo)} 
                         alt={store.name} 
                         className="h-9 w-auto object-contain flex-shrink-0 cursor-pointer hover:opacity-95" 
                       />
