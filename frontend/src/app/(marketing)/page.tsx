@@ -361,9 +361,9 @@ export default function MarketingHome() {
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 relative overflow-hidden noise-bg bg-grid-faded">
       
       {/* Aurora mesh glows */}
-      <div className="absolute top-[-10%] left-[-10%] h-[600px] w-[600px] rounded-full bg-gradient-to-br from-amber-500/10 to-transparent blur-[120px] pointer-events-none animate-aurora-fluid-1"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] h-[700px] w-[700px] rounded-full bg-gradient-to-tr from-emerald-500/5 to-transparent blur-[140px] pointer-events-none animate-aurora-fluid-2"></div>
-      <div className="absolute top-[30%] right-[10%] h-[500px] w-[500px] rounded-full bg-indigo-500/[0.02] blur-[100px] pointer-events-none"></div>
+      <div className="absolute top-[-10%] left-[-10%] h-[600px] w-[600px] rounded-full bg-gradient-to-br from-amber-500/10 to-transparent blur-[120px] pointer-events-none will-change-transform"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] h-[700px] w-[700px] rounded-full bg-gradient-to-tr from-emerald-500/5 to-transparent blur-[140px] pointer-events-none will-change-transform"></div>
+      <div className="absolute top-[30%] right-[10%] h-[500px] w-[500px] rounded-full bg-indigo-500/[0.02] blur-[100px] pointer-events-none will-change-transform"></div>
 
       {/* Header */}
       <header className="sticky top-4 z-40 mx-auto max-w-7xl w-[92%] rounded-2xl border border-border bg-card/75 backdrop-blur-lg shadow-2xl transition-all duration-300 overflow-hidden">
