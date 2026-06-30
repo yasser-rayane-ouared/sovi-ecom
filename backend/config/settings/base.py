@@ -248,6 +248,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Africa/Algiers'
+CELERY_BEAT_SCHEDULE = {
+    'sync-yalidine-tracking-every-2-hours': {
+        'task': 'apps.orders.tasks.sync_all_stores_tracking',
+        'schedule': 7200.0,
+    },
+}
 
 # =============================================================================
 # Email

@@ -252,6 +252,202 @@ class StorefrontProductDetailView(APIView):
             return Response({'error': 'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
+class StorefrontLeadCreateView(APIView):
+    """
+    Creates or updates an abandoned lead (Order with is_abandoned=True)
+    when the customer inputs their phone number in the checkout form.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, subdomain):
+        store = get_store_or_404(subdomain)
+        if not store:
+            return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        phone = request.data.get('phone', '').strip()
+        full_name = request.data.get('full_name', '').strip() or 'Lead Client'
+        items_data = request.data.get('items', [])
+        
+        if not phone:
+            return Response({'error': 'Phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Basic phone normalization to match Algerian digits
+        import re
+        clean_phone = re.sub(r'\s+', '', phone)
+        alg_pattern = r'^(0|\+213|00213|213)?(5|6|7)[0-9]{8}$'
+        if not re.match(alg_pattern, clean_phone):
+            return Response({'error': 'Invalid phone number.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get default wilaya (e.g. Algiers or first available)
+        from apps.delivery.models import Wilaya
+        wilaya = None
+        wilaya_code = request.data.get('wilaya')
+        if wilaya_code:
+            try:
+                wilaya = Wilaya.objects.filter(code=int(wilaya_code)).first()
+            except (ValueError, TypeError):
+                pass
+        if not wilaya:
+            wilaya = Wilaya.objects.filter(code=16).first() or Wilaya.objects.first()
+
+        # Calculate subtotal based on items
+        from apps.products.models import Product, ProductVariant
+        subtotal = 0
+        for item in items_data:
+            try:
+                product = Product.objects.get(id=item['product_id'], store=store)
+                variant = None
+                if item.get('variant_id'):
+                    variant = ProductVariant.objects.get(id=item['variant_id'])
+                price = variant.price if variant and variant.price else product.price
+                qty = item.get('quantity', 1)
+                subtotal += price * qty
+            except Exception:
+                pass
+
+        # Check if an abandoned lead with this phone number already exists for this store in the last 2 hours
+        from datetime import timedelta
+        from django.utils import timezone
+        two_hours_ago = timezone.now() - timedelta(hours=2)
+        
+        lead_order = Order.objects.filter(
+            store=store,
+            phone=phone,
+            is_abandoned=True,
+            created_at__gte=two_hours_ago
+        ).first()
+
+        if lead_order:
+            # Update existing lead order
+            lead_order.full_name = full_name
+            if wilaya:
+                lead_order.wilaya = wilaya
+            lead_order.subtotal = subtotal
+            lead_order.total = subtotal
+            lead_order.save()
+        else:
+            # Generate a temporary order number for lead
+            import random
+            order_number = f"LD-{timezone.now().strftime('%y%m%d')}-{random.randint(1000, 9999)}"
+            
+            lead_order = Order.objects.create(
+                store=store,
+                order_number=order_number,
+                full_name=full_name,
+                phone=phone,
+                wilaya=wilaya,
+                subtotal=subtotal,
+                delivery_price=0,
+                total=subtotal,
+                is_abandoned=True,
+                source=request.data.get('source', ''),
+                utm_source=request.data.get('utm_source', ''),
+                utm_medium=request.data.get('utm_medium', ''),
+                utm_campaign=request.data.get('utm_campaign', ''),
+            )
+            
+            # Create OrderItems
+            from apps.orders.models import OrderItem
+            for item in items_data:
+                try:
+                    product = Product.objects.get(id=item['product_id'], store=store)
+                    variant = None
+                    if item.get('variant_id'):
+                        variant = ProductVariant.objects.get(id=item['variant_id'])
+                    price = variant.price if variant and variant.price else product.price
+                    OrderItem.objects.create(
+                        order=lead_order,
+                        product=product,
+                        variant=variant,
+                        product_title=product.title,
+                        variant_name=variant.name if variant else '',
+                        quantity=item.get('quantity', 1),
+                        price=price,
+                        total=price * item.get('quantity', 1)
+                    )
+                except Exception:
+                    pass
+
+        # Trigger InitiateCheckout Meta CAPI event for Lead
+        try:
+            from django.db.models import Q
+            from apps.pixels.models import PixelConfig
+            product_ids = [item['product_id'] for item in items_data]
+            capi_pixels = PixelConfig.objects.filter(
+                store=store,
+                platform='meta',
+                is_active=True,
+                access_token__isnull=False
+            ).exclude(access_token='').filter(
+                Q(product__isnull=True) | Q(product__id__in=product_ids)
+            )
+
+            if capi_pixels.exists():
+                names = full_name.strip().split(' ', 1)
+                first_name = names[0] if names else ''
+                last_name = names[1] if len(names) > 1 else ''
+
+                h_fn = hash_data(first_name)
+                h_ln = hash_data(last_name)
+                h_ph = hash_data(normalize_phone(phone))
+                h_ct = hash_data(wilaya.name_ar)
+                h_st = hash_data(wilaya.name_ar)
+                h_country = hash_data("dz")
+
+                # Extract client IP and user agent
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                if x_forwarded_for:
+                    ip = x_forwarded_for.split(',')[0].strip()
+                else:
+                    ip = request.META.get('REMOTE_ADDR')
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+                user_data = {
+                    "ph": [h_ph] if h_ph else [],
+                    "fn": [h_fn] if h_fn else [],
+                    "ln": [h_ln] if h_ln else [],
+                    "ct": [h_ct] if h_ct else [],
+                    "st": [h_st] if h_st else [],
+                    "country": [h_country],
+                    "client_ip_address": ip,
+                    "client_user_agent": user_agent
+                }
+
+                contents = [{
+                    'id': str(item['product_id']),
+                    'quantity': item.get('quantity', 1)
+                } for item in items_data]
+
+                custom_data = {
+                    "currency": "DZD",
+                    "value": float(subtotal),
+                    "content_type": "product",
+                    "contents": contents,
+                    "num_items": len(contents),
+                }
+
+                scheme = 'https' if request.is_secure() else 'http'
+                source_url = f"{scheme}://{request.get_host()}"
+                
+                event_id = f"lead-{lead_order.id}"
+
+                trigger_capi_events(
+                    pixels=capi_pixels,
+                    event_name="InitiateCheckout",
+                    event_id=event_id,
+                    user_data=user_data,
+                    custom_data=custom_data,
+                    source_url=source_url
+                )
+        except Exception:
+            pass
+
+        return Response({
+            'lead_id': str(lead_order.id),
+            'order_number': lead_order.order_number
+        }, status=status.HTTP_201_CREATED)
+
+
 class StorefrontCheckoutView(APIView):
     """Public COD checkout — place an order."""
     permission_classes = [permissions.AllowAny]
@@ -287,7 +483,102 @@ class StorefrontCheckoutView(APIView):
                 
         serializer = OrderCreateSerializer(data=request.data, context={'store': store, 'request': request})
         serializer.is_valid(raise_exception=True)
-        order = serializer.save()
+
+        lead_id = request.data.get('lead_id')
+        order = None
+        if lead_id:
+            order = Order.objects.filter(id=lead_id, store=store, is_abandoned=True).first()
+
+        if order:
+            # Promote existing lead order to real order
+            validated_data = serializer.validated_data
+            db_wilaya = validated_data.get('wilaya')
+            db_commune = validated_data.get('commune')
+
+            # Calculate delivery price
+            delivery_price = 0
+            from apps.delivery.models import DeliveryPricing
+            try:
+                pricing = DeliveryPricing.objects.get(store=store, wilaya=db_wilaya)
+                delivery_price = pricing.home_price
+            except DeliveryPricing.DoesNotExist:
+                if hasattr(store, 'settings'):
+                    delivery_price = store.settings.default_delivery_price
+
+            # Calculate subtotal
+            from apps.products.models import Product, ProductVariant
+            subtotal = 0
+            order_items = []
+            for item in validated_data.get('items', []):
+                product = Product.objects.get(id=item['product_id'], store=store)
+                variant = None
+                if item.get('variant_id'):
+                    variant = ProductVariant.objects.get(id=item['variant_id'])
+                price = variant.price if variant and variant.price else product.price
+                qty = item.get('quantity', 1)
+                subtotal += price * qty
+                order_items.append({
+                    'product': product,
+                    'variant': variant,
+                    'product_title': product.title,
+                    'variant_name': variant.name if variant else '',
+                    'quantity': qty,
+                    'price': price,
+                })
+
+            # Coupon discount
+            coupon_code = validated_data.get('coupon_code', '')
+            coupon_discount_pct = validated_data.get('_coupon_discount_pct', 0)
+            coupon_discount = 0
+            if coupon_code and coupon_discount_pct > 0:
+                coupon_discount = subtotal * (coupon_discount_pct / 100)
+
+            # Free delivery check
+            if hasattr(store, 'settings') and store.settings.free_delivery_threshold:
+                if subtotal >= store.settings.free_delivery_threshold:
+                    delivery_price = 0
+
+            total = subtotal - coupon_discount + delivery_price
+
+            # Clear existing items
+            order.items.all().delete()
+
+            # Update order fields
+            order.full_name = validated_data.get('full_name')
+            order.phone = validated_data.get('phone')
+            order.phone2 = validated_data.get('phone2', '')
+            order.wilaya = db_wilaya
+            order.commune = db_commune
+            order.address = validated_data.get('address')
+            order.notes = validated_data.get('notes', '')
+            order.subtotal = subtotal
+            order.delivery_price = delivery_price
+            order.total = total
+            order.source = validated_data.get('source', '')
+            order.utm_source = validated_data.get('utm_source', '')
+            order.utm_medium = validated_data.get('utm_medium', '')
+            order.utm_campaign = validated_data.get('utm_campaign', '')
+            order.coupon_code = coupon_code
+            order.coupon_discount = coupon_discount
+            order.is_abandoned = False
+            order.order_number = None  # Triggers normal sequential order number ORD-xxxxx generation on save
+            order.save()
+
+            # Re-create items
+            from apps.orders.models import OrderItem
+            for item in order_items:
+                OrderItem.objects.create(
+                    order=order,
+                    product=item['product'],
+                    variant=item['variant'],
+                    product_title=item['product_title'],
+                    variant_name=item['variant_name'],
+                    quantity=item['quantity'],
+                    price=item['price'],
+                    total=item['price'] * item['quantity']
+                )
+        else:
+            order = serializer.save()
 
         # Extract client IP and user agent
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -324,6 +615,9 @@ class StorefrontCheckoutView(APIView):
                 h_fn = hash_data(first_name)
                 h_ln = hash_data(last_name)
                 h_ph = hash_data(normalize_phone(order.phone))
+                h_ct = hash_data(order.wilaya.name_ar)
+                h_st = hash_data(order.wilaya.name_ar)
+                h_country = hash_data("dz")
 
                 frontend_event_id = request.data.get('event_id', str(order.id))
 
@@ -331,6 +625,9 @@ class StorefrontCheckoutView(APIView):
                     "ph": [h_ph] if h_ph else [],
                     "fn": [h_fn] if h_fn else [],
                     "ln": [h_ln] if h_ln else [],
+                    "ct": [h_ct] if h_ct else [],
+                    "st": [h_st] if h_st else [],
+                    "country": [h_country],
                     "client_ip_address": ip,
                     "client_user_agent": user_agent
                 }
@@ -398,9 +695,29 @@ class StorefrontCheckoutView(APIView):
         except Exception:
             pass
 
+        # Generate hashed user data for the frontend pixel initialization
+        names = order.full_name.strip().split(' ', 1)
+        first_name = names[0] if names else ''
+        last_name = names[1] if len(names) > 1 else ''
+
+        h_fn = hash_data(first_name)
+        h_ln = hash_data(last_name)
+        h_ph = hash_data(normalize_phone(order.phone))
+        h_ct = hash_data(order.wilaya.name_ar)
+        h_st = hash_data(order.wilaya.name_ar)
+        h_country = hash_data("dz")
+
         response_data = {
             'message': 'Order placed successfully!',
             'order_number': order.order_number,
+            'hashed_user_data': {
+                'fn': h_fn,
+                'ln': h_ln,
+                'ph': h_ph,
+                'ct': h_ct,
+                'st': h_st,
+                'country': h_country
+            }
         }
 
         if idempotency_key:

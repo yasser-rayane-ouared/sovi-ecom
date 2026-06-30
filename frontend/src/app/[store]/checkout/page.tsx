@@ -57,6 +57,7 @@ export default function StorefrontCheckout() {
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [recaptchaVerifier, setRecaptchaVerifier] = useState<any>(null);
   const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [leadId, setLeadId] = useState<string | null>(null);
 
   useEffect(() => {
     // Generate simple UUID-like collision resistant key for idempotency
@@ -179,7 +180,22 @@ export default function StorefrontCheckout() {
         if (allPixels.length === 0) return;
 
         const purchaseEventId = (orderSuccess as any)._event_id;
+        const hashedUserData = (orderSuccess as any).hashed_user_data;
+
         initializePixels(allPixels);
+
+        // If hashedUserData is returned, initialize Meta Pixel with it to associate user attributes
+        if (hashedUserData && typeof window !== "undefined") {
+          const w = window as any;
+          if (w.fbq) {
+            allPixels.forEach((pixel) => {
+              if (pixel.platform === 'meta' && pixel.pixel_id) {
+                w.fbq('init', pixel.pixel_id, hashedUserData);
+              }
+            });
+          }
+        }
+
         trackPixelEvent(allPixels, 'Purchase', {
           content_ids: items.map((i: any) => i.product_id),
           content_names: items.map((i: any) => i.title),
@@ -198,6 +214,38 @@ export default function StorefrontCheckout() {
       }
     }
   }, [orderSuccess, store]);
+
+  // Pre-Submit Lead Capture (Cart Abandonment)
+  useEffect(() => {
+    const cleanPhone = phone.replace(/\s+/g, '');
+    const algPhoneRegex = /^(0|\+213|00213|213)?(5|6|7)[0-9]{8}$/;
+    
+    if (!algPhoneRegex.test(cleanPhone)) return;
+    if (items.length === 0) return;
+
+    const timer = setTimeout(() => {
+      api.post(`/storefront/${subdomain}/leads/`, {
+        phone: cleanPhone,
+        full_name: fullName,
+        wilaya: selectedWilaya ? parseInt(selectedWilaya) : null,
+        items: items.map((item) => ({
+          product_id: item.product_id,
+          variant_id: item.variant?.id || null,
+          quantity: item.quantity,
+        })),
+      })
+      .then((res) => {
+        if (res.data?.lead_id) {
+          setLeadId(res.data.lead_id);
+        }
+      })
+      .catch((err) => {
+        console.error("Lead sync failed:", err);
+      });
+    }, 1000); // 1s debounce
+
+    return () => clearTimeout(timer);
+  }, [phone, fullName, selectedWilaya, items, subdomain]);
 
   // Fetch communes when wilaya changes
   useEffect(() => {
@@ -376,6 +424,7 @@ export default function StorefrontCheckout() {
 
     try {
       const payload = {
+        lead_id: leadId,
         full_name: fullName,
         phone,
         phone2,

@@ -11,6 +11,7 @@ urlpatterns = [
     path('<str:subdomain>/products/<slug:slug>/', storefront_views.StorefrontProductDetailView.as_view(), name='storefront-product-detail'),
     path('<str:subdomain>/products/<slug:slug>/reviews/', storefront_views.StorefrontProductReviewsView.as_view(), name='storefront-product-reviews'),
     path('<str:subdomain>/checkout/', storefront_views.StorefrontCheckoutView.as_view(), name='storefront-checkout'),
+    path('<str:subdomain>/leads/', storefront_views.StorefrontLeadCreateView.as_view(), name='storefront-leads'),
     path('<str:subdomain>/wilayas/', storefront_views.StorefrontWilayasView.as_view(), name='storefront-wilayas'),
     path('<str:subdomain>/wilayas/<int:wilaya_id>/communes/', storefront_views.StorefrontCommunesView.as_view(), name='storefront-communes'),
     path('<str:subdomain>/pages/<slug:slug>/', storefront_views.StorefrontLandingPageView.as_view(), name='storefront-landing-page'),
