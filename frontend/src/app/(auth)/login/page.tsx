@@ -95,7 +95,15 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    const isMockClient = !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.includes("mock");
+    const isLocalIpHttp = typeof window !== "undefined" && 
+      window.location.protocol === "http:" && 
+      window.location.hostname !== "localhost" && 
+      window.location.hostname !== "127.0.0.1";
+
+    const isMockClient = !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.includes("mock") || 
+      isLocalIpHttp;
+
     setIsMock(isMockClient);
     initializeGoogleBtn();
 
