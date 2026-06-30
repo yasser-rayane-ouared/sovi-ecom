@@ -27,7 +27,9 @@ urlpatterns = [
     path('api/mcp/', include('apps.mcp_server.urls')),
     path('api/support/', include('apps.support.urls')),
 ]
+from django.views.static import serve
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += [
+    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+]
 

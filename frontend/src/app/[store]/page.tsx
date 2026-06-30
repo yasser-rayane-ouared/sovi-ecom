@@ -7,20 +7,7 @@ import api from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { ShoppingCart, Phone, Truck, ShieldCheck, Star, AlertCircle, Layers } from "lucide-react";
-import { formatCurrency, getStorefrontLink } from "../../lib/utils";
-
-// Helper: convert relative media paths to full backend URLs
-const getFullImageUrl = (url: string) => {
-  if (!url) return "";
-  let cleanUrl = url;
-  if (cleanUrl.startsWith("http://localhost:8000") || cleanUrl.startsWith("http://127.0.0.1:8000")) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
-    cleanUrl = cleanUrl.replace("http://localhost:8000", baseUrl).replace("http://127.0.0.1:8000", baseUrl);
-  }
-  if (cleanUrl.startsWith("http") || cleanUrl.startsWith("data:") || cleanUrl.startsWith("blob:")) return cleanUrl;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000';
-  return `${baseUrl}${cleanUrl}`;
-};
+import { formatCurrency, getStorefrontLink, getFullImageUrl } from "../../lib/utils";
 
 export default function StorefrontHome() {
   const params = useParams();

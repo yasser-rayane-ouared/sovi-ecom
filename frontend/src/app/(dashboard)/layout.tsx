@@ -13,23 +13,11 @@ import {
   AlertCircle, Coins, FileText, MessageSquare, Megaphone, ExternalLink,
   SidebarClose, SidebarOpen
 } from "lucide-react";
-import { getStorefrontLink } from "../../lib/utils";
+import { getStorefrontLink, getFullImageUrl } from "../../lib/utils";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { LanguageToggle } from "../../components/LanguageToggle";
 import { useLanguageStore } from "../../stores/language";
 import SubscriptionCountdownBanner from "../../components/SubscriptionCountdownBanner";
-
-const getFullImageUrl = (url: string) => {
-  if (!url) return "";
-  let cleanUrl = url;
-  if (cleanUrl.startsWith("http://localhost:8000") || cleanUrl.startsWith("http://127.0.0.1:8000")) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
-    cleanUrl = cleanUrl.replace("http://localhost:8000", baseUrl).replace("http://127.0.0.1:8000", baseUrl);
-  }
-  if (cleanUrl.startsWith("http")) return cleanUrl;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
-  return `${baseUrl}${cleanUrl}`;
-};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { t, language, isRtl } = useLanguageStore();

@@ -50,7 +50,25 @@ export function getFullImageUrl(url: string) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
     cleanUrl = cleanUrl.replace("http://localhost:8000", baseUrl).replace("http://127.0.0.1:8000", baseUrl);
   }
+  // Prevent Mixed Content blocks in production by upgrading to HTTPS
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && cleanUrl.startsWith("http://")) {
+    if (!cleanUrl.includes("localhost") && !cleanUrl.includes("127.0.0.1")) {
+      cleanUrl = cleanUrl.replace("http://", "https://");
+    }
+  }
   if (cleanUrl.startsWith("http")) return cleanUrl;
   const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
-  return `${baseUrl}${cleanUrl}`;
+  
+  let relativePath = cleanUrl;
+  if (!relativePath.startsWith("/")) {
+    relativePath = `/${relativePath}`;
+  }
+  
+  let finalBaseUrl = baseUrl;
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && finalBaseUrl.startsWith("http://")) {
+    if (!finalBaseUrl.includes("localhost") && !finalBaseUrl.includes("127.0.0.1")) {
+      finalBaseUrl = finalBaseUrl.replace("http://", "https://");
+    }
+  }
+  return `${finalBaseUrl}${relativePath}`;
 }

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import api from "../../../lib/api";
 import { useLanguageStore } from "../../../stores/language";
 import { useDashboardStore } from "../../../stores/dashboard";
-import { getRootDomain } from "../../../lib/utils";
+import { getRootDomain, getFullImageUrl } from "../../../lib/utils";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
@@ -19,18 +19,6 @@ interface SettingsProps {
 }
 
 type SettingsTab = "identity" | "shipping" | "domain" | "security" | "storefront";
-
-const getFullImageUrl = (url: string) => {
-  if (!url) return "";
-  let cleanUrl = url;
-  if (cleanUrl.startsWith("http://localhost:8000") || cleanUrl.startsWith("http://127.0.0.1:8000")) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
-    cleanUrl = cleanUrl.replace("http://localhost:8000", baseUrl).replace("http://127.0.0.1:8000", baseUrl);
-  }
-  if (cleanUrl.startsWith("http")) return cleanUrl;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
-  return `${baseUrl}${cleanUrl}`;
-};
 
 export default function SettingsDashboard({ storeId }: SettingsProps) {
   const { selectedStore, setSelectedStore } = useDashboardStore();
