@@ -1,10 +1,31 @@
 import json
+import threading
+from django.db import close_old_connections
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .authentication import McpApiKeyAuthentication
 from .models import McpToolCallLog
 from .tools.registry import list_tools, get_tool, ToolError
+
+def log_tool_call_async(store, api_key, tool_name, arguments, success, result_summary="", error_message=""):
+    def run():
+        try:
+            McpToolCallLog.objects.create(
+                store=store,
+                api_key=api_key,
+                tool_name=tool_name,
+                arguments=arguments,
+                result_summary=result_summary,
+                success=success,
+                error_message=error_message
+            )
+        except Exception:
+            pass
+        finally:
+            close_old_connections()
+    threading.Thread(target=run, daemon=True).start()
+
 
 class McpJsonRpcView(APIView):
     authentication_classes = [McpApiKeyAuthentication]
@@ -78,7 +99,7 @@ class McpJsonRpcView(APIView):
 
             tool = get_tool(tool_name)
             if not tool:
-                McpToolCallLog.objects.create(
+                log_tool_call_async(
                     store=request.store,
                     api_key=getattr(request, 'mcp_api_key', None),
                     tool_name=tool_name or "unknown",
@@ -98,7 +119,7 @@ class McpJsonRpcView(APIView):
             try:
                 result_data = tool["handler"](request.store, arguments)
                 
-                McpToolCallLog.objects.create(
+                log_tool_call_async(
                     store=request.store,
                     api_key=getattr(request, 'mcp_api_key', None),
                     tool_name=tool_name,
@@ -122,7 +143,7 @@ class McpJsonRpcView(APIView):
                 })
 
             except ToolError as te:
-                McpToolCallLog.objects.create(
+                log_tool_call_async(
                     store=request.store,
                     api_key=getattr(request, 'mcp_api_key', None),
                     tool_name=tool_name,
@@ -146,7 +167,7 @@ class McpJsonRpcView(APIView):
 
             except Exception as e:
                 error_msg = f"Unexpected error: {str(e)}"
-                McpToolCallLog.objects.create(
+                log_tool_call_async(
                     store=request.store,
                     api_key=getattr(request, 'mcp_api_key', None),
                     tool_name=tool_name,
