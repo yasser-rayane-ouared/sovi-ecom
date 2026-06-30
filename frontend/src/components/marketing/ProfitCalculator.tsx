@@ -172,7 +172,7 @@ export default function ProfitCalculator() {
             {/* Delivery method toggle */}
             <div className="space-y-3 pt-2">
               <span className="text-xs text-muted-foreground font-bold font-cairo block">{t('shippingMethod')}</span>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={() => setDeliveryType('home')}
                   className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${deliveryType === 'home' ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-300' : 'border-border bg-card/50 text-muted-foreground hover:bg-card'}`}

@@ -380,8 +380,10 @@ export default function MarketingHome() {
             </nav>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-4">
-            <ThemeToggle />
-            <LanguageToggle />
+            <div className="hidden md:flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageToggle />
+            </div>
             <Link href="/login" className="hidden sm:inline-flex">
               <Button variant="ghost" className="text-muted-foreground hover:text-foreground text-xs sm:text-sm px-4 h-9 rounded-xl">{t('login')}</Button>
             </Link>
@@ -407,7 +409,7 @@ export default function MarketingHome() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden border-t border-border/40 bg-card/90 backdrop-blur-lg px-6 py-4 space-y-4 shadow-xl"
+              className="lg:hidden border-t border-border/40 bg-card/90 backdrop-blur-lg px-6 py-4 space-y-4 shadow-xl text-start"
             >
               <nav className="flex flex-col gap-4 text-xs uppercase tracking-widest font-bold text-muted-foreground">
                 <a
@@ -439,6 +441,18 @@ export default function MarketingHome() {
                   {language === 'ar' ? 'الخطط' : 'Tarifs'}
                 </a>
                 <hr className="border-border/30" />
+                
+                {/* Theme and Language toggles for mobile view */}
+                <div className="flex items-center justify-between py-2 border-b border-border/30 pb-3">
+                  <span className="text-[11px] font-bold text-muted-foreground">
+                    {language === 'ar' ? 'خيارات الواجهة' : (language === 'fr' ? 'Options d\'interface' : 'Interface Options')}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <ThemeToggle />
+                    <LanguageToggle />
+                  </div>
+                </div>
+
                 <Link
                   href="/login"
                   onClick={() => setIsMobileMenuOpen(false)}

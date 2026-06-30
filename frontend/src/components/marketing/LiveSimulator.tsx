@@ -261,7 +261,7 @@ export default function LiveSimulator() {
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 mt-6 border-t border-slate-800 pt-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   onClick={runOrderSimulation}
                   disabled={isSimulating || (simStep === 'done' && simAction === 'order')}
