@@ -20,6 +20,13 @@ interface SettingsProps {
 
 type SettingsTab = "identity" | "shipping" | "domain" | "security" | "storefront";
 
+const getFullImageUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
+  return `${baseUrl}${url}`;
+};
+
 export default function SettingsDashboard({ storeId }: SettingsProps) {
   const { selectedStore, setSelectedStore } = useDashboardStore();
   const { t, isRtl } = useLanguageStore();
@@ -380,7 +387,7 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                         {logo ? (
                           <div className="relative w-40 h-20 rounded-2xl border border-border bg-muted/20 overflow-hidden flex items-center justify-center p-3 group shadow-inner">
-                            <img src={logo} alt="Logo Preview" className="h-full w-auto object-contain" />
+                            <img src={getFullImageUrl(logo)} alt="Logo Preview" className="h-full w-auto object-contain" />
                             <button
                               type="button"
                               onClick={() => setLogo("")}
@@ -447,7 +454,7 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                   <div className="border border-border bg-muted/15 rounded-2xl p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-border pb-4">
                       {logo ? (
-                        <img src={logo} alt="mockup logo" className="h-8 w-auto object-contain" />
+                        <img src={getFullImageUrl(logo)} alt="mockup logo" className="h-8 w-auto object-contain" />
                       ) : (
                         <div className="h-8 w-24 bg-muted/20 rounded animate-pulse"></div>
                       )}

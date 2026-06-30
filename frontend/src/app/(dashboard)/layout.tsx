@@ -19,6 +19,13 @@ import { LanguageToggle } from "../../components/LanguageToggle";
 import { useLanguageStore } from "../../stores/language";
 import SubscriptionCountdownBanner from "../../components/SubscriptionCountdownBanner";
 
+const getFullImageUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http")) return url;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000";
+  return `${baseUrl}${url}`;
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { t, language, isRtl } = useLanguageStore();
   const pathname = usePathname();
@@ -297,7 +304,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <div className="store-avatar-glass h-10 w-10 rounded-xl flex items-center justify-center font-black text-xl flex-shrink-0 font-outfit text-white overflow-hidden">
                             {selectedStore?.logo ? (
                               <img
-                                src={selectedStore.logo}
+                                src={getFullImageUrl(selectedStore.logo)}
                                 alt={selectedStore.name}
                                 className="h-full w-full object-cover rounded-xl"
                                 onError={(e) => {
@@ -347,7 +354,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <div className="store-avatar-glass h-10 w-10 rounded-xl flex items-center justify-center font-black text-xl flex-shrink-0 font-outfit text-white overflow-hidden">
                         {selectedStore?.logo ? (
                           <img
-                            src={selectedStore.logo}
+                            src={getFullImageUrl(selectedStore.logo)}
                             alt={selectedStore.name}
                             className="h-full w-full object-cover rounded-xl"
                             onError={(e) => {
