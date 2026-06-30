@@ -212,6 +212,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [pathname, selectedStore, router]);
 
+  // Dynamic Tab Favicon Update
+  useEffect(() => {
+    if (selectedStore?.logo) {
+      const logoUrl = getFullImageUrl(selectedStore.logo);
+      const linkSelectors = ["link[rel~='icon']", "link[rel='shortcut icon']", "link[rel='apple-touch-icon']"];
+      
+      linkSelectors.forEach((selector) => {
+        let link: HTMLLinkElement | null = document.querySelector(selector);
+        if (!link && selector.includes('icon')) {
+          link = document.createElement('link');
+          if (selector.includes('shortcut')) {
+            link.rel = 'shortcut icon';
+          } else if (selector.includes('apple')) {
+            link.rel = 'apple-touch-icon';
+          } else {
+            link.rel = 'icon';
+          }
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        if (link) {
+          link.href = logoUrl;
+        }
+      });
+    } else {
+      const linkSelectors = ["link[rel~='icon']", "link[rel='shortcut icon']", "link[rel='apple-touch-icon']"];
+      linkSelectors.forEach((selector) => {
+        const link: HTMLLinkElement | null = document.querySelector(selector);
+        if (link) {
+          link.href = "/logo.png";
+        }
+      });
+    }
+  }, [selectedStore]);
+
   const handleLogout = () => {
     logout();
     setSelectedStore(null);
