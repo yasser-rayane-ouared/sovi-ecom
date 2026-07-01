@@ -269,7 +269,7 @@ export default function StorefrontHome() {
                           <Link href={getStorefrontLink(subdomain, `/products/${product.slug}`)}>
                             <div className="relative aspect-square w-full bg-slate-100 overflow-hidden">
                               <img
-                                src={product.primary_image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600"}
+                                src={product.primary_image ? getFullImageUrl(product.primary_image) : "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600"}
                                 alt={product.title}
                                 className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                               />
@@ -356,7 +356,7 @@ export default function StorefrontHome() {
                               {imgStyle === 'circle' && (
                                 <div className="h-[76px] w-[76px] rounded-full overflow-hidden border-2 border-primary/20 group-hover:border-primary transition-all duration-300 shadow-sm group-hover:scale-105 bg-slate-50 flex items-center justify-center">
                                   {cat.image_url ? (
-                                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                                    <img src={getFullImageUrl(cat.image_url)} alt={cat.name} className="h-full w-full object-cover" />
                                   ) : (
                                     <div className="h-full w-full bg-gradient-to-tr from-primary/10 to-indigo-600/10 flex items-center justify-center text-primary text-xl font-bold font-outfit">
                                       {cat.name.charAt(0).toUpperCase()}
@@ -367,7 +367,7 @@ export default function StorefrontHome() {
                               {imgStyle === 'square' && (
                                 <div className="h-[76px] w-[76px] rounded-2xl overflow-hidden border border-slate-100 group-hover:border-primary transition-all duration-300 shadow-sm group-hover:scale-105 bg-slate-50 flex items-center justify-center">
                                   {cat.image_url ? (
-                                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                                    <img src={getFullImageUrl(cat.image_url)} alt={cat.name} className="h-full w-full object-cover" />
                                   ) : (
                                     <div className="h-full w-full bg-gradient-to-tr from-primary/10 to-indigo-600/10 flex items-center justify-center text-primary text-xl font-bold font-outfit">
                                       {cat.name.charAt(0).toUpperCase()}
@@ -378,7 +378,7 @@ export default function StorefrontHome() {
                               {imgStyle === 'card' && (
                                 <div className="h-[100px] w-full rounded-2xl overflow-hidden relative shadow-sm group-hover:scale-105 transition-all duration-300 flex items-center justify-center bg-slate-900 text-white">
                                   {cat.image_url ? (
-                                    <img src={cat.image_url} alt={cat.name} className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500" />
+                                    <img src={getFullImageUrl(cat.image_url)} alt={cat.name} className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500" />
                                   ) : (
                                     <div className="absolute inset-0 bg-gradient-to-tr from-primary to-indigo-600 opacity-90"></div>
                                   )}
@@ -413,7 +413,7 @@ export default function StorefrontHome() {
                               {imgStyle === 'circle' && (
                                 <div className="h-[76px] w-[76px] rounded-full overflow-hidden border-2 border-primary/20 group-hover:border-primary transition-all duration-300 shadow-sm group-hover:scale-105 bg-slate-50 flex items-center justify-center">
                                   {cat.image_url ? (
-                                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                                    <img src={getFullImageUrl(cat.image_url)} alt={cat.name} className="h-full w-full object-cover" />
                                   ) : (
                                     <div className="h-full w-full bg-gradient-to-tr from-primary/10 to-indigo-600/10 flex items-center justify-center text-primary text-xl font-bold font-outfit">
                                       {cat.name.charAt(0).toUpperCase()}
@@ -424,7 +424,7 @@ export default function StorefrontHome() {
                               {imgStyle === 'square' && (
                                 <div className="h-[76px] w-[76px] rounded-2xl overflow-hidden border border-slate-100 group-hover:border-primary transition-all duration-300 shadow-sm group-hover:scale-105 bg-slate-50 flex items-center justify-center">
                                   {cat.image_url ? (
-                                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                                    <img src={getFullImageUrl(cat.image_url)} alt={cat.name} className="h-full w-full object-cover" />
                                   ) : (
                                     <div className="h-full w-full bg-gradient-to-tr from-primary/10 to-indigo-600/10 flex items-center justify-center text-primary text-xl font-bold font-outfit">
                                       {cat.name.charAt(0).toUpperCase()}
@@ -435,7 +435,7 @@ export default function StorefrontHome() {
                               {imgStyle === 'card' && (
                                 <div className="h-[100px] w-full rounded-2xl overflow-hidden relative shadow-sm group-hover:scale-105 transition-all duration-300 flex items-center justify-center bg-slate-900 text-white">
                                   {cat.image_url ? (
-                                    <img src={cat.image_url} alt={cat.name} className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500" />
+                                    <img src={getFullImageUrl(cat.image_url)} alt={cat.name} className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500" />
                                   ) : (
                                     <div className="absolute inset-0 bg-gradient-to-tr from-primary to-indigo-600 opacity-90"></div>
                                   )}
@@ -617,7 +617,7 @@ export default function StorefrontHome() {
                 >
                   {config.image_url ? (
                     <img
-                      src={config.image_url}
+                      src={getFullImageUrl(config.image_url)}
                       alt={config.caption || ""}
                       className="w-full h-auto object-cover rounded-2xl shadow-md max-w-5xl mx-auto"
                     />

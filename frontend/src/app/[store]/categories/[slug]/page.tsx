@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShoppingCart, Phone, Truck, ShieldCheck, Star } from "lucide-react";
-import { formatCurrency, getStorefrontLink } from "@/lib/utils";
+import { formatCurrency, getStorefrontLink, getFullImageUrl } from "@/lib/utils";
 
 export default function StorefrontCategoryPage() {
   const params = useParams();
@@ -131,7 +131,7 @@ export default function StorefrontCategoryPage() {
                     <Link href={getStorefrontLink(subdomain, "/")} className="flex items-center gap-3 hover:opacity-90 transition-opacity">
                       {store.logo ? (
                         <img 
-                          src={store.logo.startsWith('http') ? store.logo : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${store.logo}`} 
+                          src={getFullImageUrl(store.logo)} 
                           alt={store.name} 
                           className="h-9 w-auto object-contain" 
                         />
@@ -226,7 +226,7 @@ export default function StorefrontCategoryPage() {
                           <Link href={getStorefrontLink(subdomain, `/products/${product.slug}`)}>
                             <div className="relative aspect-square w-full bg-slate-100 overflow-hidden">
                               <img
-                                src={product.primary_image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600"}
+                                src={product.primary_image ? getFullImageUrl(product.primary_image) : "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600"}
                                 alt={product.title}
                                 className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                               />
@@ -374,7 +374,7 @@ export default function StorefrontCategoryPage() {
                 <section key={section.id} className="py-12 bg-white border-b border-slate-100 text-center">
                   <div className="container mx-auto px-4 md:px-6 max-w-3xl space-y-3">
                     {config.image_url ? (
-                      <img src={config.image_url} alt={config.caption || "Category Banner"} className="mx-auto rounded-2xl shadow-md max-w-full h-auto object-cover" />
+                      <img src={getFullImageUrl(config.image_url)} alt={config.caption || "Category Banner"} className="mx-auto rounded-2xl shadow-md max-w-full h-auto object-cover" />
                     ) : (
                       <div className="py-12 border border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs bg-slate-50">
                         {t("لا توجد صورة محددة في هذا القسم.", "Aucune image spécifiée dans cette section.", "No image specified in this section.")}

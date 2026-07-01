@@ -3760,7 +3760,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                 </div>
               </div>
 
-              {(!title && !price && !primaryImage && !description) ? (
+              {(!title && !price && !primaryImage && images.length === 0 && !description) ? (
                 /* Empty/Blank state */
                 <div className={`overflow-hidden bg-muted/5 flex flex-col items-center justify-center p-6 text-center text-muted-foreground transition-all duration-300 ${
                   viewport === 'mobile' ? 'border-[6px] border-slate-850 rounded-[28px] w-full max-w-[320px] h-[520px] mx-auto' :
@@ -4087,7 +4087,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
                               {isSelectedPreview && <div className="absolute top-1 left-1 z-10 bg-primary text-primary-foreground text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">{language === 'ar' ? "جاري التعديل" : "Editing"}</div>}
                               <div className="relative aspect-square w-full flex items-center justify-center overflow-hidden" style={hasPreviewTheme ? { backgroundColor: previewTheme['--theme-card-bg'] } : { backgroundColor: '#f8fafc' }}>
-                                {primaryImage ? (
+                                {images.length > 0 ? (
+                                  <img src={getFullImageUrl(images.find(img => img.is_primary)?.image_url || images[0].image_url)} alt={title || "Product"} className="w-full h-full object-cover" />
+                                ) : primaryImage ? (
                                   <img src={getFullImageUrl(primaryImage)} alt={title || "Product"} className="w-full h-full object-cover" />
                                 ) : (
                                   <Image className="h-6 w-6 text-slate-300" />

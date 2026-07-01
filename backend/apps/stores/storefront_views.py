@@ -780,7 +780,22 @@ class StorefrontCommunesView(generics.ListAPIView):
         wilaya = Wilaya.objects.filter(code=self.kwargs['wilaya_id']).first()
         if not wilaya:
             return Commune.objects.none()
-        return Commune.objects.filter(wilaya=wilaya)
+        
+        # Auto-seed default commune if none exist for this wilaya
+        communes = Commune.objects.filter(wilaya=wilaya)
+        if not communes.exists():
+            Commune.objects.get_or_create(
+                wilaya=wilaya,
+                name_ar=wilaya.name_ar,
+                name_fr=wilaya.name_fr,
+                defaults={
+                    'name_en': wilaya.name_fr,
+                    'postal_code': f"{wilaya.code:02d}000"
+                }
+            )
+            communes = Commune.objects.filter(wilaya=wilaya)
+            
+        return communes
 
 
 class StorefrontLandingPageView(APIView):

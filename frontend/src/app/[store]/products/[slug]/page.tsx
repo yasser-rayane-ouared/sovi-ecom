@@ -1176,7 +1176,7 @@ export default function StorefrontProductDetail() {
                   <div className="relative aspect-square w-full" style={hasTheme ? { backgroundColor: themed.cardBg } : { backgroundColor: '#f8fafc' }}>
                     {productImages.length > 0 ? (
                       <img
-                        src={productImages[activeImageIndex]?.image_url || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600"}
+                        src={productImages[activeImageIndex]?.image_url ? getFullImageUrl(productImages[activeImageIndex].image_url) : "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600"}
                         alt={`${product.title} - ${activeImageIndex + 1}`}
                         className="w-full h-full object-cover transition-all duration-300"
                         style={hasTheme ? {
@@ -1229,7 +1229,7 @@ export default function StorefrontProductDetail() {
                             activeImageIndex === idx ? 'border-primary scale-105 ring-1 ring-primary/30' : 'border-transparent opacity-60 hover:opacity-100'
                           }`}
                         >
-                          <img src={img.image_url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                          <img src={getFullImageUrl(img.image_url)} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>
@@ -1812,7 +1812,7 @@ export default function StorefrontProductDetail() {
                   style={getSectionStyle(section)}
                 >
                   <img
-                    src={config.image_url}
+                    src={getFullImageUrl(config.image_url)}
                     alt={config.caption || ""}
                     className="w-full object-cover"
                     style={hasTheme ? { borderRadius: isMobile ? '0px' : themed.imgRadius } : {}}
@@ -1958,9 +1958,9 @@ export default function StorefrontProductDetail() {
 
                           {r.photo && (
                             <div className={isArabic ? 'mr-10 mt-1' : 'ml-10 mt-1'}>
-                              <a href={r.photo} target="_blank" rel="noopener noreferrer">
+                              <a href={getFullImageUrl(r.photo)} target="_blank" rel="noopener noreferrer">
                                 <img
-                                  src={r.photo}
+                                  src={getFullImageUrl(r.photo)}
                                   alt="Review photo"
                                   className="h-20 w-20 object-cover rounded-lg border border-slate-200 dark:border-zinc-800 hover:scale-105 transition-transform cursor-pointer"
                                 />
@@ -2059,7 +2059,7 @@ export default function StorefrontProductDetail() {
                             <div className="flex items-center gap-2 justify-end w-full">
                               {reviewForm.photo_url && (
                                 <div className="relative h-12 w-12 border rounded-lg overflow-hidden group">
-                                  <img src={reviewForm.photo_url} alt="Review attachment preview" className="h-full w-full object-cover" />
+                                  <img src={getFullImageUrl(reviewForm.photo_url)} alt="Review attachment preview" className="h-full w-full object-cover" />
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -2138,7 +2138,7 @@ export default function StorefrontProductDetail() {
                         >
                           {t("قبل", "Avant", "Before")}
                         </p>
-                        <img src={config.before_url} alt="Before" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                        <img src={getFullImageUrl(config.before_url)} alt="Before" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
                       </div>
                     )}
                     {config.after_url && (
@@ -2149,7 +2149,7 @@ export default function StorefrontProductDetail() {
                         >
                           {t("بعد", "Après", "After")}
                         </p>
-                        <img src={config.after_url} alt="After" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                        <img src={getFullImageUrl(config.after_url)} alt="After" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
                       </div>
                     )}
                   </div>
