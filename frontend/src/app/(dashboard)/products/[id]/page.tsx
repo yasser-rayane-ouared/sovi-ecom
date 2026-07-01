@@ -3725,7 +3725,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
 
           {/* Column 3: Left Column (Phone Preview, lg:w-[30%]) */}
           {/* Live Preview Column (30%) */}
-          <div className="w-full xl:w-[30%] sticky top-6 space-y-4 flex-shrink-0">
+          <div className="w-full lg:w-[30%] sticky top-6 space-y-4 flex-shrink-0">
             <div className="w-full bg-card border border-border rounded-2xl p-5 shadow-sm text-card-foreground text-right" dir="rtl">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-b border-border pb-3 mb-4">
                 <h3 className="text-xs font-bold flex items-center gap-2">
