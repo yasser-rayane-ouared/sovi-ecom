@@ -1047,15 +1047,28 @@ export default function StorefrontProductDetail() {
     cardBackdrop: (themeVars as any)['--theme-card-backdrop'] || undefined,
   };
 
-  // Card style for themed sections
-  const themedCardStyle: React.CSSProperties = hasTheme ? {
-    background: themed.cardBg,
-    borderColor: isMobile ? 'transparent' : themed.cardBorder,
-    borderRadius: isMobile ? '0px' : themed.sectionRadius,
-    backdropFilter: themed.cardBackdrop,
-    borderWidth: isMobile ? '0px' : '1px',
-    borderStyle: 'solid',
-  } : {};
+  const getSectionStyle = (section: any): React.CSSProperties => {
+    const config = section?.config || {};
+    if (hasTheme) {
+      return {
+        backgroundColor: config.background_color || themed.cardBg,
+        color: config.color || themed.text,
+        borderColor: isMobile ? 'transparent' : themed.cardBorder,
+        borderRadius: isMobile ? '0px' : themed.sectionRadius,
+        backdropFilter: themed.cardBackdrop,
+        borderWidth: isMobile ? '0px' : '1px',
+        borderStyle: 'solid',
+      };
+    }
+    return {
+      backgroundColor: config.background_color || '#ffffff',
+      color: config.color || '#1e293b',
+      borderColor: isMobile ? 'transparent' : '#cbd5e1',
+      borderRadius: isMobile ? '0px' : '24px',
+      borderWidth: isMobile ? '0px' : '1px',
+      borderStyle: 'solid',
+    };
+  };
 
   const themedCardClass = hasTheme ? 'shadow-none md:shadow-md overflow-hidden' : 'bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md overflow-hidden';
 
@@ -1158,7 +1171,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id || "product_info"}
                   className={themedCardClass}
-                  style={themedCardStyle}
+                  style={getSectionStyle(section)}
                 >
                   <div className="relative aspect-square w-full" style={hasTheme ? { backgroundColor: themed.cardBg } : { backgroundColor: '#f8fafc' }}>
                     {productImages.length > 0 ? (
@@ -1320,7 +1333,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id || "quantity_offers"}
                   className={hasTheme ? `p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}` : `bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}`}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                 >
                   <h3
                     className={hasTheme ? 'text-sm font-extrabold' : 'text-sm font-extrabold text-slate-900'}
@@ -1778,7 +1791,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? `p-4 md:p-5 ${isArabic ? 'text-right' : 'text-left'}` : `bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 ${isArabic ? 'text-right' : 'text-left'}`}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                 >
                   <div
                     className="text-sm leading-relaxed"
@@ -1796,7 +1809,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? 'overflow-hidden' : 'bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md overflow-hidden'}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                 >
                   <img
                     src={config.image_url}
@@ -1846,7 +1859,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? `p-4 md:p-6 space-y-6 ${isArabic ? 'text-right' : 'text-left'}` : `bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-6 space-y-6 ${isArabic ? 'text-right' : 'text-left'}`}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                   data-section-type="reviews"
                 >
                   <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 ${isArabic ? 'flex-row-reverse' : ''}`} style={hasTheme ? { borderColor: themed.cardBorder } : { borderColor: '#f1f5f9' }}>
@@ -2114,7 +2127,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? 'p-4 md:p-5 text-right' : 'bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 text-right'}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                 >
                   <div className="grid grid-cols-2 gap-3">
                     {config.before_url && (
@@ -2147,7 +2160,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? `p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}` : `bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}`}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                 >
                   <h3
                     className={hasTheme ? 'font-extrabold' : 'font-extrabold text-slate-900'}
@@ -2182,7 +2195,7 @@ export default function StorefrontProductDetail() {
                   key={section.id}
                   id="security-commitment-container"
                   className={hasTheme ? `p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}` : `bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}`}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                 >
                   <div className={`flex items-start gap-3 justify-start`}>
                     <input
@@ -2208,12 +2221,13 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? 'w-full py-4 px-4 md:px-6 border-b flex items-center justify-between' : `w-full bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 flex items-center justify-between ${isArabic ? 'text-right' : 'text-left'}`}
-                  style={hasTheme ? { 
-                    backgroundColor: config.background_color || themed.bg || '#ffffff',
-                    borderColor: themed.cardBorder || '#f1f5f9',
+                  style={{
+                    backgroundColor: config.background_color || (hasTheme ? (themed.bg || '#ffffff') : '#ffffff'),
+                    color: config.color || (hasTheme ? themed.text : '#1e293b'),
+                    borderColor: hasTheme ? (themed.cardBorder || '#f1f5f9') : '#cbd5e1',
                     borderBottomWidth: '1px',
                     borderBottomStyle: 'solid',
-                  } : {}}
+                  }}
                 >
                   {store?.logo ? (
                     <Link href={getStorefrontLink(subdomain, "/")}>
@@ -2255,12 +2269,13 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? 'w-full text-center py-6 border-t' : 'w-full bg-white border-t border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 text-center'}
-                  style={hasTheme ? { 
-                    backgroundColor: config.background_color || themed.bg || '#ffffff',
-                    borderColor: themed.cardBorder || '#f1f5f9',
+                  style={{
+                    backgroundColor: config.background_color || (hasTheme ? (themed.bg || '#ffffff') : '#ffffff'),
+                    color: config.color || (hasTheme ? themed.text : '#1e293b'),
+                    borderColor: hasTheme ? (themed.cardBorder || '#f1f5f9') : '#cbd5e1',
                     borderTopWidth: '1px',
                     borderTopStyle: 'solid',
-                  } : {}}
+                  }}
                 >
                   <div
                     className="text-xs opacity-80 leading-relaxed font-cairo"
@@ -2278,7 +2293,7 @@ export default function StorefrontProductDetail() {
                 <div
                   key={section.id}
                   className={hasTheme ? 'p-4 md:p-5' : 'bg-white border-y border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5'}
-                  style={hasTheme ? { ...themedCardStyle } : {}}
+                  style={getSectionStyle(section)}
                 >
                   <div className="text-center space-y-3">
                     <Tag className="h-6 w-6 mx-auto text-amber-500" />

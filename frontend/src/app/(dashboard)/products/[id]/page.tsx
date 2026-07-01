@@ -122,6 +122,11 @@ function ReviewsSectionEditor({
   const [buyerReviews, setBuyerReviews] = React.useState<any[]>([]);
   const [buyerReviewsLoading, setBuyerReviewsLoading] = React.useState(false);
 
+  const updateConfig = (key: string, value: any) => {
+    const newConfig = { ...reviewsConfig, [key]: value };
+    handleUpdateSection(section.id, { config: newConfig });
+  };
+
   const loadBuyerReviews = async () => {
     if (!currentStoreId || isCreateMode) return;
     setBuyerReviewsLoading(true);
@@ -335,6 +340,50 @@ function ReviewsSectionEditor({
           )}
         </div>
       )}
+
+      {/* Section Styling & Colors block */}
+      <div className="pt-4 border-t border-border space-y-3">
+        <h5 className="font-bold text-xs text-foreground flex items-center gap-1.5 font-cairo">
+          <Palette className="h-3.5 w-3.5 text-primary" />
+          {language === 'ar' ? "ألوان ومظهر القسم" : (language === 'fr' ? "Couleurs et apparence" : "Section Styling & Colors")}
+        </h5>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5 text-right">
+            <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون الخلفية" : (language === 'fr' ? "Couleur d'arrière-plan" : "Background Color")}</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={reviewsConfig.background_color || '#ffffff'}
+                onChange={(e) => updateConfig('background_color', e.target.value)}
+                className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+              />
+              <Input
+                value={reviewsConfig.background_color || ''}
+                onChange={(e) => updateConfig('background_color', e.target.value)}
+                placeholder="#ffffff"
+                className="text-xs font-outfit h-9 pr-3 text-right"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5 text-right">
+            <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون النصوص" : (language === 'fr' ? "Couleur du texte" : "Text Color")}</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={reviewsConfig.color || '#1e293b'}
+                onChange={(e) => updateConfig('color', e.target.value)}
+                className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+              />
+              <Input
+                value={reviewsConfig.color || ''}
+                onChange={(e) => updateConfig('color', e.target.value)}
+                placeholder="#1e293b"
+                className="text-xs font-outfit h-9 pr-3 text-right"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -502,6 +551,8 @@ function CheckoutSectionEditor({
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl mx-auto">
           {[
+            { key: "background_color", label: language === 'ar' ? "لون خلفية القسم" : (language === 'fr' ? "Arrière-plan de la section" : "Section Background"), val: config.background_color || "#ffffff" },
+            { key: "color", label: language === 'ar' ? "لون نصوص القسم" : (language === 'fr' ? "Texte de la section" : "Section Text"), val: config.color || "#1e293b" },
             { key: "form_bg_color", label: language === 'ar' ? "خلفية الاستمارة" : (language === 'fr' ? "Arrière-plan du formulaire" : "Form Background"), val: form_bg_color },
             { key: "form_border_color", label: language === 'ar' ? "حدود الاستمارة" : (language === 'fr' ? "Bordure du formulaire" : "Form Border"), val: form_border_color },
             { key: "labels_text_color", label: language === 'ar' ? "النصوص والعناوين" : (language === 'fr' ? "Textes et titres" : "Texts and Titles"), val: labels_text_color },
@@ -3060,6 +3111,50 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                         </div>
                       )}
                     </div>
+
+                    {/* Section Styling & Colors block */}
+                    <div className="pt-4 border-t border-border space-y-3">
+                      <h5 className="font-bold text-xs text-foreground flex items-center gap-1.5 font-cairo">
+                        <Palette className="h-3.5 w-3.5 text-primary" />
+                        {language === 'ar' ? "ألوان ومظهر القسم" : (language === 'fr' ? "Couleurs et apparence" : "Section Styling & Colors")}
+                      </h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون الخلفية" : (language === 'fr' ? "Couleur d'arrière-plan" : "Background Color")}</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={section.config.background_color || '#ffffff'}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, background_color: e.target.value } })}
+                              className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                            />
+                            <Input
+                              value={section.config.background_color || ''}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, background_color: e.target.value } })}
+                              placeholder="#ffffff"
+                              className="text-xs font-outfit h-9 pr-3 text-right"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون النصوص" : (language === 'fr' ? "Couleur du texte" : "Text Color")}</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={section.config.color || '#1e293b'}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, color: e.target.value } })}
+                              className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                            />
+                            <Input
+                              value={section.config.color || ''}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, color: e.target.value } })}
+                              placeholder="#1e293b"
+                              className="text-xs font-outfit h-9 pr-3 text-right"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               }
@@ -3125,6 +3220,50 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                     ) : (
                       <p className="text-xs text-muted-foreground">{language === 'ar' ? "لا توجد عروض كمية. أضف عروضًا لتشجيع الشراء بكميات أكبر." : "No quantity offers. Add offers to encourage larger purchases."}</p>
                     )}
+
+                    {/* Section Styling & Colors block */}
+                    <div className="pt-4 border-t border-border space-y-3">
+                      <h5 className="font-bold text-xs text-foreground flex items-center gap-1.5 font-cairo">
+                        <Palette className="h-3.5 w-3.5 text-primary" />
+                        {language === 'ar' ? "ألوان ومظهر القسم" : (language === 'fr' ? "Couleurs et apparence" : "Section Styling & Colors")}
+                      </h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون الخلفية" : (language === 'fr' ? "Couleur d'arrière-plan" : "Background Color")}</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={section.config.background_color || '#ffffff'}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, background_color: e.target.value } })}
+                              className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                            />
+                            <Input
+                              value={section.config.background_color || ''}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, background_color: e.target.value } })}
+                              placeholder="#ffffff"
+                              className="text-xs font-outfit h-9 pr-3 text-right"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون النصوص" : (language === 'fr' ? "Couleur du texte" : "Text Color")}</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={section.config.color || '#1e293b'}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, color: e.target.value } })}
+                              className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                            />
+                            <Input
+                              value={section.config.color || ''}
+                              onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, color: e.target.value } })}
+                              placeholder="#1e293b"
+                              className="text-xs font-outfit h-9 pr-3 text-right"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               }
@@ -3389,6 +3528,50 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                           style={{ backgroundColor: editingSection.config.background_color || 'transparent', textAlign: editingSection.config.text_align || 'right' }}
                         />
 
+                        {/* Section Styling & Colors block */}
+                        <div className="pt-4 border-t border-border space-y-3">
+                          <h5 className="font-bold text-xs text-foreground flex items-center gap-1.5 font-cairo">
+                            <Palette className="h-3.5 w-3.5 text-primary" />
+                            {language === 'ar' ? "ألوان ومظهر القسم" : (language === 'fr' ? "Couleurs et apparence" : "Section Styling & Colors")}
+                          </h5>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5 text-right">
+                              <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون الخلفية" : (language === 'fr' ? "Couleur d'arrière-plan" : "Background Color")}</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={editingSection.config.background_color || '#ffffff'}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, background_color: e.target.value } } : prev)}
+                                  className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                                />
+                                <Input
+                                  value={editingSection.config.background_color || ''}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, background_color: e.target.value } } : prev)}
+                                  placeholder="#ffffff"
+                                  className="text-xs font-outfit h-9 pr-3 text-right"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5 text-right">
+                              <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون النصوص" : (language === 'fr' ? "Couleur du texte" : "Text Color")}</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={editingSection.config.color || '#1e293b'}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, color: e.target.value } } : prev)}
+                                  className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                                />
+                                <Input
+                                  value={editingSection.config.color || ''}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, color: e.target.value } } : prev)}
+                                  placeholder="#1e293b"
+                                  className="text-xs font-outfit h-9 pr-3 text-right"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="flex gap-2">
                           <Button type="button" onClick={() => handleUpdateSection(section.id, { config: editingSection.config })} size="sm" variant="glow" className="text-xs">{language === 'ar' ? "حفظ التغييرات" : "Save Changes"}</Button>
                           <Button type="button" onClick={() => setEditingSection(null)} size="sm" variant="outline" className="text-xs">{language === 'ar' ? "إلغاء" : "Cancel"}</Button>
@@ -3443,6 +3626,51 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                             </div>
                           );
                         })}
+
+                        {/* Section Styling & Colors block */}
+                        <div className="pt-4 border-t border-border space-y-3">
+                          <h5 className="font-bold text-xs text-foreground flex items-center gap-1.5 font-cairo">
+                            <Palette className="h-3.5 w-3.5 text-primary" />
+                            {language === 'ar' ? "ألوان ومظهر القسم" : (language === 'fr' ? "Couleurs et apparence" : "Section Styling & Colors")}
+                          </h5>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5 text-right">
+                              <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون الخلفية" : (language === 'fr' ? "Couleur d'arrière-plan" : "Background Color")}</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={editingSection.config.background_color || '#ffffff'}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, background_color: e.target.value } } : prev)}
+                                  className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                                />
+                                <Input
+                                  value={editingSection.config.background_color || ''}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, background_color: e.target.value } } : prev)}
+                                  placeholder="#ffffff"
+                                  className="text-xs font-outfit h-9 pr-3 text-right"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5 text-right">
+                              <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "لون النصوص" : (language === 'fr' ? "Couleur du texte" : "Text Color")}</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={editingSection.config.color || '#1e293b'}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, color: e.target.value } } : prev)}
+                                  className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent shrink-0"
+                                />
+                                <Input
+                                  value={editingSection.config.color || ''}
+                                  onChange={(e) => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, color: e.target.value } } : prev)}
+                                  placeholder="#1e293b"
+                                  className="text-xs font-outfit h-9 pr-3 text-right"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="flex gap-2 pt-2">
                           <Button type="button" onClick={() => handleUpdateSection(section.id, { config: editingSection.config })} size="sm" variant="glow" className="text-xs">{language === 'ar' ? "حفظ التغييرات" : "Save Changes"}</Button>
                           <Button type="button" onClick={() => setEditingSection(null)} size="sm" variant="outline" className="text-xs">{language === 'ar' ? "إلغاء" : "Cancel"}</Button>
@@ -3580,13 +3808,14 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                       const config = section.config || {};
                       const previewTheme: any = PREVIEW_THEME_STYLES[selectedTheme] || {};
                       const hasPreviewTheme = !!selectedTheme && !!PREVIEW_THEME_STYLES[selectedTheme];
-                      const previewCardStyle: React.CSSProperties = hasPreviewTheme ? {
-                        background: (previewTheme as any)['--theme-card-bg'],
-                        borderColor: viewport === 'mobile' ? 'transparent' : (previewTheme as any)['--theme-card-border'],
-                        borderRadius: viewport === 'mobile' ? '0px' : ((previewTheme as any)['--theme-section-radius'] || '12px'),
+                      const previewCardStyle: React.CSSProperties = {
+                        backgroundColor: config.background_color || (hasPreviewTheme ? (previewTheme as any)['--theme-card-bg'] : undefined),
+                        color: config.color || (hasPreviewTheme ? (previewTheme as any)['--theme-text'] : undefined),
+                        borderColor: viewport === 'mobile' ? 'transparent' : (hasPreviewTheme ? (previewTheme as any)['--theme-card-border'] : '#cbd5e1'),
+                        borderRadius: viewport === 'mobile' ? '0px' : (hasPreviewTheme ? ((previewTheme as any)['--theme-section-radius'] || '12px') : '12px'),
                         borderWidth: viewport === 'mobile' ? '0px' : '1px',
                         borderStyle: 'solid',
-                      } : {};
+                      };
                       const previewCardClass = hasPreviewTheme 
                         ? 'shadow-sm overflow-hidden text-right' 
                         : (viewport === 'mobile' 
