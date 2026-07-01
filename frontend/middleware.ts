@@ -22,8 +22,16 @@ export default function middleware(req: NextRequest) {
   // Extract subdomain
   let subdomain = hostname.replace(`.${rootDomain}`, '').replace(`:${url.port}`, '');
 
+  // Fallback: if rootDomain didn't match but we are on the platform domain sovi-dz.com
+  if (subdomain === hostname && hostname.includes('sovi-dz.com')) {
+    const parts = hostname.split('.');
+    if (parts.length > 2) {
+      subdomain = parts[0];
+    }
+  }
+
   // If the host is exactly the root domain, or has www prefix, do not rewrite
-  if (hostname === rootDomain || hostname === `www.${rootDomain}` || subdomain === 'localhost' || !subdomain) {
+  if (hostname === rootDomain || hostname === `www.${rootDomain}` || subdomain === 'localhost' || !subdomain || subdomain === 'www') {
     return NextResponse.next();
   }
 

@@ -112,6 +112,7 @@ class StoreSubscription(models.Model):
 
 
 def get_active_limits(store):
+    seed_default_plans_if_empty()
     """
     Computes effective merged limits for a given store.
     If there are multiple active/trial subscriptions, they stack:
@@ -276,3 +277,78 @@ def get_active_limits(store):
         limits['time_remaining_seconds'] = max(0, int(time_rem.total_seconds()))
 
     return limits
+
+
+def seed_default_plans_if_empty():
+    if Plan.objects.exists():
+        return
+    Plan.objects.create(
+        name='starter',
+        display_name_ar='المبتدئ',
+        price_da=1200.00,
+        trial_days=7,
+        max_products=5,
+        max_workers=1,
+        max_pixels=2,
+        max_orders_per_month=200,
+        has_variants=True,
+        has_ab_testing=True,
+        has_coupons=True,
+        has_custom_domain=True,
+        has_advanced_analytics=True,
+        has_otp=True,
+        has_captcha=True,
+        has_rate_limit=True,
+        has_algerian_ip=True,
+        has_sticky_cta=True,
+        has_api_access=True,
+        has_multi_store=True,
+        is_active=True,
+    )
+    Plan.objects.create(
+        name='pro',
+        display_name_ar='المحترف',
+        price_da=2500.00,
+        trial_days=7,
+        max_products=15,
+        max_workers=5,
+        max_pixels=5,
+        max_orders_per_month=1000,
+        has_variants=True,
+        has_ab_testing=True,
+        has_coupons=True,
+        has_custom_domain=True,
+        has_advanced_analytics=True,
+        has_otp=True,
+        has_captcha=True,
+        has_rate_limit=True,
+        has_algerian_ip=True,
+        has_sticky_cta=True,
+        has_api_access=True,
+        has_multi_store=True,
+        is_active=True,
+    )
+    Plan.objects.create(
+        name='max',
+        display_name_ar='الأقصى',
+        price_da=4900.00,
+        trial_days=7,
+        max_products=-1,
+        max_workers=-1,
+        max_pixels=-1,
+        max_orders_per_month=-1,
+        has_variants=True,
+        has_ab_testing=True,
+        has_coupons=True,
+        has_custom_domain=True,
+        has_advanced_analytics=True,
+        has_otp=True,
+        has_captcha=True,
+        has_rate_limit=True,
+        has_algerian_ip=True,
+        has_sticky_cta=True,
+        has_api_access=True,
+        has_multi_store=True,
+        is_active=True,
+    )
+

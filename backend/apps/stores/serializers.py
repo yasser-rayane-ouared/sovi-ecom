@@ -252,7 +252,11 @@ class StoreCreateSerializer(serializers.ModelSerializer):
         # Create default 7 days Starter trial subscription
         from django.utils import timezone
         from datetime import timedelta
-        from apps.subscriptions.models import Plan, StoreSubscription
+        from apps.subscriptions.models import Plan, StoreSubscription, seed_default_plans_if_empty
+        
+        # Ensure default plans exist
+        seed_default_plans_if_empty()
+        
         try:
             starter_plan = Plan.objects.get(name='starter')
             StoreSubscription.objects.create(
