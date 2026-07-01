@@ -49,6 +49,13 @@ export function getAbsoluteStorefrontLink(subdomain: string, path: string, custo
     return `http://${subdomain}.localhost${port}${path}`;
   }
   
+  // If using default Railway domains (e.g., app.up.railway.app), we cannot use nested subdomains
+  // because SSL certificates do not support nested wildcards (*.*.up.railway.app).
+  // Instead, we must use path-based routing: https://{hostname}/{subdomain}{path}
+  if (hostname.includes('railway.app')) {
+    return `${window.location.protocol}//${hostname}/${subdomain}${path}`;
+  }
+  
   // In production: return http:// by default to avoid hostname certificate mismatch errors
   // on subdomains that do not have wildcard SSL configured yet.
   const cleanRoot = rootDomain.split(':')[0];
