@@ -549,13 +549,13 @@ function CheckoutSectionEditor({
           {language === 'ar' ? "تخصيص ألوان الاستمارة" : (language === 'fr' ? "Couleurs du formulaire" : "Customize Form Colors")}
         </h5>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
           {[
             { key: "background_color", label: language === 'ar' ? "لون خلفية القسم" : (language === 'fr' ? "Arrière-plan de la section" : "Section Background"), val: config.background_color || "#ffffff" },
             { key: "color", label: language === 'ar' ? "لون نصوص القسم" : (language === 'fr' ? "Texte de la section" : "Section Text"), val: config.color || "#1e293b" },
             { key: "form_bg_color", label: language === 'ar' ? "خلفية الاستمارة" : (language === 'fr' ? "Arrière-plan du formulaire" : "Form Background"), val: form_bg_color },
             { key: "form_border_color", label: language === 'ar' ? "حدود الاستمارة" : (language === 'fr' ? "Bordure du formulaire" : "Form Border"), val: form_border_color },
-            { key: "labels_text_color", label: language === 'ar' ? "النصوص والعناوين" : (language === 'fr' ? "Textes et titres" : "Texts and Titles"), val: labels_text_color },
+            { key: "labels_text_color", label: language === 'ar' ? "النصوص والعناوين" : (language === 'fr' ? "Textes et titres" : "Labels & Titles"), val: labels_text_color },
             { key: "fields_bg_color", label: language === 'ar' ? "خلفية حقول الإدخال" : (language === 'fr' ? "Arrière-plan des champs" : "Field Background"), val: fields_bg_color },
             { key: "fields_text_color", label: language === 'ar' ? "نص حقول الإدخال" : (language === 'fr' ? "Texte des champs" : "Field Text"), val: fields_text_color },
             { key: "fields_border_color", label: language === 'ar' ? "حدود حقول الإدخال" : (language === 'fr' ? "Bordure des champs" : "Field Border"), val: fields_border_color },
@@ -564,21 +564,25 @@ function CheckoutSectionEditor({
           ].map((item) => (
             <div
               key={item.key}
-              className="flex items-center justify-between p-2.5 rounded-xl border border-border bg-card shadow-sm hover:border-primary/30 transition-all text-right"
+              className="flex flex-col gap-1.5 p-3 rounded-xl border border-border bg-card shadow-sm hover:border-primary/30 transition-all"
             >
               {/* Color Label */}
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <div
-                  className="h-3 w-3 rounded-full border border-border/50 flex-shrink-0"
-                  style={{ backgroundColor: item.val }}
-                />
-                <span className="text-[11px] font-bold text-foreground font-cairo truncate">
-                  {item.label}
-                </span>
-              </div>
+              <span className="text-[10px] font-bold text-muted-foreground font-cairo leading-tight">
+                {item.label}
+              </span>
 
-              {/* Color Picker & Hex Input group */}
-              <div className="flex items-center gap-1.5 shrink-0" dir="ltr">
+              {/* Color Picker & Hex Input row */}
+              <div className="flex items-center gap-1.5" dir="ltr">
+                {/* Color swatch */}
+                <div className="relative h-7 w-7 rounded-lg overflow-hidden border border-border shadow-sm cursor-pointer hover:scale-105 transition-transform flex-shrink-0">
+                  <input
+                    type="color"
+                    value={item.val}
+                    onChange={(e) => updateConfig(item.key, e.target.value)}
+                    className="absolute inset-0 h-full w-full scale-150 cursor-pointer border-0 p-0"
+                  />
+                </div>
+
                 {/* Hex text input */}
                 <input
                   type="text"
@@ -590,19 +594,9 @@ function CheckoutSectionEditor({
                       updateConfig(item.key, "#" + hexVal);
                     }
                   }}
-                  className="w-14 text-[10px] font-bold font-mono uppercase bg-background border border-input rounded px-1 py-0.5 h-7 text-center focus:border-primary focus-visible:outline-none"
+                  className="flex-1 min-w-0 text-[10px] font-bold font-mono uppercase bg-background border border-input rounded px-1.5 py-0.5 h-7 text-center focus:border-primary focus-visible:outline-none"
                   placeholder="FFFFFF"
                 />
-
-                {/* Color Picker square */}
-                <div className="relative h-7 w-7 rounded-lg overflow-hidden border border-border shadow-sm cursor-pointer hover:scale-105 transition-transform flex-shrink-0">
-                  <input
-                    type="color"
-                    value={item.val}
-                    onChange={(e) => updateConfig(item.key, e.target.value)}
-                    className="absolute inset-0 h-full w-full scale-150 cursor-pointer border-0 p-0"
-                  />
-                </div>
               </div>
             </div>
           ))}
