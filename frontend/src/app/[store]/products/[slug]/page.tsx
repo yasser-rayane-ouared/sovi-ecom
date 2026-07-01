@@ -1237,12 +1237,14 @@ export default function StorefrontProductDetail() {
                   <div className={`p-4 md:p-6 space-y-3 ${isArabic ? 'text-right' : 'text-left'}`}>
                     <h1
                       className={hasTheme ? 'font-extrabold animate-fade-in-up' : 'text-xl font-extrabold text-slate-900 animate-fade-in-up'}
-                      style={hasTheme ? {
-                        color: themed.text,
-                        textTransform: themed.titleTransform as any,
-                        fontWeight: themed.titleWeight || '800',
-                        fontSize: themed.titleSize || '1.25rem',
-                      } : {}}
+                      style={{
+                        ...(hasTheme ? {
+                          textTransform: themed.titleTransform as any,
+                          fontWeight: themed.titleWeight || '800',
+                          fontSize: themed.titleSize || '1.25rem',
+                        } : {}),
+                        color: config.color || (hasTheme ? themed.text : undefined),
+                      }}
                     >
                       {product.title}
                     </h1>
@@ -1274,7 +1276,9 @@ export default function StorefrontProductDetail() {
                     {product.description && (
                       <p
                         className={hasTheme ? 'text-sm leading-relaxed opacity-70' : 'text-sm text-slate-500 leading-relaxed'}
-                        style={hasTheme ? { color: themed.text } : {}}
+                        style={{
+                          color: config.color || (hasTheme ? themed.text : undefined),
+                        }}
                       >
                         {product.description}
                       </p>
@@ -1283,7 +1287,7 @@ export default function StorefrontProductDetail() {
                       <div className="space-y-3 pt-2 border-t border-dashed border-slate-100">
                         {Object.entries(optionGroups).map(([label, values]) => (
                           <div key={label} className={`space-y-1 ${isArabic ? 'text-right' : 'text-left'}`}>
-                            <span className="text-xs font-bold text-slate-500" style={hasTheme ? { color: themed.text, opacity: 0.6 } : {}}>{label}:</span>
+                            <span className="text-xs font-bold text-slate-500" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.6 }}>{label}:</span>
                             <div className="flex flex-wrap gap-2 justify-start">
                               {values.map((val) => {
                                 const isSelected = selectedOptions[label] === val;
@@ -1315,7 +1319,9 @@ export default function StorefrontProductDetail() {
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                       <div
                         className={hasTheme ? 'text-2xl font-black font-outfit' : 'text-2xl font-black text-primary font-outfit'}
-                        style={hasTheme ? { color: themed.accent } : {}}
+                        style={{
+                          color: config.color || (hasTheme ? themed.accent : undefined),
+                        }}
                       >
                         {formatCurrency(productPrice)}
                       </div>

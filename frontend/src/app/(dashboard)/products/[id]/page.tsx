@@ -4112,14 +4112,18 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                               <div className={`p-3 space-y-1.5 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
                                 <h1 
                                   className={hasPreviewTheme ? 'font-extrabold text-xs' : 'text-xs font-extrabold text-slate-900'}
-                                  style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                  style={{
+                                    color: config.color || (hasPreviewTheme ? previewTheme['--theme-text'] : undefined),
+                                  }}
                                 >
                                   {title || (language === 'ar' ? "عنوان المنتج..." : "Product Title...")}
                                 </h1>
                                 {description && (
                                   <p 
                                     className={hasPreviewTheme ? 'text-[9px] leading-relaxed opacity-70' : 'text-[9px] text-slate-500 leading-relaxed'}
-                                    style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                    style={{
+                                      color: config.color || (hasPreviewTheme ? previewTheme['--theme-text'] : undefined),
+                                    }}
                                   >
                                     {description.length > 80 ? description.substring(0, 80) + '...' : description}
                                   </p>
@@ -4128,7 +4132,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                                   <div className="space-y-1 pt-1 border-t border-dashed border-slate-100">
                                     {variantAttributes.slice(0, 2).map((attr, aIdx) => (
                                       <div key={aIdx} className="space-y-0.5">
-                                        <span className="text-[8px] font-bold text-slate-500" style={hasPreviewTheme ? { color: previewTheme['--theme-text'], opacity: 0.6 } : {}}>{attr.name}:</span>
+                                        <span className="text-[8px] font-bold text-slate-500" style={{ color: config.color || (hasPreviewTheme ? previewTheme['--theme-text'] : undefined), opacity: 0.6 }}>{attr.name}:</span>
                                         <div className="flex flex-wrap gap-0.5">
                                           {attr.values.slice(0, 4).map((val, vIdx) => (
                                             <span key={vIdx} className={`px-1.5 py-0.5 rounded text-[7px] font-bold border ${vIdx === 0 ? 'bg-primary/10 border-primary text-primary' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
@@ -4144,7 +4148,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                                 <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
                                   <div 
                                     className={hasPreviewTheme ? 'text-sm font-black font-outfit' : 'text-sm font-black text-primary font-outfit'}
-                                    style={hasPreviewTheme ? { color: previewTheme['--theme-accent'] } : {}}
+                                    style={{
+                                      color: config.color || (hasPreviewTheme ? previewTheme['--theme-accent'] : undefined),
+                                    }}
                                   >
                                     {price ? formatCurrency(parseFloat(price)) : "0.00 DZD"}
                                   </div>
