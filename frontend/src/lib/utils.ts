@@ -31,6 +31,29 @@ export function getStorefrontLink(subdomain: string, path: string) {
   }
 }
 
+export function getAbsoluteStorefrontLink(subdomain: string, path: string, customDomain?: string) {
+  if (typeof window === 'undefined') {
+    return `/${subdomain}${path === '/' ? '' : path}`;
+  }
+  
+  if (customDomain) {
+    return `${window.location.protocol}//${customDomain}${path}`;
+  }
+  
+  const hostname = window.location.hostname;
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+  
+  // If we are on localhost, return http://{subdomain}.localhost:3000/path
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    const port = window.location.port ? `:${window.location.port}` : '';
+    return `http://${subdomain}.localhost${port}${path}`;
+  }
+  
+  // In production: return https://{subdomain}.{rootDomain}/path
+  const cleanRoot = rootDomain.split(':')[0];
+  return `${window.location.protocol}//${subdomain}.${cleanRoot}${path}`;
+}
+
 export function getRootDomain() {
   if (typeof window !== "undefined") {
     if (process.env.NEXT_PUBLIC_ROOT_DOMAIN) {

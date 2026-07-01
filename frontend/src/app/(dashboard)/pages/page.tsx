@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { LANDING_TEMPLATES, type LandingTemplate } from "../../../lib/landing-templates";
 import { CANVA_TEMPLATES, type CanvaTemplate } from "../../../lib/canva-templates";
+import { getAbsoluteStorefrontLink } from "../../../lib/utils";
 
 interface PagesProps {
   storeId?: string;
@@ -262,7 +263,7 @@ export default function PagesDashboard({ storeId, storeSubdomain }: PagesProps) 
                     <Settings2 className="h-3.5 w-3.5" /> {t("pagesCardEditBuilder")}
                   </Button>
                   <a
-                    href={`http://${currentStoreSubdomain}.localhost:3000/${currentStoreSubdomain}/pages/${page.slug}`}
+                    href={getAbsoluteStorefrontLink(currentStoreSubdomain || "", `/pages/${page.slug}`, selectedStore?.custom_domain)}
                     target="_blank"
                     rel="noreferrer"
                   >

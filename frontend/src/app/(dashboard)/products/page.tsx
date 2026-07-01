@@ -8,7 +8,7 @@ import { useLanguageStore } from "../../../stores/language";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Plus, Search, Trash2, Edit2, Image, ExternalLink } from "lucide-react";
-import { formatCurrency, getFullImageUrl } from "../../../lib/utils";
+import { formatCurrency, getFullImageUrl, getAbsoluteStorefrontLink } from "../../../lib/utils";
 
 interface ProductsProps {
   storeId?: string;
@@ -148,7 +148,7 @@ export default function ProductsDashboard({ storeId }: ProductsProps) {
                       <Edit2 className="h-3.5 w-3.5" /> {t('edit')}
                     </Button>
                     <Button
-                      onClick={() => window.open(`http://${selectedStore?.subdomain}.localhost:3000/products/${p.slug}`, "_blank")}
+                      onClick={() => window.open(getAbsoluteStorefrontLink(selectedStore?.subdomain || "", `/products/${p.slug}`, selectedStore?.custom_domain), "_blank")}
                       variant="outline"
                       size="sm"
                       className="px-3 border-border dark:border-white/5 hover:bg-muted dark:hover:bg-white/5 text-xs"

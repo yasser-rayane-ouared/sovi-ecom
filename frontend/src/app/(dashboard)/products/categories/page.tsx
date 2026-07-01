@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Search, Trash2, Edit2, Folder, ExternalLink } from "lucide-react";
 import { useLanguageStore } from "@/stores/language";
+import { getAbsoluteStorefrontLink } from "@/lib/utils";
 
 export default function CategoriesDashboard() {
   const { selectedStore } = useDashboardStore() as any;
@@ -136,7 +137,7 @@ export default function CategoriesDashboard() {
                       <Edit2 className="h-3.5 w-3.5" /> {t('editAndCustomize')}
                     </Button>
                     <Button
-                      onClick={() => window.open(`http://${selectedStore?.subdomain}.localhost:3000/categories/${c.slug}`, "_blank")}
+                      onClick={() => window.open(getAbsoluteStorefrontLink(selectedStore?.subdomain || "", `/categories/${c.slug}`, selectedStore?.custom_domain), "_blank")}
                       variant="outline"
                       size="sm"
                       className="px-3 border-border dark:border-white/5 hover:bg-muted dark:hover:bg-white/5 text-xs"
