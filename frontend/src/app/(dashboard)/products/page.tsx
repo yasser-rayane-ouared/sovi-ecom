@@ -8,7 +8,7 @@ import { useLanguageStore } from "../../../stores/language";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Plus, Search, Trash2, Edit2, Image, ExternalLink } from "lucide-react";
-import { formatCurrency } from "../../../lib/utils";
+import { formatCurrency, getFullImageUrl } from "../../../lib/utils";
 
 interface ProductsProps {
   storeId?: string;
@@ -121,7 +121,7 @@ export default function ProductsDashboard({ storeId }: ProductsProps) {
             <Card key={p.id} className="border-border dark:border-white/5 bg-card/40 dark:bg-white/5 overflow-hidden group hover:border-primary/20 transition-all flex flex-col justify-between">
               <div className="relative aspect-video w-full bg-black/40 overflow-hidden border-b border-border dark:border-white/5 flex items-center justify-center">
                 {p.primary_image ? (
-                  <img src={p.primary_image} alt={p.title} className="w-full h-full object-cover transition-all group-hover:scale-105" />
+                  <img src={getFullImageUrl(p.primary_image)} alt={p.title} className="w-full h-full object-cover transition-all group-hover:scale-105" />
                 ) : (
                   <Image className="h-10 w-10 text-muted-foreground" />
                 )}

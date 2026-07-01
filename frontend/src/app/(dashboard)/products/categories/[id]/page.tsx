@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useDashboardStore } from "@/stores/dashboard";
 import { useLanguageStore } from "@/stores/language";
-import { getRootDomain } from "@/lib/utils";
+import { getRootDomain, getFullImageUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -566,7 +566,7 @@ export default function CategoryEditorPage() {
                   <label className="text-xs text-muted font-bold block">{t("categoryPublishBanner")}</label>
                   {imageUrl ? (
                     <div className="relative aspect-video rounded-xl overflow-hidden border border-white/5 bg-black/40">
-                      <img src={imageUrl} alt="Category Banner" className="w-full h-full object-cover" />
+                      <img src={getFullImageUrl(imageUrl)} alt="Category Banner" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setImageUrl("")}
@@ -949,7 +949,7 @@ export default function CategoryEditorPage() {
                               <label className="text-xs text-muted font-bold block">{language === "ar" ? "صورة القسم المخصصة" : "Image personnalisée"}</label>
                               {editingSection.config.image_url ? (
                                 <div className="relative aspect-video rounded-xl overflow-hidden border border-white/5 bg-black/40">
-                                  <img src={editingSection.config.image_url} alt="Custom Section" className="w-full h-full object-cover" />
+                                  <img src={getFullImageUrl(editingSection.config.image_url)} alt="Custom Section" className="w-full h-full object-cover" />
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateSection(editingSection.id, { config: { ...editingSection.config, image_url: "" } })}

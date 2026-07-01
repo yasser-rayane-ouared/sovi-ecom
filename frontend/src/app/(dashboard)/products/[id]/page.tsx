@@ -9,7 +9,7 @@ import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Plus, Trash2, Edit2, Image, Sparkles, AlertCircle, GripVertical, EyeOff, Layers, Text, Camera, Star, SplitSquareHorizontal, Gift, CheckSquare, ChevronDown, Palette, Check, Shield, Smartphone, Tablet, Monitor, Tag, ShoppingCart, User, Phone, MapPin, Truck, Save, Loader2 } from "lucide-react";
-import { formatCurrency } from "../../../../lib/utils";
+import { formatCurrency, getFullImageUrl } from "../../../../lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -60,7 +60,7 @@ function SortableImageItem({ id, url, isPrimary, onDelete }: SortableImageItemPr
       style={style}
       className="relative aspect-square rounded-xl overflow-hidden border border-border bg-muted/20 flex items-center justify-center group shadow-sm select-none"
     >
-      <img src={url} alt="Product image" className="w-full h-full object-cover pointer-events-none" />
+      <img src={getFullImageUrl(url)} alt="Product image" className="w-full h-full object-cover pointer-events-none" />
       
       {/* Drag handle area */}
       <div
@@ -329,7 +329,7 @@ function ReviewsSectionEditor({
                 </div>
               </div>
               {r.body && <p className="text-xs text-muted-foreground text-right">{r.body}</p>}
-              {r.photo_url && <img src={r.photo_url} alt="review" className="h-16 rounded-lg object-cover" />}
+              {r.photo_url && <img src={getFullImageUrl(r.photo_url)} alt="review" className="h-16 rounded-lg object-cover" />}
               <div className={`text-[10px] font-bold ${r.is_approved ? 'text-emerald-500' : 'text-amber-500'}`}>
                 {r.is_approved ? (language === 'ar' ? '✓ منشور' : (language === 'fr' ? '✓ Publié' : '✓ Published')) : (language === 'ar' ? '⏳ بانتظار المراجعة' : (language === 'fr' ? '⏳ En attente' : '⏳ Pending Review'))}
               </div>
@@ -3023,7 +3023,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                                       {/* Small preview */}
                                       {combo.image_url ? (
                                         <div className="h-10 w-10 rounded border border-border overflow-hidden bg-muted/20 flex-shrink-0 flex items-center justify-center">
-                                          <img src={combo.image_url} alt="Variant preview" className="w-full h-full object-cover" />
+                                          <img src={getFullImageUrl(combo.image_url)} alt="Variant preview" className="w-full h-full object-cover" />
                                         </div>
                                       ) : (
                                         <div className="h-10 w-10 rounded border border-dashed border-border bg-muted/5 flex-shrink-0 flex items-center justify-center text-muted-foreground/30">
@@ -3587,7 +3587,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                                 <label className="text-xs font-medium text-muted-foreground">{field.label}</label>
                                 {val ? (
                                   <div className="relative rounded-lg overflow-hidden border border-border bg-muted/20">
-                                    <img src={val} alt={field.label} className="w-full h-32 object-cover" />
+                                    <img src={getFullImageUrl(val)} alt={field.label} className="w-full h-32 object-cover" />
                                     <button type="button" onClick={() => setEditingSection((prev: any) => prev ? { ...prev, config: { ...prev.config, [field.key]: "" } } : prev)} className="absolute top-1 right-1 bg-black/70 text-red-400 text-xs px-2 py-0.5 rounded">{language === 'ar' ? "إزالة" : "Remove"}</button>
                                   </div>
                                 ) : (
@@ -3791,20 +3791,21 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                   
                   {/* Preview Scrollable Screen */}
                   <div 
-                    className={`flex-grow overflow-y-auto pb-6 text-right text-xs ${viewport === 'mobile' ? 'pt-0 space-y-0 px-0' : 'pt-3 space-y-3 px-2'}`} 
+                    className="flex-grow overflow-y-auto pb-6 text-right text-xs" 
                     dir="rtl"
                     style={{
-                      background: (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg']?.includes('gradient') 
+                      background: selectedTheme && (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg']?.includes('gradient') 
                         ? (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg'] 
-                        : undefined,
-                      backgroundColor: !(PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg']?.includes('gradient') 
+                        : (!selectedTheme ? 'linear-gradient(to bottom, #f8fafc, #ffffff)' : undefined),
+                      backgroundColor: selectedTheme && !(PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg']?.includes('gradient') 
                         ? ((PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-bg'] || '#f8fafc') 
                         : undefined,
-                      color: (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-text'] || '#1e293b',
-                      fontFamily: (PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-font'] || 'sans-serif',
+                      color: selectedTheme ? ((PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-text'] || '#1e293b') : '#1e293b',
+                      fontFamily: selectedTheme ? ((PREVIEW_THEME_STYLES[selectedTheme] as any)?.['--theme-font'] || 'sans-serif') : 'sans-serif',
                     }}
                   >
-                    {activeList.map((section: any) => {
+                    <div className={`w-full max-w-full ${viewport === 'mobile' ? 'py-0 space-y-0 px-0' : 'py-4 space-y-4 px-2 md:py-8 md:space-y-6 md:px-4'}`}>
+                      {activeList.map((section: any) => {
                       const config = section.config || {};
                       const previewTheme: any = PREVIEW_THEME_STYLES[selectedTheme] || {};
                       const hasPreviewTheme = !!selectedTheme && !!PREVIEW_THEME_STYLES[selectedTheme];
@@ -4087,7 +4088,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                               {isSelectedPreview && <div className="absolute top-1 left-1 z-10 bg-primary text-primary-foreground text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">{language === 'ar' ? "جاري التعديل" : "Editing"}</div>}
                               <div className="relative aspect-square w-full bg-slate-100 flex items-center justify-center overflow-hidden">
                                 {primaryImage ? (
-                                  <img src={primaryImage} alt={title || "Product"} className="w-full h-full object-cover" />
+                                  <img src={getFullImageUrl(primaryImage)} alt={title || "Product"} className="w-full h-full object-cover" />
                                 ) : (
                                   <Image className="h-6 w-6 text-slate-300" />
                                 )}
@@ -4182,20 +4183,44 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                           );
                         case "header":
                           return (
-                            <div key={section.id} className={`w-full py-3 px-4 border-b border-slate-100 bg-white flex items-center justify-between ${clickableRingClass}`} style={{ ...previewCardStyle, backgroundColor: config.background_color || '#ffffff' }} {...previewClickableProps}>
-                              <div className="h-5 w-5 bg-slate-100 rounded-full flex-shrink-0 animate-pulse"></div>
-                              <div 
-                                className="text-xs font-bold leading-relaxed px-2 flex-grow text-right" 
-                                style={{ color: config.color || previewTheme['--theme-text'] || '#0f172a', textAlign: config.text_align || 'right' as any }}
-                                dangerouslySetInnerHTML={{ __html: config.content || (language === 'ar' ? 'متجرنا' : (language === 'fr' ? 'Notre boutique' : 'Our Store')) }}
-                              />
+                            <div 
+                              key={section.id} 
+                              className={`w-full py-3.5 px-4 border-b border-slate-200 bg-white/95 backdrop-blur flex items-center justify-between ${clickableRingClass}`} 
+                              style={{ 
+                                ...previewCardStyle, 
+                                backgroundColor: config.background_color ? `${config.background_color}F2` : '#ffffffec' 
+                              }} 
+                              {...previewClickableProps}
+                            >
+                              <div className="flex items-center gap-2 flex-grow justify-start">
+                                {selectedStore?.logo ? (
+                                  <img src={getFullImageUrl(selectedStore.logo)} alt={selectedStore.name} className="h-6 w-auto object-contain flex-shrink-0" />
+                                ) : (
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="h-6 w-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                      {selectedStore?.name?.charAt(0).toUpperCase() || "M"}
+                                    </div>
+                                    <span 
+                                      className="text-xs font-bold text-slate-800"
+                                      style={{ color: config.color || undefined }}
+                                    >
+                                      {config.content || selectedStore?.name}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 bg-slate-50">
+                                  <ShoppingCart className="h-3.5 w-3.5" />
+                                </div>
+                              </div>
                             </div>
                           );
                         case "image":
                           return (
                             <div key={section.id} className={`${previewCardClass} overflow-hidden ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
                               {config.image ? (
-                                  <img src={config.image} alt="" className="w-full object-cover" />
+                                  <img src={getFullImageUrl(config.image)} alt="" className="w-full object-cover" />
                               ) : (
                                 <div className="h-16 bg-slate-100 flex items-center justify-center text-[9px] text-slate-300">
                                   {language === 'ar' ? "قسم صورة" : "Image Section"}
@@ -4204,45 +4229,82 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                               {config.caption && <p className="text-[8px] text-center py-0.5 opacity-60">{config.caption}</p>}
                             </div>
                           );
-                        case "reviews":
+                        case "reviews": {
+                          const reviewsList = config.reviews || [];
                           return (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
-                              <div className="p-2 space-y-1.5">
+                              <div className="p-2 space-y-2">
                                 <h4 className="text-[10px] font-bold" style={{ color: previewTheme['--theme-text'] }}>{language === 'ar' ? "آراء العملاء" : (language === 'fr' ? "Avis clients" : "Customer Reviews")}</h4>
-                                <div className="space-y-1 text-[8px] opacity-80">
-                                  <div><strong>{language === 'ar' ? "محمد ب." : "Mohamed B."}</strong>: {language === 'ar' ? "منتج رائع جداً" : "Very great product"}</div>
-                                  <div><strong>{language === 'ar' ? "سارة م." : "Sarah M."}</strong>: {language === 'ar' ? "توصيل سريع" : "Fast delivery"}</div>
-                                </div>
+                                {reviewsList.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {reviewsList.slice(0, 3).map((r: any, idx: number) => (
+                                      <div key={idx} className="border-b border-border/50 pb-1.5 last:border-b-0 space-y-0.5 text-[8px] text-right">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[7px] text-amber-400 font-outfit">{'★'.repeat(r.rating || 5)}{'☆'.repeat(5 - (r.rating || 5))}</span>
+                                          <strong className="font-bold">{r.reviewer_name || (language === 'ar' ? "مشتري" : "Buyer")}</strong>
+                                        </div>
+                                        {r.body && <p className="opacity-80">{r.body}</p>}
+                                        {r.photo_url && <img src={getFullImageUrl(r.photo_url)} alt="" className="h-8 rounded object-cover" />}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1 text-[8px] opacity-80">
+                                    <div><strong>{language === 'ar' ? "محمد ب." : "Mohamed B."}</strong>: {language === 'ar' ? "منتج رائع جداً" : "Very great product"}</div>
+                                    <div><strong>{language === 'ar' ? "سارة م." : "Sarah M."}</strong>: {language === 'ar' ? "توصيل سريع" : "Fast delivery"}</div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );
+                        }
                         case "before_after":
                           return (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
-                              <div className="grid grid-cols-2 gap-1 p-1.5 text-center text-[8px]">
+                              <div className="grid grid-cols-2 gap-1.5 p-2 text-center text-[8px]">
                                 <div>
-                                  <div className="opacity-60 mb-0.5">{language === 'ar' ? "قبل" : "Before"}</div>
-                                  <div className="h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
+                                  <div className="opacity-60 mb-1">{language === 'ar' ? "قبل" : "Before"}</div>
+                                  {config.before_url ? (
+                                    <img src={getFullImageUrl(config.before_url)} alt="Before" className="h-16 w-full object-cover rounded border border-slate-200" />
+                                  ) : (
+                                    <div className="h-16 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
+                                  )}
                                 </div>
                                 <div>
-                                  <div className="opacity-60 mb-0.5">{language === 'ar' ? "بعد" : "After"}</div>
-                                  <div className="h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
+                                  <div className="opacity-60 mb-1">{language === 'ar' ? "بعد" : "After"}</div>
+                                  {config.after_url ? (
+                                    <img src={getFullImageUrl(config.after_url)} alt="After" className="h-16 w-full object-cover rounded border border-slate-200" />
+                                  ) : (
+                                    <div className="h-16 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
+                                  )}
                                 </div>
                               </div>
                             </div>
                           );
-                        case "features":
+                        case "features": {
+                          const featuresList = Array.isArray(config.features) 
+                            ? config.features 
+                            : (typeof config.features === 'string' ? config.features.split("\n").filter(Boolean) : []);
                           return (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
                               <div className="p-2 space-y-1 text-right text-[9px]" style={{ color: previewTheme['--theme-text'] }}>
                                 <div className="font-bold">{language === 'ar' ? "مميزات المنتج" : (language === 'fr' ? "Caractéristiques" : "Product Features")}</div>
-                                <ul className="space-y-0.5 opacity-80">
-                                  <li>✓ {language === 'ar' ? "ميزة أولى للمنتج" : "1st feature"}</li>
-                                  <li>✓ {language === 'ar' ? "ميزة ثانية للمنتج" : "2nd feature"}</li>
-                                </ul>
+                                {featuresList.length > 0 ? (
+                                  <ul className="space-y-0.5 opacity-80">
+                                    {featuresList.map((f: string, idx: number) => (
+                                      <li key={idx}>✓ {f}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <ul className="space-y-0.5 opacity-80">
+                                    <li>✓ {language === 'ar' ? "ميزة أولى للمنتج" : "1st feature"}</li>
+                                    <li>✓ {language === 'ar' ? "ميزة ثانية للمنتج" : "2nd feature"}</li>
+                                  </ul>
+                                )}
                               </div>
                             </div>
                           );
+                        }
                         case "coupon":
                           return (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
@@ -4270,6 +4332,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                           return null;
                       }
                     })}
+                    </div>
                   </div>
 
                   {/* Sticky CTA button mock — rendered at bottom of phone frame */}
