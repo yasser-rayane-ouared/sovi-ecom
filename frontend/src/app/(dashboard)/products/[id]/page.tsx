@@ -4086,40 +4086,130 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                           return (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
                               {isSelectedPreview && <div className="absolute top-1 left-1 z-10 bg-primary text-primary-foreground text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow">{language === 'ar' ? "جاري التعديل" : "Editing"}</div>}
-                              <div className="relative aspect-square w-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                              <div className="relative aspect-square w-full flex items-center justify-center overflow-hidden" style={hasPreviewTheme ? { backgroundColor: previewTheme['--theme-card-bg'] } : { backgroundColor: '#f8fafc' }}>
                                 {primaryImage ? (
                                   <img src={getFullImageUrl(primaryImage)} alt={title || "Product"} className="w-full h-full object-cover" />
                                 ) : (
                                   <Image className="h-6 w-6 text-slate-300" />
                                 )}
+                                <span className={`absolute top-2 ${language === 'ar' ? 'right-2' : 'left-2'} bg-red-600 text-white text-[6px] font-black tracking-wider px-1.5 py-0.5 rounded-full shadow z-10`}>
+                                  COD
+                                </span>
                               </div>
-                              <div className="p-3 space-y-1.5">
-                                <h1 className="font-bold text-xs" style={{ color: previewTheme['--theme-text'] }}>
+                              {images.length > 1 && (
+                                <div className="flex gap-1 px-2 py-1.5 overflow-x-auto border-b border-slate-100">
+                                  {images.slice(0, 5).map((img, idx) => (
+                                    <div key={idx} className={`h-7 w-7 rounded overflow-hidden border flex-shrink-0 ${idx === 0 ? 'border-primary' : 'border-transparent opacity-60'}`}>
+                                      <img src={getFullImageUrl(img.image_url)} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className={`p-3 space-y-1.5 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                                <h1 
+                                  className={hasPreviewTheme ? 'font-extrabold text-xs' : 'text-xs font-extrabold text-slate-900'}
+                                  style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                >
                                   {title || (language === 'ar' ? "عنوان المنتج..." : "Product Title...")}
                                 </h1>
-                                <div className="text-xs font-black font-outfit" style={{ color: previewTheme['--theme-accent'] || '#4f46e5' }}>
-                                  {price ? `${formatCurrency(parseFloat(price))}` : "0.00 DZD"}
-                                </div>
                                 {description && (
-                                  <p className="text-[10px] opacity-70 leading-relaxed" style={{ color: previewTheme['--theme-text'] }}>
-                                    {description}
+                                  <p 
+                                    className={hasPreviewTheme ? 'text-[9px] leading-relaxed opacity-70' : 'text-[9px] text-slate-500 leading-relaxed'}
+                                    style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                  >
+                                    {description.length > 80 ? description.substring(0, 80) + '...' : description}
                                   </p>
                                 )}
+                                {hasVariants && variantAttributes.length > 0 && (
+                                  <div className="space-y-1 pt-1 border-t border-dashed border-slate-100">
+                                    {variantAttributes.slice(0, 2).map((attr, aIdx) => (
+                                      <div key={aIdx} className="space-y-0.5">
+                                        <span className="text-[8px] font-bold text-slate-500" style={hasPreviewTheme ? { color: previewTheme['--theme-text'], opacity: 0.6 } : {}}>{attr.name}:</span>
+                                        <div className="flex flex-wrap gap-0.5">
+                                          {attr.values.slice(0, 4).map((val, vIdx) => (
+                                            <span key={vIdx} className={`px-1.5 py-0.5 rounded text-[7px] font-bold border ${vIdx === 0 ? 'bg-primary/10 border-primary text-primary' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                                              {val}
+                                            </span>
+                                          ))}
+                                          {attr.values.length > 4 && <span className="text-[7px] text-slate-400">+{attr.values.length - 4}</span>}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+                                  <div 
+                                    className={hasPreviewTheme ? 'text-sm font-black font-outfit' : 'text-sm font-black text-primary font-outfit'}
+                                    style={hasPreviewTheme ? { color: previewTheme['--theme-accent'] } : {}}
+                                  >
+                                    {price ? formatCurrency(parseFloat(price)) : "0.00 DZD"}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           );
                         case "quantity_offers":
                           return quantityOffers.length > 0 ? (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
-                              <div className="p-3 space-y-1.5">
-                                <div className="font-bold text-[10px]" style={{ color: previewTheme['--theme-text'] }}>{language === 'ar' ? "عروض الكمية" : (language === 'fr' ? "Offres de quantité" : "Quantity Offers")}</div>
+                              <div className={`p-3 space-y-1.5 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                                <h3 
+                                  className={hasPreviewTheme ? 'text-[10px] font-extrabold' : 'text-[10px] font-extrabold text-slate-900'}
+                                  style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                >
+                                  {language === 'ar' ? "عروض الكمية (اختر الكمية لتخفيض السعر)" : (language === 'fr' ? "Offres de quantité" : "Quantity Offers")}
+                                </h3>
                                 <div className="grid grid-cols-2 gap-1">
-                                  {quantityOffers.map((o: any, idx: number) => (
-                                    <div key={idx} className="p-1 text-center border border-slate-100 rounded-lg bg-slate-50/50">
-                                      <div className="text-[10px] font-bold font-outfit">{formatCurrency(o.price)}</div>
-                                      <div className="text-[8px] text-slate-400">{o.quantity} {language === 'ar' ? "قطع" : "pieces"}</div>
+                                  {/* Base 1-piece card */}
+                                  <div 
+                                    className="p-1.5 text-center"
+                                    style={hasPreviewTheme ? {
+                                      borderWidth: '2px', borderStyle: 'solid',
+                                      borderColor: previewTheme['--theme-accent'] || '#6366f1',
+                                      borderRadius: previewTheme['--theme-section-radius'] || '8px',
+                                      backgroundColor: `${previewTheme['--theme-accent'] || '#6366f1'}10`,
+                                    } : {
+                                      borderWidth: '2px', borderStyle: 'solid',
+                                      borderColor: '#6366f1', borderRadius: '8px',
+                                      backgroundColor: 'rgba(99,102,241,0.05)',
+                                    }}
+                                  >
+                                    <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                      {price ? formatCurrency(parseFloat(price)) : "0 DZD"}
                                     </div>
-                                  ))}
+                                    <div className={hasPreviewTheme ? 'text-[8px] opacity-60' : 'text-[8px] text-slate-500'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                      {language === 'ar' ? "1 قطعة" : "1 piece"}
+                                    </div>
+                                  </div>
+                                  {quantityOffers.map((o: any, idx: number) => {
+                                    const basePrice = price ? parseFloat(price) : 0;
+                                    const savePct = basePrice > 0 ? Math.round((1 - o.price / o.quantity / basePrice) * 100) : 0;
+                                    return (
+                                      <div 
+                                        key={idx} 
+                                        className="p-1.5 text-center"
+                                        style={hasPreviewTheme ? {
+                                          borderWidth: '2px', borderStyle: 'solid',
+                                          borderColor: previewTheme['--theme-card-border'] || '#e5e7eb',
+                                          borderRadius: previewTheme['--theme-section-radius'] || '8px',
+                                        } : {
+                                          borderWidth: '2px', borderStyle: 'solid',
+                                          borderColor: '#f1f5f9', borderRadius: '8px',
+                                        }}
+                                      >
+                                        <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                          {formatCurrency(o.price)}
+                                        </div>
+                                        <div className={hasPreviewTheme ? 'text-[8px] opacity-60' : 'text-[8px] text-slate-500'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                          {o.quantity} {language === 'ar' ? "قطع" : "pieces"}
+                                        </div>
+                                        {savePct > 0 && (
+                                          <div className="text-[7px] text-green-600 font-bold mt-0.5">
+                                            {language === 'ar' ? "وفر" : "Save"} {savePct}%
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             </div>
@@ -4163,20 +4253,39 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                         }
                         case "text":
                           return (
-                            <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={{ ...previewCardStyle, backgroundColor: config.background_color || 'transparent' }} {...previewClickableProps}>
+                            <div key={section.id} className={`${previewCardClass} ${clickableRingClass} ${language === 'ar' ? 'text-right' : 'text-left'}`} style={previewCardStyle} {...previewClickableProps}>
                               <div 
-                                className="text-[10px] leading-relaxed p-2" 
-                                style={{ color: config.color || previewTheme['--theme-text'], textAlign: config.text_align || 'right' as any }}
+                                className="text-[9px] leading-relaxed p-3" 
+                                style={{ 
+                                  fontSize: config.font_size || '10px',
+                                  color: hasPreviewTheme ? (config.color !== '#ffffff' ? config.color : previewTheme['--theme-text']) : (config.color || '#334155'), 
+                                  textAlign: config.text_align || (language === 'ar' ? 'right' : 'left') as any 
+                                }}
                                 dangerouslySetInnerHTML={{ __html: config.content || (language === 'ar' ? 'نص مخصص...' : 'Custom text...') }}
                               />
                             </div>
                           );
                         case "footer":
                           return (
-                            <div key={section.id} className={`w-full text-center py-4 border-t border-slate-100 bg-white ${clickableRingClass}`} style={{ ...previewCardStyle, backgroundColor: config.background_color || '#ffffff' }} {...previewClickableProps}>
+                            <div 
+                              key={section.id} 
+                              className={`w-full text-center py-4 border-t ${clickableRingClass}`} 
+                              style={{
+                                backgroundColor: config.background_color || (hasPreviewTheme ? (previewTheme['--theme-bg'] || '#ffffff') : '#ffffff'),
+                                color: config.color || (hasPreviewTheme ? previewTheme['--theme-text'] : '#1e293b'),
+                                borderColor: hasPreviewTheme ? (previewTheme['--theme-card-border'] || '#f1f5f9') : '#cbd5e1',
+                                borderTopWidth: '1px',
+                                borderTopStyle: 'solid' as const,
+                              }} 
+                              {...previewClickableProps}
+                            >
                               <div 
-                                className="text-[9px] opacity-75 leading-relaxed px-4" 
-                                style={{ color: config.color || previewTheme['--theme-text'] || '#64748b', textAlign: config.text_align || 'center' as any }}
+                                className="text-[9px] opacity-80 leading-relaxed px-3 font-cairo" 
+                                style={{ 
+                                  fontSize: config.font_size || '10px',
+                                  color: config.color || (hasPreviewTheme ? previewTheme['--theme-text'] : '#64748b'), 
+                                  textAlign: config.text_align || 'center' as any 
+                                }}
                                 dangerouslySetInnerHTML={{ __html: config.content || (language === 'ar' ? '© جميع الحقوق محفوظة' : (language === 'fr' ? '© Tous droits réservés' : '© All rights reserved')) }}
                               />
                             </div>
@@ -4185,50 +4294,72 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                           return (
                             <div 
                               key={section.id} 
-                              className={`w-full py-3.5 px-4 border-b border-slate-200 bg-white/95 backdrop-blur flex items-center justify-between ${clickableRingClass}`} 
+                              className={`w-full py-3 px-4 border-b flex items-center justify-between ${clickableRingClass}`} 
                               style={{ 
-                                ...previewCardStyle, 
-                                backgroundColor: config.background_color ? `${config.background_color}F2` : '#ffffffec' 
+                                backgroundColor: config.background_color || (hasPreviewTheme ? (previewTheme['--theme-bg'] || '#ffffff') : '#ffffff'),
+                                color: config.color || (hasPreviewTheme ? previewTheme['--theme-text'] : '#1e293b'),
+                                borderColor: hasPreviewTheme ? (previewTheme['--theme-card-border'] || '#f1f5f9') : '#cbd5e1',
+                                borderBottomWidth: '1px',
+                                borderBottomStyle: 'solid' as const,
                               }} 
                               {...previewClickableProps}
                             >
-                              <div className="flex items-center gap-2 flex-grow justify-start">
-                                {selectedStore?.logo ? (
-                                  <img src={getFullImageUrl(selectedStore.logo)} alt={selectedStore.name} className="h-6 w-auto object-contain flex-shrink-0" />
-                                ) : (
-                                  <div className="flex items-center gap-1.5">
-                                    <div className="h-6 w-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                                      {selectedStore?.name?.charAt(0).toUpperCase() || "M"}
-                                    </div>
-                                    <span 
-                                      className="text-xs font-bold text-slate-800"
-                                      style={{ color: config.color || undefined }}
-                                    >
-                                      {config.content || selectedStore?.name}
-                                    </span>
+                              {selectedStore?.logo ? (
+                                <img src={getFullImageUrl(selectedStore.logo)} alt={selectedStore.name} className="h-6 w-auto object-contain flex-shrink-0" />
+                              ) : (
+                                <div className="flex items-center gap-1.5 flex-grow justify-start">
+                                  <div 
+                                    className="h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                                    style={hasPreviewTheme ? {
+                                      backgroundColor: `${previewTheme['--theme-accent'] || '#6366f1'}15`,
+                                      color: previewTheme['--theme-accent'] || '#6366f1',
+                                    } : {
+                                      backgroundColor: 'rgba(99,102,241,0.1)',
+                                      color: 'rgb(99,102,241)',
+                                    }}
+                                  >
+                                    {selectedStore?.name?.charAt(0).toUpperCase() || "M"}
                                   </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="h-6 w-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 bg-slate-50">
-                                  <ShoppingCart className="h-3.5 w-3.5" />
+                                  <div 
+                                    className="text-[11px] font-bold leading-relaxed flex-grow text-right font-cairo"
+                                    style={{
+                                      fontSize: config.font_size || '14px',
+                                      color: config.color || (hasPreviewTheme ? previewTheme['--theme-text'] : '#111111'),
+                                      textAlign: config.text_align || (language === 'ar' ? 'right' : 'left') as any,
+                                    }}
+                                    dangerouslySetInnerHTML={{ __html: config.content || selectedStore?.name || (language === 'ar' ? 'متجرنا' : 'Our Store') }}
+                                  />
                                 </div>
-                              </div>
+                              )}
                             </div>
                           );
-                        case "image":
+                        case "image": {
+                          const imgUrl = config.image_url || config.image;
                           return (
                             <div key={section.id} className={`${previewCardClass} overflow-hidden ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
-                              {config.image ? (
-                                  <img src={getFullImageUrl(config.image)} alt="" className="w-full object-cover" />
+                              {imgUrl ? (
+                                <img 
+                                  src={getFullImageUrl(imgUrl)} 
+                                  alt={config.caption || ""} 
+                                  className="w-full object-cover" 
+                                  style={hasPreviewTheme ? { borderRadius: viewport === 'mobile' ? '0px' : previewTheme['--theme-img-radius'] } : {}}
+                                />
                               ) : (
                                 <div className="h-16 bg-slate-100 flex items-center justify-center text-[9px] text-slate-300">
                                   {language === 'ar' ? "قسم صورة" : "Image Section"}
                                 </div>
                               )}
-                              {config.caption && <p className="text-[8px] text-center py-0.5 opacity-60">{config.caption}</p>}
+                              {config.caption && (
+                                <p 
+                                  className={hasPreviewTheme ? 'text-[8px] text-center py-1 px-2 opacity-60' : 'text-[8px] text-slate-500 text-center py-1 px-2'}
+                                  style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                >
+                                  {config.caption}
+                                </p>
+                              )}
                             </div>
                           );
+                        }
                         case "reviews": {
                           const reviewsList = config.reviews || [];
                           return (
@@ -4261,23 +4392,51 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                         case "before_after":
                           return (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
-                              <div className="grid grid-cols-2 gap-1.5 p-2 text-center text-[8px]">
-                                <div>
-                                  <div className="opacity-60 mb-1">{language === 'ar' ? "قبل" : "Before"}</div>
-                                  {config.before_url ? (
-                                    <img src={getFullImageUrl(config.before_url)} alt="Before" className="h-16 w-full object-cover rounded border border-slate-200" />
-                                  ) : (
-                                    <div className="h-16 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="opacity-60 mb-1">{language === 'ar' ? "بعد" : "After"}</div>
-                                  {config.after_url ? (
-                                    <img src={getFullImageUrl(config.after_url)} alt="After" className="h-16 w-full object-cover rounded border border-slate-200" />
-                                  ) : (
-                                    <div className="h-16 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
-                                  )}
-                                </div>
+                              <div className={`grid grid-cols-2 gap-2 p-3 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                                {config.before_url && (
+                                  <div>
+                                    <p 
+                                      className={hasPreviewTheme ? 'text-[8px] font-bold mb-1 text-center opacity-60' : 'text-[8px] font-bold text-slate-500 mb-1 text-center'}
+                                      style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                    >
+                                      {language === 'ar' ? "قبل" : "Before"}
+                                    </p>
+                                    <img 
+                                      src={getFullImageUrl(config.before_url)} 
+                                      alt="Before" 
+                                      className="w-full object-cover" 
+                                      style={{ borderRadius: hasPreviewTheme ? (previewTheme['--theme-img-radius'] || '8px') : '8px' }}
+                                    />
+                                  </div>
+                                )}
+                                {config.after_url && (
+                                  <div>
+                                    <p 
+                                      className={hasPreviewTheme ? 'text-[8px] font-bold mb-1 text-center opacity-60' : 'text-[8px] font-bold text-slate-500 mb-1 text-center'}
+                                      style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                    >
+                                      {language === 'ar' ? "بعد" : "After"}
+                                    </p>
+                                    <img 
+                                      src={getFullImageUrl(config.after_url)} 
+                                      alt="After" 
+                                      className="w-full object-cover" 
+                                      style={{ borderRadius: hasPreviewTheme ? (previewTheme['--theme-img-radius'] || '8px') : '8px' }}
+                                    />
+                                  </div>
+                                )}
+                                {!config.before_url && !config.after_url && (
+                                  <>
+                                    <div>
+                                      <div className="text-[8px] opacity-60 mb-1 text-center">{language === 'ar' ? "قبل" : "Before"}</div>
+                                      <div className="h-16 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[8px] text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-[8px] opacity-60 mb-1 text-center">{language === 'ar' ? "بعد" : "After"}</div>
+                                      <div className="h-16 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[8px] text-slate-300">{language === 'ar' ? "صورة" : "Image"}</div>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </div>
                           );
@@ -4287,19 +4446,26 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                             : (typeof config.features === 'string' ? config.features.split("\n").filter(Boolean) : []);
                           return (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
-                              <div className="p-2 space-y-1 text-right text-[9px]" style={{ color: previewTheme['--theme-text'] }}>
-                                <div className="font-bold">{language === 'ar' ? "مميزات المنتج" : (language === 'fr' ? "Caractéristiques" : "Product Features")}</div>
+                              <div className={`p-3 space-y-1.5 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                                <h3 
+                                  className={hasPreviewTheme ? 'text-[10px] font-extrabold' : 'text-[10px] font-extrabold text-slate-900'}
+                                  style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
+                                >
+                                  {language === 'ar' ? "مميزات المنتج" : (language === 'fr' ? "Caractéristiques du produit" : "Product Features")}
+                                </h3>
                                 {featuresList.length > 0 ? (
-                                  <ul className="space-y-0.5 opacity-80">
+                                  <ul className="space-y-1">
                                     {featuresList.map((f: string, idx: number) => (
-                                      <li key={idx}>✓ {f}</li>
+                                      <li key={idx} className="flex items-start gap-1 text-[9px] justify-start" style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : { color: '#475569' }}>
+                                        <svg className="h-3 w-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke={hasPreviewTheme ? (previewTheme['--theme-accent'] || '#22c55e') : '#22c55e'} strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        {f}
+                                      </li>
                                     ))}
                                   </ul>
                                 ) : (
-                                  <ul className="space-y-0.5 opacity-80">
-                                    <li>✓ {language === 'ar' ? "ميزة أولى للمنتج" : "1st feature"}</li>
-                                    <li>✓ {language === 'ar' ? "ميزة ثانية للمنتج" : "2nd feature"}</li>
-                                  </ul>
+                                  <p className={hasPreviewTheme ? 'text-[8px] text-center py-1 opacity-50' : 'text-[8px] text-slate-400 text-center py-1'}>
+                                    {language === 'ar' ? "لا توجد مميزات مضافة" : "No features added"}
+                                  </p>
                                 )}
                               </div>
                             </div>
