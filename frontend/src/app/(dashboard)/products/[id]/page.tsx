@@ -3806,7 +3806,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                   >
                     <div className={`w-full max-w-full ${viewport === 'mobile' ? 'py-0 space-y-0 px-0' : 'py-4 space-y-4 px-2 md:py-8 md:space-y-6 md:px-4'}`}>
                       {activeList.map((section: any) => {
-                      const config = section.config || {};
+                      const config = (editingSection && editingSection.id === section.id) 
+                        ? (editingSection.config || {}) 
+                        : (section.config || {});
                       const previewTheme: any = PREVIEW_THEME_STYLES[selectedTheme] || {};
                       const hasPreviewTheme = !!selectedTheme && !!PREVIEW_THEME_STYLES[selectedTheme];
                       const previewCardStyle: React.CSSProperties = {

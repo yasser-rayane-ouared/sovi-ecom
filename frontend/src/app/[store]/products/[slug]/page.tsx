@@ -1812,7 +1812,7 @@ export default function StorefrontProductDetail() {
                   style={getSectionStyle(section)}
                 >
                   <img
-                    src={getFullImageUrl(config.image_url)}
+                    src={getFullImageUrl(config.image_url || config.image)}
                     alt={config.caption || ""}
                     className="w-full object-cover"
                     style={hasTheme ? { borderRadius: isMobile ? '0px' : themed.imgRadius } : {}}
@@ -2130,7 +2130,7 @@ export default function StorefrontProductDetail() {
                   style={getSectionStyle(section)}
                 >
                   <div className="grid grid-cols-2 gap-3">
-                    {config.before_url && (
+                    {(config.before_url || config.before) && (
                       <div>
                         <p
                           className={hasTheme ? 'text-xs font-bold mb-1 text-center opacity-60' : 'text-xs font-bold text-slate-500 mb-1 text-center'}
@@ -2138,10 +2138,10 @@ export default function StorefrontProductDetail() {
                         >
                           {t("قبل", "Avant", "Before")}
                         </p>
-                        <img src={getFullImageUrl(config.before_url)} alt="Before" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                        <img src={getFullImageUrl(config.before_url || config.before)} alt="Before" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
                       </div>
                     )}
-                    {config.after_url && (
+                    {(config.after_url || config.after) && (
                       <div>
                         <p
                           className={hasTheme ? 'text-xs font-bold mb-1 text-center opacity-60' : 'text-xs font-bold text-slate-500 mb-1 text-center'}
@@ -2149,7 +2149,7 @@ export default function StorefrontProductDetail() {
                         >
                           {t("بعد", "Après", "After")}
                         </p>
-                        <img src={getFullImageUrl(config.after_url)} alt="After" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                        <img src={getFullImageUrl(config.after_url || config.after)} alt="After" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
                       </div>
                     )}
                   </div>
