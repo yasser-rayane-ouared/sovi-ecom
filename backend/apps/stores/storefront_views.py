@@ -777,12 +777,52 @@ class StorefrontCommunesView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        wilaya = Wilaya.objects.filter(code=self.kwargs['wilaya_id']).first()
+        wilaya_id = self.kwargs['wilaya_id']
+        wilaya = Wilaya.objects.filter(code=wilaya_id).first()
+        if not wilaya:
+            wilaya = Wilaya.objects.filter(id=wilaya_id).first()
+            
         if not wilaya:
             return Commune.objects.none()
         
-        # Auto-seed default commune if none exist for this wilaya
+        # Auto-seed from JSON if empty or has only 1 fallback commune
         communes = Commune.objects.filter(wilaya=wilaya)
+        if communes.count() <= 1:
+            import json
+            from pathlib import Path
+            base_dir = Path(__file__).resolve().parent.parent.parent
+            data_file = base_dir / 'locations' / 'data' / 'algeria_locations.json'
+            if data_file.exists():
+                try:
+                    with open(data_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    wilaya_data = None
+                    for w_data in data.get('wilayas', []):
+                        if w_data.get('code') == wilaya.code:
+                            wilaya_data = w_data
+                            break
+                    if wilaya_data and wilaya_data.get('communes'):
+                        # Delete any existing fallback communes for this wilaya
+                        communes.delete()
+                        communes_to_create = []
+                        for commune_name in wilaya_data['communes']:
+                            communes_to_create.append(
+                                Commune(
+                                    wilaya=wilaya,
+                                    name_ar=commune_name,
+                                    name_fr=commune_name,
+                                    name_en=commune_name,
+                                    postal_code=f"{wilaya.code:02d}000"
+                                )
+                            )
+                        Commune.objects.bulk_create(communes_to_create)
+                        communes = Commune.objects.filter(wilaya=wilaya)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to auto-seed delivery communes from JSON: {e}")
+
+        # Auto-seed default commune if still empty
         if not communes.exists():
             Commune.objects.get_or_create(
                 wilaya=wilaya,
