@@ -1,6 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  swcMinify: true,
+  compiler: {
+    // Strip console.log in production builds to reduce bundle size
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  experimental: {
+    // Tree-shake heavy libraries so only used icons/components are bundled
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts', '@tiptap/react', '@tiptap/starter-kit'],
+  },
   images: {
     remotePatterns: [
       {
