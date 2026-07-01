@@ -27,6 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [stores, setStores] = useState<any[]>([]);
   const { selectedStore, setSelectedStore } = useDashboardStore();
+  const [logoError, setLogoError] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [globalSidebarCollapsed, setGlobalSidebarCollapsed] = useState(() => {
@@ -82,6 +83,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       
       setOnboardingTasks(tasksObj);
     }
+  }, [selectedStore]);
+
+  useEffect(() => {
+    setLogoError(false);
   }, [selectedStore]);
 
   const toggleOnboardingTask = (key: keyof typeof onboardingTasks) => {
@@ -244,7 +249,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       });
     }
-  }, [selectedStore]);
+  }, [selectedStore, pathname]);
 
   const handleLogout = () => {
     logout();
@@ -329,23 +334,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <div className="flex items-center gap-3">
                           {/* Store Logo / Initial Avatar */}
                           <div className="store-avatar-glass h-10 w-10 rounded-xl flex items-center justify-center font-black text-xl flex-shrink-0 font-outfit text-white overflow-hidden">
-                            {selectedStore?.logo ? (
+                            {selectedStore?.logo && !logoError ? (
                               <img
                                 src={getFullImageUrl(selectedStore.logo)}
                                 alt={selectedStore.name}
                                 className="h-full w-full object-cover rounded-xl"
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                  (e.currentTarget.nextSibling as HTMLElement)!.style.display = 'flex';
-                                }}
+                                onError={() => setLogoError(true)}
                               />
-                            ) : null}
-                            <span
-                              className="h-full w-full flex items-center justify-center"
-                              style={{ display: selectedStore?.logo ? 'none' : 'flex' }}
-                            >
-                              {selectedStore?.name?.[0]?.toUpperCase() || 'S'}
-                            </span>
+                            ) : (
+                              <span className="h-full w-full flex items-center justify-center">
+                                {selectedStore?.name?.[0]?.toUpperCase() || 'S'}
+                              </span>
+                            )}
                           </div>
                           <div className="text-start">
                             <h4 className="font-black text-sm truncate max-w-[110px] text-white tracking-wide font-cairo leading-tight drop-shadow">
@@ -379,23 +379,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div className="relative flex items-center justify-center p-2">
                       {/* Store Logo / Initial Avatar */}
                       <div className="store-avatar-glass h-10 w-10 rounded-xl flex items-center justify-center font-black text-xl flex-shrink-0 font-outfit text-white overflow-hidden">
-                        {selectedStore?.logo ? (
+                        {selectedStore?.logo && !logoError ? (
                           <img
                             src={getFullImageUrl(selectedStore.logo)}
                             alt={selectedStore.name}
                             className="h-full w-full object-cover rounded-xl"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).style.display = 'none';
-                              (e.currentTarget.nextSibling as HTMLElement)!.style.display = 'flex';
-                            }}
+                            onError={() => setLogoError(true)}
                           />
-                        ) : null}
-                        <span
-                          className="h-full w-full flex items-center justify-center"
-                          style={{ display: selectedStore?.logo ? 'none' : 'flex' }}
-                        >
-                          {selectedStore?.name?.[0]?.toUpperCase() || 'S'}
-                        </span>
+                        ) : (
+                          <span className="h-full w-full flex items-center justify-center">
+                            {selectedStore?.name?.[0]?.toUpperCase() || 'S'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
