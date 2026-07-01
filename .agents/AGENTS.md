@@ -26,3 +26,21 @@ This project-scoped rules document outlines the core patterns and architectural 
 
 ### 2. Cities and Communes Fallbacks
 - In `StorefrontCommunesView`, if no communes are found in the database for a selected wilaya (province), always auto-seed or generate a fallback default commune on-the-fly to prevent empty dropdowns on the storefront checkout form.
+
+## Performance Rules
+
+### 1. Parallel Storefront API Fetching (Frontend)
+- **NEVER** use sequential `.then()` chaining for independent data fetches (store info, product, wilayas) on storefront pages. This creates a "waterfall" that multiplies load latency.
+- **ALWAYS** use `Promise.all([...])` to fetch independent API resources simultaneously on the following pages:
+  - `frontend/src/app/[store]/products/[slug]/page.tsx` — store, product, and wilayas must be fetched in parallel.
+  - `frontend/src/app/[store]/checkout/page.tsx` — store and wilayas must be fetched in parallel.
+  - `frontend/src/app/[store]/pages/[slug]/page.tsx` — store, pageData, and wilayas must be fetched in parallel.
+- Any new storefront page that requires multiple independent API calls must also use `Promise.all`.
+
+### 2. Backend Store Metadata Caching (Backend)
+- `get_store_or_404(subdomain)` in `storefront_views.py` MUST check the Django cache before querying the database.
+  - Cache key format: `storefront_store_<subdomain>` (lowercased).
+  - Positive results (valid store) must be cached for **300 seconds** (5 minutes).
+  - Negative results (no store, inactive, no subscription) must be cached for **60 seconds** (1 minute) using `False` as the sentinel value.
+- `Store.save()` and `StoreSettings.save()` MUST delete the cache keys for their subdomain and custom_domain on every save, so merchant changes take effect immediately.
+- Do NOT remove the `cache.get()` / `cache.set()` / `cache.delete()` calls from these methods.
