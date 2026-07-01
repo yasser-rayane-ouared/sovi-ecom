@@ -49,9 +49,10 @@ export function getAbsoluteStorefrontLink(subdomain: string, path: string, custo
     return `http://${subdomain}.localhost${port}${path}`;
   }
   
-  // In production: return https://{subdomain}.{rootDomain}/path
+  // In production: return http:// by default to avoid hostname certificate mismatch errors
+  // on subdomains that do not have wildcard SSL configured yet.
   const cleanRoot = rootDomain.split(':')[0];
-  return `${window.location.protocol}//${subdomain}.${cleanRoot}${path}`;
+  return `http://${subdomain}.${cleanRoot}${path}`;
 }
 
 export function getRootDomain() {
