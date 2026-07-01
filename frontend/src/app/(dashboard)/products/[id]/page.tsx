@@ -8,7 +8,7 @@ import { useLanguageStore } from "../../../../stores/language";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { Card, CardContent } from "../../../../components/ui/card";
-import { Plus, Trash2, Edit2, Image, Sparkles, AlertCircle, GripVertical, EyeOff, Layers, Text, Camera, Star, SplitSquareHorizontal, Gift, CheckSquare, ChevronDown, Palette, Check, Shield, Smartphone, Tablet, Monitor, Tag, ShoppingCart, User, Phone, MapPin, Truck } from "lucide-react";
+import { Plus, Trash2, Edit2, Image, Sparkles, AlertCircle, GripVertical, EyeOff, Layers, Text, Camera, Star, SplitSquareHorizontal, Gift, CheckSquare, ChevronDown, Palette, Check, Shield, Smartphone, Tablet, Monitor, Tag, ShoppingCart, User, Phone, MapPin, Truck, Save, Loader2 } from "lucide-react";
 import { formatCurrency } from "../../../../lib/utils";
 import {
   DndContext,
@@ -3458,6 +3458,41 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                 </div>
               );
             })()}
+            
+            {/* Save changes button block at the bottom of Column 2 */}
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm text-right flex items-center justify-between gap-4 mt-6">
+              <p className="text-[10px] text-muted-foreground leading-relaxed flex-1">
+                {language === 'ar' ? "تأكد من حفظ جميع التغييرات قبل الانتقال إلى صفحة أخرى." : "Make sure to save all changes before navigating away."}
+              </p>
+              <div className="flex gap-3 shrink-0">
+                <Button 
+                  type="button" 
+                  onClick={() => router.push("/products")} 
+                  variant="outline" 
+                  className="text-xs px-4 py-2 h-auto rounded-xl"
+                >
+                  {language === 'ar' ? "إلغاء" : "Cancel"}
+                </Button>
+                <Button 
+                  type="submit" 
+                  variant="glow" 
+                  disabled={submitting} 
+                  className="text-xs px-6 py-2.5 h-auto rounded-xl font-bold font-cairo flex items-center gap-1.5"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>{language === 'ar' ? "جاري الحفظ..." : "Saving..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>{isCreateMode ? (language === 'ar' ? "إنشاء وحفظ المنتج" : "Create Product") : (language === 'ar' ? "حفظ التغييرات" : "Save Changes")}</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
             </div>
 
           {/* Column 3: Left Column (Phone Preview, lg:w-[30%]) */}
