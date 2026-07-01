@@ -791,7 +791,7 @@ class StorefrontCommunesView(generics.ListAPIView):
             import json
             from pathlib import Path
             base_dir = Path(__file__).resolve().parent.parent.parent
-            data_file = base_dir / 'locations' / 'data' / 'algeria_locations.json'
+            data_file = base_dir / 'apps' / 'locations' / 'data' / 'algeria_locations.json'
             if data_file.exists():
                 try:
                     with open(data_file, 'r', encoding='utf-8') as f:
@@ -802,20 +802,33 @@ class StorefrontCommunesView(generics.ListAPIView):
                             wilaya_data = w_data
                             break
                     if wilaya_data and wilaya_data.get('communes'):
-                        # Delete any existing fallback communes for this wilaya
-                        communes.delete()
+                        # Build a set of existing names (in lowercase) to avoid duplicates
+                        existing_names = set()
+                        for c in communes:
+                            if c.name_ar:
+                                existing_names.add(c.name_ar.strip().lower())
+                            if c.name_fr:
+                                existing_names.add(c.name_fr.strip().lower())
+                            if c.name_en:
+                                existing_names.add(c.name_en.strip().lower())
+                        
                         communes_to_create = []
                         for commune_name in wilaya_data['communes']:
-                            communes_to_create.append(
-                                Commune(
-                                    wilaya=wilaya,
-                                    name_ar=commune_name,
-                                    name_fr=commune_name,
-                                    name_en=commune_name,
-                                    postal_code=f"{wilaya.code:02d}000"
+                            cleaned_name = commune_name.strip().lower()
+                            if cleaned_name not in existing_names:
+                                communes_to_create.append(
+                                    Commune(
+                                        wilaya=wilaya,
+                                        name_ar=commune_name,
+                                        name_fr=commune_name,
+                                        name_en=commune_name,
+                                        postal_code=f"{wilaya.code:02d}000"
+                                    )
                                 )
-                            )
-                        Commune.objects.bulk_create(communes_to_create)
+                                existing_names.add(cleaned_name)
+                                
+                        if communes_to_create:
+                            Commune.objects.bulk_create(communes_to_create)
                         communes = Commune.objects.filter(wilaya=wilaya)
                 except Exception as e:
                     import logging
