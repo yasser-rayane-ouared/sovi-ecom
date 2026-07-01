@@ -46,20 +46,18 @@ export default function ConsumerLandingPage() {
   useEffect(() => {
     if (subdomain && slug) {
       setLoading(true);
-      api.get(`/storefront/${subdomain}/`)
-        .then((res) => {
-          setStore(res.data);
-          if (res.data?.settings?.primary_color) {
-            document.documentElement.style.setProperty('--primary', res.data.settings.primary_color);
+      Promise.all([
+        api.get(`/storefront/${subdomain}/`),
+        api.get(`/storefront/${subdomain}/pages/${slug}/`),
+        api.get(`/storefront/${subdomain}/wilayas/`)
+      ])
+        .then(([storeRes, pageRes, wilayasRes]) => {
+          setStore(storeRes.data);
+          if (storeRes.data?.settings?.primary_color) {
+            document.documentElement.style.setProperty('--primary', storeRes.data.settings.primary_color);
           }
-          return api.get(`/storefront/${subdomain}/pages/${slug}/`);
-        })
-        .then((res) => {
-          setPageData(res.data);
-          return api.get(`/storefront/${subdomain}/wilayas/`);
-        })
-        .then((res) => {
-          setWilayas(res.data || []);
+          setPageData(pageRes.data);
+          setWilayas(wilayasRes.data || []);
         })
         .catch(() => {})
         .finally(() => setLoading(false));

@@ -14,10 +14,21 @@ from apps.pages.serializers import LandingPagePublicSerializer
 
 
 def get_store_or_404(subdomain):
+    from django.core.cache import cache
     from django.db.models import Q
+
     clean_subdomain = subdomain.lower() if subdomain else ""
     if clean_subdomain.startswith('www.'):
         clean_subdomain = clean_subdomain[4:]
+
+    cache_key = f"storefront_store_{clean_subdomain}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        # None is stored as sentinel to indicate "no store" — use False as sentinel
+        if cached is False:
+            return None
+        return cached
+
     try:
         store = Store.objects.select_related('settings', 'active_theme').get(
             Q(subdomain=subdomain) |
@@ -32,15 +43,20 @@ def get_store_or_404(subdomain):
         from apps.subscriptions.models import get_active_limits
         limits = get_active_limits(store)
         if not limits['has_active_subscription']:
+            cache.set(cache_key, False, 60)  # Cache negative result for 1 minute
             return None
             
         # Verify custom domain limits
         is_subdomain_match = (subdomain.lower() == store.subdomain.lower()) or (clean_subdomain == store.subdomain.lower())
         if not is_subdomain_match and not limits.get('has_custom_domain', False):
+            cache.set(cache_key, False, 60)
             return None
-            
+
+        # Cache the store object for 5 minutes
+        cache.set(cache_key, store, 300)
         return store
     except Store.DoesNotExist:
+        cache.set(cache_key, False, 60)
         return None
 
 

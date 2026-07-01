@@ -55,6 +55,17 @@ class Store(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        """Invalidate storefront cache on store update."""
+        super().save(*args, **kwargs)
+        try:
+            from django.core.cache import cache
+            cache.delete(f"storefront_store_{self.subdomain.lower()}")
+            if self.custom_domain:
+                cache.delete(f"storefront_store_{self.custom_domain.lower()}")
+        except Exception:
+            pass
+
 
 class StoreSettings(TimeStampedModel):
     """Store-level settings and configuration."""
@@ -116,6 +127,18 @@ class StoreSettings(TimeStampedModel):
 
     def __str__(self):
         return f'Settings for {self.store.name}'
+
+    def save(self, *args, **kwargs):
+        """Invalidate storefront store cache when settings change."""
+        super().save(*args, **kwargs)
+        try:
+            from django.core.cache import cache
+            store = self.store
+            cache.delete(f"storefront_store_{store.subdomain.lower()}")
+            if store.custom_domain:
+                cache.delete(f"storefront_store_{store.custom_domain.lower()}")
+        except Exception:
+            pass
 
 
 class StoreWorker(TimeStampedModel):

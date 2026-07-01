@@ -399,12 +399,16 @@ export default function StorefrontProductDetail() {
   useEffect(() => {
     if (!subdomain || !slug) return;
     setLoading(true);
-    api.get(`/storefront/${subdomain}/`)
-      .then((res) => setStore(res.data))
-      .then(() => api.get(`/storefront/${subdomain}/products/${slug}/`))
-      .then((res) => setRawProduct(res.data))
-      .then(() => api.get(`/storefront/${subdomain}/wilayas/`))
-      .then((res) => setWilayas(res.data || []))
+    Promise.all([
+      api.get(`/storefront/${subdomain}/`),
+      api.get(`/storefront/${subdomain}/products/${slug}/`),
+      api.get(`/storefront/${subdomain}/wilayas/`)
+    ])
+      .then(([storeRes, productRes, wilayasRes]) => {
+        setStore(storeRes.data);
+        setRawProduct(productRes.data);
+        setWilayas(wilayasRes.data || []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [subdomain, slug]);
