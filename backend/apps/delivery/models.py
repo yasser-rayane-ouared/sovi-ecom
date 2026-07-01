@@ -102,6 +102,18 @@ class DeliveryPricing(TenantModel):
     class Meta:
         db_table = 'delivery_pricing'
 
+    def save(self, *args, **kwargs):
+        """Invalidate storefront cached wilayas pricing list when pricing changes."""
+        super().save(*args, **kwargs)
+        try:
+            from django.core.cache import cache
+            store = self.store
+            cache.delete(f"storefront_wilayas_{store.subdomain.lower()}")
+            if store.custom_domain:
+                cache.delete(f"storefront_wilayas_{store.custom_domain.lower()}")
+        except Exception:
+            pass
+
     def __str__(self):
         return f'{self.store.name} - {self.wilaya.name_ar}: {self.home_price} DZD'
 

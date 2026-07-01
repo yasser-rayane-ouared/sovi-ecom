@@ -748,6 +748,16 @@ class StorefrontWilayasView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain):
+        from django.core.cache import cache
+        clean_subdomain = subdomain.lower() if subdomain else ""
+        if clean_subdomain.startswith('www.'):
+            clean_subdomain = clean_subdomain[4:]
+
+        cache_key = f"storefront_wilayas_{clean_subdomain}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
         store = get_store_or_404(subdomain)
         if not store:
             return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -783,6 +793,8 @@ class StorefrontWilayasView(APIView):
                 'desk_price': float(p.desk_price),
                 'is_active': p.is_active
             })
+            
+        cache.set(cache_key, data, 86400)  # Cache for 24 hours
         return Response(data)
 
 

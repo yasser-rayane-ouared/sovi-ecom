@@ -72,6 +72,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # Middleware
 # =============================================================================
 MIDDLEWARE = [
+    'django.middleware.gzip.GZipMiddleware',  # Compress all API responses to save network transit bandwidth
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -125,6 +126,7 @@ if RUNNING_IN_DOCKER or 'POSTGRES_HOST' in os.environ:
             'PASSWORD': db_pass,
             'HOST': db_host,
             'PORT': db_port,
+            'CONN_MAX_AGE': 60,  # Reuse database connections to speed up transactions and queries
         }
     }
     CACHES = {
