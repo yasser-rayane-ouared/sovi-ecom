@@ -22,7 +22,16 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         store = self.get_store()
-        return Product.objects.filter(store=store).prefetch_related(
+        
+        # Hide B variant products from dashboard product listings
+        active_variant_ids = Product.objects.filter(
+            store=store,
+            ab_test_product_b__isnull=False
+        ).values_list('ab_test_product_b_id', flat=True)
+
+        return Product.objects.filter(store=store).exclude(
+            id__in=active_variant_ids
+        ).prefetch_related(
             'images', 'videos', 'variants__options', 'quantity_offers', 'bundle_offers__items'
         )
 
