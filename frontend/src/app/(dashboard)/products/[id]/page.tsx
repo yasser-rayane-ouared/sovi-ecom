@@ -3154,6 +3154,8 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
               }
 
               if (section.section_type === 'quantity_offers') {
+                const offersDisplayMode = section.config?.offers_display_mode || 'grid';
+                const offersSectionTitle = section.config?.offers_section_title || '';
                 return (
                   <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
                     <div className="flex items-center justify-between border-b border-border pb-3">
@@ -3164,6 +3166,40 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                       {!showAddOffer && (
                         <button type="button" onClick={() => setShowAddOffer(true)} className="text-xs text-primary hover:underline">{language === 'ar' ? "+ إضافة عرض" : "+ Add Offer"}</button>
                       )}
+                    </div>
+
+                    {/* Section Title Input */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "عنوان القسم (اختياري)" : (language === 'fr' ? "Titre de la section (optionnel)" : "Section Title (optional)")}</label>
+                      <Input
+                        value={offersSectionTitle}
+                        onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, offers_section_title: e.target.value } })}
+                        placeholder={language === 'ar' ? "عروض الكمية (اختر الكمية لتخفيض السعر)" : (language === 'fr' ? "Offres de quantité" : "Quantity Offers")}
+                        className="text-xs font-cairo h-9"
+                      />
+                    </div>
+
+                    {/* Display Mode Toggle */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "طريقة العرض" : (language === 'fr' ? "Mode d'affichage" : "Display Mode")}</label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateSection(section.id, { config: { ...section.config, offers_display_mode: 'grid' } })}
+                          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold transition-all ${offersDisplayMode === 'grid' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:border-primary/30'}`}
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>
+                          {language === 'ar' ? "شبكة" : (language === 'fr' ? "Grille" : "Grid")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateSection(section.id, { config: { ...section.config, offers_display_mode: 'list' } })}
+                          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold transition-all ${offersDisplayMode === 'list' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:border-primary/30'}`}
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="6.5" width="14" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="12" width="14" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>
+                          {language === 'ar' ? "قائمة" : (language === 'fr' ? "Liste" : "List")}
+                        </button>
+                      </div>
                     </div>
                     
                     {showAddOffer && (
@@ -4152,7 +4188,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                               </div>
                             </div>
                           );
-                        case "quantity_offers":
+                        case "quantity_offers": {
+                          const offersDisplayMode = section.config?.offers_display_mode || 'grid';
+                          const offersSectionTitle = section.config?.offers_section_title || '';
+                          const defaultOffersTitle = language === 'ar' ? "عروض الكمية (اختر الكمية لتخفيض السعر)" : (language === 'fr' ? "Offres de quantité" : "Quantity Offers");
                           return quantityOffers.length > 0 ? (
                             <div key={section.id} className={`${previewCardClass} ${clickableRingClass}`} style={previewCardStyle} {...previewClickableProps}>
                               <div className={`p-3 space-y-1.5 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
@@ -4160,64 +4199,125 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                                   className={hasPreviewTheme ? 'text-[10px] font-extrabold' : 'text-[10px] font-extrabold text-slate-900'}
                                   style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}
                                 >
-                                  {language === 'ar' ? "عروض الكمية (اختر الكمية لتخفيض السعر)" : (language === 'fr' ? "Offres de quantité" : "Quantity Offers")}
+                                  {offersSectionTitle || defaultOffersTitle}
                                 </h3>
-                                <div className="grid grid-cols-2 gap-1">
-                                  {/* Base 1-piece card */}
-                                  <div 
-                                    className="p-1.5 text-center"
-                                    style={hasPreviewTheme ? {
-                                      borderWidth: '2px', borderStyle: 'solid',
-                                      borderColor: previewTheme['--theme-accent'] || '#6366f1',
-                                      borderRadius: previewTheme['--theme-section-radius'] || '8px',
-                                      backgroundColor: `${previewTheme['--theme-accent'] || '#6366f1'}10`,
-                                    } : {
-                                      borderWidth: '2px', borderStyle: 'solid',
-                                      borderColor: '#6366f1', borderRadius: '8px',
-                                      backgroundColor: 'rgba(99,102,241,0.05)',
-                                    }}
-                                  >
-                                    <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
-                                      {price ? formatCurrency(parseFloat(price)) : "0 DZD"}
-                                    </div>
-                                    <div className={hasPreviewTheme ? 'text-[8px] opacity-60' : 'text-[8px] text-slate-500'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
-                                      {language === 'ar' ? "1 قطعة" : "1 piece"}
-                                    </div>
-                                  </div>
-                                  {quantityOffers.map((o: any, idx: number) => {
-                                    const basePrice = price ? parseFloat(price) : 0;
-                                    const savePct = basePrice > 0 ? Math.round((1 - o.price / o.quantity / basePrice) * 100) : 0;
-                                    return (
-                                      <div 
-                                        key={idx} 
-                                        className="p-1.5 text-center"
-                                        style={hasPreviewTheme ? {
-                                          borderWidth: '2px', borderStyle: 'solid',
-                                          borderColor: previewTheme['--theme-card-border'] || '#e5e7eb',
-                                          borderRadius: previewTheme['--theme-section-radius'] || '8px',
-                                        } : {
-                                          borderWidth: '2px', borderStyle: 'solid',
-                                          borderColor: '#f1f5f9', borderRadius: '8px',
-                                        }}
-                                      >
-                                        <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
-                                          {formatCurrency(o.price)}
-                                        </div>
-                                        <div className={hasPreviewTheme ? 'text-[8px] opacity-60' : 'text-[8px] text-slate-500'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
-                                          {o.quantity} {language === 'ar' ? "قطع" : "pieces"}
-                                        </div>
-                                        {savePct > 0 && (
-                                          <div className="text-[7px] text-green-600 font-bold mt-0.5">
-                                            {language === 'ar' ? "وفر" : "Save"} {savePct}%
-                                          </div>
-                                        )}
+                                {offersDisplayMode === 'list' ? (
+                                  /* ── LIST MODE ── */
+                                  <div className="space-y-1">
+                                    {/* Base 1-piece row */}
+                                    <div 
+                                      className="flex items-center justify-between px-2 py-1.5"
+                                      style={hasPreviewTheme ? {
+                                        borderWidth: '2px', borderStyle: 'solid',
+                                        borderColor: previewTheme['--theme-accent'] || '#6366f1',
+                                        borderRadius: previewTheme['--theme-section-radius'] || '8px',
+                                        backgroundColor: `${previewTheme['--theme-accent'] || '#6366f1'}10`,
+                                      } : {
+                                        borderWidth: '2px', borderStyle: 'solid',
+                                        borderColor: '#6366f1', borderRadius: '8px',
+                                        backgroundColor: 'rgba(99,102,241,0.05)',
+                                      }}
+                                    >
+                                      <div className={hasPreviewTheme ? 'text-[9px] font-bold' : 'text-[9px] font-bold text-slate-900'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                        {language === 'ar' ? "1 قطعة" : "1 piece"}
                                       </div>
-                                    );
-                                  })}
-                                </div>
+                                      <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                        {price ? formatCurrency(parseFloat(price)) : "0 DZD"}
+                                      </div>
+                                    </div>
+                                    {quantityOffers.map((o: any, idx: number) => {
+                                      const basePrice = price ? parseFloat(price) : 0;
+                                      const savePct = basePrice > 0 ? Math.round((1 - o.price / o.quantity / basePrice) * 100) : 0;
+                                      return (
+                                        <div 
+                                          key={idx}
+                                          className="flex items-center justify-between px-2 py-1.5"
+                                          style={hasPreviewTheme ? {
+                                            borderWidth: '2px', borderStyle: 'solid',
+                                            borderColor: previewTheme['--theme-card-border'] || '#e5e7eb',
+                                            borderRadius: previewTheme['--theme-section-radius'] || '8px',
+                                          } : {
+                                            borderWidth: '2px', borderStyle: 'solid',
+                                            borderColor: '#f1f5f9', borderRadius: '8px',
+                                          }}
+                                        >
+                                          <div className="flex items-center gap-1.5">
+                                            <div className={hasPreviewTheme ? 'text-[9px] font-bold' : 'text-[9px] font-bold text-slate-900'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                              {o.quantity} {language === 'ar' ? "قطع" : "pieces"}
+                                            </div>
+                                            {savePct > 0 && (
+                                              <div className="text-[7px] text-green-600 font-bold">
+                                                -{savePct}%
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                            {formatCurrency(o.price)}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  /* ── GRID MODE (default) ── */
+                                  <div className="grid grid-cols-2 gap-1">
+                                    {/* Base 1-piece card */}
+                                    <div 
+                                      className="p-1.5 text-center"
+                                      style={hasPreviewTheme ? {
+                                        borderWidth: '2px', borderStyle: 'solid',
+                                        borderColor: previewTheme['--theme-accent'] || '#6366f1',
+                                        borderRadius: previewTheme['--theme-section-radius'] || '8px',
+                                        backgroundColor: `${previewTheme['--theme-accent'] || '#6366f1'}10`,
+                                      } : {
+                                        borderWidth: '2px', borderStyle: 'solid',
+                                        borderColor: '#6366f1', borderRadius: '8px',
+                                        backgroundColor: 'rgba(99,102,241,0.05)',
+                                      }}
+                                    >
+                                      <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                        {price ? formatCurrency(parseFloat(price)) : "0 DZD"}
+                                      </div>
+                                      <div className={hasPreviewTheme ? 'text-[8px] opacity-60' : 'text-[8px] text-slate-500'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                        {language === 'ar' ? "1 قطعة" : "1 piece"}
+                                      </div>
+                                    </div>
+                                    {quantityOffers.map((o: any, idx: number) => {
+                                      const basePrice = price ? parseFloat(price) : 0;
+                                      const savePct = basePrice > 0 ? Math.round((1 - o.price / o.quantity / basePrice) * 100) : 0;
+                                      return (
+                                        <div 
+                                          key={idx} 
+                                          className="p-1.5 text-center"
+                                          style={hasPreviewTheme ? {
+                                            borderWidth: '2px', borderStyle: 'solid',
+                                            borderColor: previewTheme['--theme-card-border'] || '#e5e7eb',
+                                            borderRadius: previewTheme['--theme-section-radius'] || '8px',
+                                          } : {
+                                            borderWidth: '2px', borderStyle: 'solid',
+                                            borderColor: '#f1f5f9', borderRadius: '8px',
+                                          }}
+                                        >
+                                          <div className={hasPreviewTheme ? 'text-[10px] font-black font-outfit' : 'text-[10px] font-black text-slate-900 font-outfit'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                            {formatCurrency(o.price)}
+                                          </div>
+                                          <div className={hasPreviewTheme ? 'text-[8px] opacity-60' : 'text-[8px] text-slate-500'} style={hasPreviewTheme ? { color: previewTheme['--theme-text'] } : {}}>
+                                            {o.quantity} {language === 'ar' ? "قطع" : "pieces"}
+                                          </div>
+                                          {savePct > 0 && (
+                                            <div className="text-[7px] text-green-600 font-bold mt-0.5">
+                                              {language === 'ar' ? "وفر" : "Save"} {savePct}%
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ) : null;
+                        }
 
                         case "security_otp":
                         case "security_captcha":

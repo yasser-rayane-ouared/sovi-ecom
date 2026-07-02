@@ -1338,7 +1338,11 @@ export default function StorefrontProductDetail() {
                   </div>
                 </div>
               );
-            case "quantity_offers":
+            case "quantity_offers": {
+              const offersConfig = section.config || {};
+              const offersDisplayMode = offersConfig.offers_display_mode || 'grid';
+              const offersSectionTitle = offersConfig.offers_section_title || '';
+              const defaultOffersTitle = t("عروض الكمية (اختر الكمية لتخفيض السعر)", "Offres de quantité (Choisissez la quantité pour réduire le prix)", "Quantity Offers (Select quantity to reduce price)");
               return offers.length > 0 ? (
                 <div
                   key={section.id || "quantity_offers"}
@@ -1349,60 +1353,132 @@ export default function StorefrontProductDetail() {
                     className={hasTheme ? 'text-sm font-extrabold' : 'text-sm font-extrabold text-slate-900'}
                     style={hasTheme ? { color: themed.text } : {}}
                   >
-                    {t("عروض الكمية (اختر الكمية لتخفيض السعر)", "Offres de quantité (Choisissez la quantité pour réduire le prix)", "Quantity Offers (Select quantity to reduce price)")}
+                    {offersSectionTitle || defaultOffersTitle}
                   </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div
-                      onClick={() => setQuantity(1)}
-                      className={`p-3 text-center cursor-pointer transition-all ${
-                        hasTheme ? '' : (quantity === 1 ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
-                      }`}
-                      style={hasTheme ? {
-                        borderWidth: '2px',
-                        borderStyle: 'solid',
-                        borderColor: quantity === 1 ? themed.accent : themed.cardBorder,
-                        borderRadius: themed.sectionRadius || '12px',
-                        backgroundColor: quantity === 1 ? `${themed.accent}10` : 'transparent',
-                      } : {
-                        borderWidth: '2px',
-                        borderStyle: 'solid',
-                        borderRadius: '12px',
-                      }}
-                    >
-                      <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(productPrice)}</div>
-                      <div className={hasTheme ? 'text-xs opacity-60' : 'text-xs text-slate-500'} style={hasTheme ? { color: themed.text } : {}}>{t("1 قطعة", "1 pièce", "1 piece")}</div>
-                    </div>
-                    {offers.map((offer: any) => (
+                  {offersDisplayMode === 'list' ? (
+                    /* ── LIST MODE ── */
+                    <div className="space-y-2">
+                      {/* Base 1-piece row */}
                       <div
-                        key={offer.id || offer.quantity}
-                        onClick={() => setQuantity(offer.quantity)}
-                        className={`p-3 text-center cursor-pointer transition-all ${
-                          hasTheme ? '' : (quantity === offer.quantity ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
+                        onClick={() => setQuantity(1)}
+                        className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all ${
+                          hasTheme ? '' : (quantity === 1 ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
                         }`}
                         style={hasTheme ? {
                           borderWidth: '2px',
                           borderStyle: 'solid',
-                          borderColor: quantity === offer.quantity ? themed.accent : themed.cardBorder,
+                          borderColor: quantity === 1 ? themed.accent : themed.cardBorder,
                           borderRadius: themed.sectionRadius || '12px',
-                          backgroundColor: quantity === offer.quantity ? `${themed.accent}10` : 'transparent',
+                          backgroundColor: quantity === 1 ? `${themed.accent}10` : 'transparent',
                         } : {
                           borderWidth: '2px',
                           borderStyle: 'solid',
                           borderRadius: '12px',
                         }}
                       >
-                        <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(offer.price)}</div>
-                        <div className={hasTheme ? 'text-xs opacity-60' : 'text-xs text-slate-500'} style={hasTheme ? { color: themed.text } : {}}>{offer.quantity} {t("قطع", "pièces", "pieces")}</div>
-                        {productPrice > 0 && (
-                          <div className="text-[10px] text-green-600 font-bold mt-0.5">
-                            {t("وفر", "Économisez", "Save")} {Math.round((1 - offer.price / offer.quantity / productPrice) * 100)}%
+                        <div className="flex items-center gap-2">
+                          <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all`}
+                            style={hasTheme ? { borderColor: quantity === 1 ? themed.accent : themed.cardBorder } : { borderColor: quantity === 1 ? 'var(--primary)' : '#e2e8f0' }}
+                          >
+                            {quantity === 1 && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: hasTheme ? themed.accent : 'var(--primary)' }} />}
                           </div>
-                        )}
+                          <span className={hasTheme ? 'text-sm font-bold' : 'text-sm font-bold text-slate-900'} style={hasTheme ? { color: themed.text } : {}}>{t("1 قطعة", "1 pièce", "1 piece")}</span>
+                        </div>
+                        <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(productPrice)}</div>
                       </div>
-                    ))}
-                  </div>
+                      {offers.map((offer: any) => {
+                        const savePct = productPrice > 0 ? Math.round((1 - offer.price / offer.quantity / productPrice) * 100) : 0;
+                        return (
+                          <div
+                            key={offer.id || offer.quantity}
+                            onClick={() => setQuantity(offer.quantity)}
+                            className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all ${
+                              hasTheme ? '' : (quantity === offer.quantity ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
+                            }`}
+                            style={hasTheme ? {
+                              borderWidth: '2px',
+                              borderStyle: 'solid',
+                              borderColor: quantity === offer.quantity ? themed.accent : themed.cardBorder,
+                              borderRadius: themed.sectionRadius || '12px',
+                              backgroundColor: quantity === offer.quantity ? `${themed.accent}10` : 'transparent',
+                            } : {
+                              borderWidth: '2px',
+                              borderStyle: 'solid',
+                              borderRadius: '12px',
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all`}
+                                style={hasTheme ? { borderColor: quantity === offer.quantity ? themed.accent : themed.cardBorder } : { borderColor: quantity === offer.quantity ? 'var(--primary)' : '#e2e8f0' }}
+                              >
+                                {quantity === offer.quantity && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: hasTheme ? themed.accent : 'var(--primary)' }} />}
+                              </div>
+                              <span className={hasTheme ? 'text-sm font-bold' : 'text-sm font-bold text-slate-900'} style={hasTheme ? { color: themed.text } : {}}>{offer.quantity} {t("قطع", "pièces", "pieces")}</span>
+                              {savePct > 0 && (
+                                <span className="text-[10px] text-green-600 font-bold px-1.5 py-0.5 bg-green-50 rounded-full">-{savePct}%</span>
+                              )}
+                            </div>
+                            <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(offer.price)}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* ── GRID MODE (default) ── */
+                    <div className="grid grid-cols-2 gap-2">
+                      <div
+                        onClick={() => setQuantity(1)}
+                        className={`p-3 text-center cursor-pointer transition-all ${
+                          hasTheme ? '' : (quantity === 1 ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
+                        }`}
+                        style={hasTheme ? {
+                          borderWidth: '2px',
+                          borderStyle: 'solid',
+                          borderColor: quantity === 1 ? themed.accent : themed.cardBorder,
+                          borderRadius: themed.sectionRadius || '12px',
+                          backgroundColor: quantity === 1 ? `${themed.accent}10` : 'transparent',
+                        } : {
+                          borderWidth: '2px',
+                          borderStyle: 'solid',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(productPrice)}</div>
+                        <div className={hasTheme ? 'text-xs opacity-60' : 'text-xs text-slate-500'} style={hasTheme ? { color: themed.text } : {}}>{t("1 قطعة", "1 pièce", "1 piece")}</div>
+                      </div>
+                      {offers.map((offer: any) => (
+                        <div
+                          key={offer.id || offer.quantity}
+                          onClick={() => setQuantity(offer.quantity)}
+                          className={`p-3 text-center cursor-pointer transition-all ${
+                            hasTheme ? '' : (quantity === offer.quantity ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
+                          }`}
+                          style={hasTheme ? {
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderColor: quantity === offer.quantity ? themed.accent : themed.cardBorder,
+                            borderRadius: themed.sectionRadius || '12px',
+                            backgroundColor: quantity === offer.quantity ? `${themed.accent}10` : 'transparent',
+                          } : {
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(offer.price)}</div>
+                          <div className={hasTheme ? 'text-xs opacity-60' : 'text-xs text-slate-500'} style={hasTheme ? { color: themed.text } : {}}>{offer.quantity} {t("قطع", "pièces", "pieces")}</div>
+                          {productPrice > 0 && (
+                            <div className="text-[10px] text-green-600 font-bold mt-0.5">
+                              {t("وفر", "Économisez", "Save")} {Math.round((1 - offer.price / offer.quantity / productPrice) * 100)}%
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : null;
+            }
             case "checkout": {
               const config = section.config || {};
               const form_language = config.form_language ?? store?.language ?? 'ar';
