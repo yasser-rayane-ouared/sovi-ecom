@@ -1622,7 +1622,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       // Edit mode
       const activeId = activeTab === 'A' ? productId : abTestProductBId;
       const activeList = [...sections];
-      const existingSection = activeList.find(s => s.section_type === sectionType || (sectionId && s.id === sectionId));
+      const existingSection = sectionId
+        ? activeList.find(s => s.id === sectionId)
+        : activeList.find(s => s.section_type === sectionType);
       
       if (existingSection) {
         // Active -> delete it
@@ -1669,7 +1671,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     } else {
       // Create mode
       setPendingSections(prev => {
-        const existing = prev.find(s => s.section_type === sectionType || (sectionId && s.id === sectionId));
+        const existing = sectionId
+          ? prev.find(s => s.id === sectionId)
+          : prev.find(s => s.section_type === sectionType);
         if (existing) {
           if (sectionType === 'quantity_offers') {
             setQuantityOffers([]);
