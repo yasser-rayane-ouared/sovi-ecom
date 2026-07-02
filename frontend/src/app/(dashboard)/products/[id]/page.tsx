@@ -2629,10 +2629,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1 px-1 leading-normal">
                       {language === 'ar' 
-                        ? "💡 خطوات الإعداد: اذهب إلى إعدادات المتجر العامة > الحماية والأمان > أدخل 'Site Key' و 'Secret Key' لتفعيل الحماية التلقائية من الروبوتات."
+                        ? "💡 خطوات الإعداد: اذهب إلى إعدادات المتجر العامة > الحماية والأمان > أدخل 'Site Key' و 'Secret Key' لتفعيل الحماية التلقائية من الروبوتات. (تنبيه: أضف النطاق في Google بدون https:// مثل: athletic-love-production-b2e8.up.railway.app)"
                         : (language === 'fr' 
-                            ? "💡 Configuration : Allez dans Paramètres Généraux > Sécurité > Saisissez la Site Key et Secret Key." 
-                            : "💡 Setup steps: Go to General Settings > Security > Enter Site Key and Secret Key to enable automatic bot protection.")}
+                            ? "💡 Configuration : Allez dans Paramètres Généraux > Sécurité > Saisissez la Site Key et Secret Key. (Note: Ajoutez le domaine dans Google SANS https://)" 
+                            : "💡 Setup steps: Go to General Settings > Security > Enter Site Key and Secret Key to enable automatic bot protection. (Note: Register domain in Google WITHOUT the https:// prefix)")}
                     </p>
                     {hasCaptcha && (!(selectedStore?.settings as any)?.security_captcha_site_key || !(selectedStore?.settings as any)?.security_captcha_secret_key) && (
                       <p className="text-[9px] text-amber-500 mr-2 leading-tight">{language === 'ar' ? "⚠️ لم يتم إعداد مفاتيح الكابتشا في إعدادات المتجر العامة بعد." : (language === 'fr' ? "⚠️ Clés reCAPTCHA non configurées dans les paramètres." : "⚠️ reCAPTCHA keys not configured in general settings.")}</p>
