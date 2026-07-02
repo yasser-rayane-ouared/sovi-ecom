@@ -2627,6 +2627,13 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                       <input type="checkbox" checked={hasCaptcha} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
                       <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "كابتشا Google reCAPTCHA v3" : "Google reCAPTCHA v3"}</span>
                     </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 px-1 leading-normal">
+                      {language === 'ar' 
+                        ? "💡 خطوات الإعداد: اذهب إلى إعدادات المتجر العامة > الحماية والأمان > أدخل 'Site Key' و 'Secret Key' لتفعيل الحماية التلقائية من الروبوتات."
+                        : (language === 'fr' 
+                            ? "💡 Configuration : Allez dans Paramètres Généraux > Sécurité > Saisissez la Site Key et Secret Key." 
+                            : "💡 Setup steps: Go to General Settings > Security > Enter Site Key and Secret Key to enable automatic bot protection.")}
+                    </p>
                     {hasCaptcha && (!(selectedStore?.settings as any)?.security_captcha_site_key || !(selectedStore?.settings as any)?.security_captcha_secret_key) && (
                       <p className="text-[9px] text-amber-500 mr-2 leading-tight">{language === 'ar' ? "⚠️ لم يتم إعداد مفاتيح الكابتشا في إعدادات المتجر العامة بعد." : (language === 'fr' ? "⚠️ Clés reCAPTCHA non configurées dans les paramètres." : "⚠️ reCAPTCHA keys not configured in general settings.")}</p>
                     )}
@@ -2641,36 +2648,70 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                       <input type="checkbox" checked={hasOtp} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
                       <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "التحقق عبر الهاتف SMS OTP" : "SMS OTP Phone Verification"}</span>
                     </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 px-1 leading-normal">
+                      {language === 'ar' 
+                        ? "💡 خطوات الإعداد: اذهب إلى إعدادات المتجر العامة > الحماية والأمان > ألصق كود إعدادات Firebase لفرض تأكيد رقم الهاتف عبر رمز SMS قبل الطلب."
+                        : (language === 'fr' 
+                            ? "💡 Configuration : Allez dans Paramètres Généraux > Sécurité > Collez la configuration Firebase." 
+                            : "💡 Setup steps: Go to General Settings > Security > Paste Firebase JSON config to verify phone numbers via SMS OTP before checkout.")}
+                    </p>
                     {hasOtp && !(selectedStore?.settings as any)?.security_firebase_config_json && (
                       <p className="text-[9px] text-amber-500 mr-2 leading-tight">{language === 'ar' ? "⚠️ لم يتم إدخال إعدادات Firebase في إعدادات المتجر العامة بعد." : (language === 'fr' ? "⚠️ Firebase non configuré dans les paramètres généraux." : "⚠️ Firebase not configured in general settings.")}</p>
                     )}
                   </div>
 
                   {/* Rate Limit */}
-                  <div
-                    onClick={() => toggleLayoutSection('security_rate_limit')}
-                    className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
-                  >
-                    <input type="checkbox" checked={hasRateLimit} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
-                    <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "حد أقصى للطلبات اليومية لكل IP" : "Daily Orders Limit per IP"}</span>
+                  <div className="space-y-1">
+                    <div
+                      onClick={() => toggleLayoutSection('security_rate_limit')}
+                      className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
+                    >
+                      <input type="checkbox" checked={hasRateLimit} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                      <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "حد أقصى للطلبات اليومية لكل IP" : "Daily Orders Limit per IP"}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 px-1 leading-normal">
+                      {language === 'ar' 
+                        ? "💡 خطوات الإعداد: اذهب إلى إعدادات المتجر العامة > الحماية والأمان > اضبط الحد الأقصى لعدد الطلبات المسموح بها لكل IP يومياً لمنع السبام المتكرر."
+                        : (language === 'fr' 
+                            ? "💡 Configuration : Allez dans Paramètres Généraux > Sécurité > Définissez le nombre maximum de commandes par adresse IP." 
+                            : "💡 Setup steps: Go to General Settings > Security > Set maximum daily orders allowed per IP address to block duplicate request spam.")}
+                    </p>
                   </div>
 
                   {/* Algerian IP restrict */}
-                  <div
-                    onClick={() => toggleLayoutSection('security_algerian_ip')}
-                    className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
-                  >
-                    <input type="checkbox" checked={hasAlgerianIp} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
-                    <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "حظر الطلبات من خارج الجزائر" : "Block Orders Outside Algeria"}</span>
+                  <div className="space-y-1">
+                    <div
+                      onClick={() => toggleLayoutSection('security_algerian_ip')}
+                      className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
+                    >
+                      <input type="checkbox" checked={hasAlgerianIp} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                      <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "حظر الطلبات من خارج الجزائر" : "Block Orders Outside Algeria"}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 px-1 leading-normal">
+                      {language === 'ar' 
+                        ? "💡 خطوات الإعداد: لا تتطلب إعدادات إضافية. عند التفعيل، سيتم تلقائياً حظر أي زيارة أو طلب يأتي من خارج الجزائر لمنع المنافسين الوهميين."
+                        : (language === 'fr' 
+                            ? "💡 Configuration : Aucun paramétrage requis. Bloque automatiquement les commandes hors Algérie." 
+                            : "💡 Setup steps: No extra setup required. Automatically blocks orders from non-Algerian IP addresses to prevent fake international bot traffic.")}
+                    </p>
                   </div>
 
                   {/* Customer Commitment Checkbox */}
-                  <div
-                    onClick={() => toggleLayoutSection('security_commitment')}
-                    className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
-                  >
-                    <input type="checkbox" checked={hasCommitment} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
-                    <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "التزام العميل بجدية الطلب" : (language === 'fr' ? "Engagement du client" : "Customer Commitment Checkbox")}</span>
+                  <div className="space-y-1">
+                    <div
+                      onClick={() => toggleLayoutSection('security_commitment')}
+                      className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-muted/5 hover:bg-muted/10 cursor-pointer transition-all text-right"
+                    >
+                      <input type="checkbox" checked={hasCommitment} readOnly className="rounded border-border text-primary focus:ring-primary h-4 w-4 accent-primary cursor-pointer" />
+                      <span className="text-xs font-semibold flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> {language === 'ar' ? "التزام العميل بجدية الطلب" : (language === 'fr' ? "Engagement du client" : "Customer Commitment Checkbox")}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 px-1 leading-normal">
+                      {language === 'ar' 
+                        ? "💡 خطوات الإعداد: لا تتطلب إعدادات إضافية. يظهر مربع إقرار يفرض على العميل تأكيد رغبته وجديته في الشراء والالتزام بالرد الهاتفي قبل إتمام الطلب."
+                        : (language === 'fr' 
+                            ? "💡 Configuration : Aucun paramétrage requis. Affiche une case à cocher d'engagement d'achat lors de la commande." 
+                            : "💡 Setup steps: No extra setup required. Renders a checkbox forcing customers to verify their purchase commitment and phone confirmation before order submission.")}
+                    </p>
                   </div>
                 </div>
               </div>
