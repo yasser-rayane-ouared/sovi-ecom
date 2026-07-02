@@ -1590,6 +1590,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       } catch (linkErr: any) {
         console.error("Failed to link B variant to master:", linkErr?.response?.data || linkErr);
       }
+
+      // Load Version B's cloned sections and field values into the editor state
+      await loadProductData(newProd.id);
+
     } catch (err: any) {
       console.error("Duplicate API error:", err?.response?.status, err?.response?.data || err?.message);
       setError(language === 'ar' ? "فشل إنشاء الصفحة البديلة المكررة B." : (language === 'fr' ? "Échec de création de la page alternative B." : "Failed to create alternative version B."));
