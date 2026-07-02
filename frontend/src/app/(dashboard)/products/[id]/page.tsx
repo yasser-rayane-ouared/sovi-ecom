@@ -778,6 +778,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
   // A/B Layout Testing States
   const [enableAbTest, setEnableAbTest] = useState(false);
   const [abTestProductBId, setAbTestProductBId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<'A' | 'B'>('A');
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [abTestStats, setAbTestStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -1314,7 +1315,6 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     }
   }, [currentStoreId, isCreateMode]);
 
-  const [activeTab, setActiveTab] = useState<'A' | 'B'>('A');
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
 
   useEffect(() => {
