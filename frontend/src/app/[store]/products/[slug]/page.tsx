@@ -231,7 +231,7 @@ export default function StorefrontProductDetail() {
     return ar;
   };
   const [rawProduct, setRawProduct] = useState<any>(null);
-  const [abGroup, setAbGroup] = useState<'A' | 'B'>('A');
+  const [abGroup, setAbGroup] = useState<'A' | 'B' | null>(null);
 
   const product = (rawProduct?.enable_ab_test && rawProduct.ab_test_product_b_detail && abGroup === 'B')
     ? rawProduct.ab_test_product_b_detail
@@ -461,7 +461,7 @@ export default function StorefrontProductDetail() {
 
   // Initialize pixels and track ViewContent on page view
   useEffect(() => {
-    if (!product || !store) return;
+    if (!product || !store || abGroup === null) return;
 
     // Collect all relevant pixels (store-level + product-specific)
     const allPixels = deduplicatePixels([
@@ -482,12 +482,13 @@ export default function StorefrontProductDetail() {
           content_type: 'product',
           value: parseFloat(product.price || 0),
           currency: 'DZD',
+          ab_test_group: rawProduct?.enable_ab_test ? abGroup : null,
         }, eventId);
       } catch (e) {
         console.error("[Sovi Pixels] Error running storefront pixels:", e);
       }
     }
-  }, [product, store]);
+  }, [product, store, abGroup]);
 
   // Section interaction tracking (impressions & clicks)
   useEffect(() => {
@@ -929,6 +930,7 @@ export default function StorefrontProductDetail() {
         value: totalPrice,
         currency: 'DZD',
         num_items: quantity,
+        ab_test_group: rawProduct?.enable_ab_test ? abGroup : null,
       });
     }
 
@@ -947,6 +949,7 @@ export default function StorefrontProductDetail() {
           value: totalPrice,
           currency: 'DZD',
           num_items: quantity,
+          ab_test_group: rawProduct?.enable_ab_test ? abGroup : null,
         }, purchaseEventId);
       }
 

@@ -838,10 +838,14 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     );
   };
 
-  // Check for draft on mount/storeId load
+  // Check for draft on mount/storeId load or variant switch
   useEffect(() => {
     if (typeof window === "undefined" || !productId || !currentStoreId) return;
-    const key = `sovi_product_draft_${productId}_${currentStoreId}`;
+    setHasDraft(false);
+    setDraftToRestore(null);
+    const activeId = activeTab === 'A' ? productId : abTestProductBId;
+    if (!activeId) return;
+    const key = `sovi_product_draft_${activeId}_${currentStoreId}`;
     const saved = localStorage.getItem(key);
     if (saved) {
       try {
@@ -854,7 +858,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
         console.error("Failed to parse draft", e);
       }
     }
-  }, [productId, currentStoreId]);
+  }, [productId, currentStoreId, activeTab, abTestProductBId]);
 
   // Enable auto-save after initial loading is complete
   useEffect(() => {
@@ -871,8 +875,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
   // Auto-save effect
   useEffect(() => {
     if (!shouldAutoSave || typeof window === "undefined" || !productId || !currentStoreId) return;
+    const activeId = activeTab === 'A' ? productId : abTestProductBId;
+    if (!activeId) return;
     
-    const key = `sovi_product_draft_${productId}_${currentStoreId}`;
+    const key = `sovi_product_draft_${activeId}_${currentStoreId}`;
     const draftData = {
       title,
       price,
@@ -912,7 +918,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     hasVariants,
     pendingSections,
     productId,
-    currentStoreId
+    currentStoreId,
+    activeTab,
+    abTestProductBId
   ]);
 
   const handleRestoreDraft = () => {
@@ -940,8 +948,11 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
 
   const handleDiscardDraft = () => {
     if (typeof window !== "undefined" && productId && currentStoreId) {
-      const key = `sovi_product_draft_${productId}_${currentStoreId}`;
-      localStorage.removeItem(key);
+      const activeId = activeTab === 'A' ? productId : abTestProductBId;
+      if (activeId) {
+        const key = `sovi_product_draft_${activeId}_${currentStoreId}`;
+        localStorage.removeItem(key);
+      }
     }
     setHasDraft(false);
     setDraftToRestore(null);
@@ -1592,13 +1603,14 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
 
     if (!isCreateMode) {
       // Edit mode
+      const activeId = activeTab === 'A' ? productId : abTestProductBId;
       const activeList = [...sections];
       const existingSection = activeList.find(s => s.section_type === sectionType || (sectionId && s.id === sectionId));
       
       if (existingSection) {
         // Active -> delete it
         try {
-          await api.delete(`/products/${currentStoreId}/${productId}/sections/${existingSection.id}/`);
+          await api.delete(`/products/${currentStoreId}/${activeId}/sections/${existingSection.id}/`);
           setSections(prev => prev.filter(s => s.id !== existingSection.id));
           if (sectionType === 'quantity_offers') {
             setQuantityOffers([]);
@@ -1627,7 +1639,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
             config.font_size = "14px";
             order = 999;
           }
-          const res = await api.post(`/products/${currentStoreId}/${productId}/sections/`, {
+          const res = await api.post(`/products/${currentStoreId}/${activeId}/sections/`, {
             section_type: sectionType,
             config,
             order
@@ -1980,8 +1992,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
 
     if (!isCreateMode) {
       if (!currentStoreId) return;
+      const activeId = activeTab === 'A' ? productId : abTestProductBId;
       try {
-        const res = await api.post(`/products/${currentStoreId}/${productId}/sections/`, {
+        const res = await api.post(`/products/${currentStoreId}/${activeId}/sections/`, {
           section_type: sectionType,
           config,
         });
@@ -2000,8 +2013,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
   const handleDeleteSection = async (sectionId: string) => {
     if (!isCreateMode) {
       if (!currentStoreId) return;
+      const activeId = activeTab === 'A' ? productId : abTestProductBId;
       try {
-        await api.delete(`/products/${currentStoreId}/${productId}/sections/${sectionId}/`);
+        await api.delete(`/products/${currentStoreId}/${activeId}/sections/${sectionId}/`);
         setSections((prev) => prev.filter((s) => s.id !== sectionId));
       } catch {
         setError(language === 'ar' ? "فشل حذف القسم" : (language === 'fr' ? "Échec de la suppression" : "Failed to delete section"));
@@ -2014,10 +2028,11 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
   const handleUpdateSection = async (sectionId: string, updates: any) => {
     if (!isCreateMode) {
       if (!currentStoreId) return;
+      const activeId = activeTab === 'A' ? productId : abTestProductBId;
       // Optimistic update for instant preview rendering
       setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, ...updates, config: { ...(s.config || {}), ...(updates.config || {}) } } : s)));
       try {
-        const res = await api.patch(`/products/${currentStoreId}/${productId}/sections/${sectionId}/`, updates);
+        const res = await api.patch(`/products/${currentStoreId}/${activeId}/sections/${sectionId}/`, updates);
         setSections((prev) => prev.map((s) => (s.id === sectionId ? res.data : s)));
       } catch {
         setError(language === 'ar' ? "فشل تحديث القسم" : (language === 'fr' ? "Échec de la mise à jour" : "Failed to update section"));
@@ -2054,13 +2069,14 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       setSections(reordered);
       setDragIndex(null);
       if (!currentStoreId) return;
+      const activeId = activeTab === 'A' ? productId : abTestProductBId;
       try {
         const sectionIds = reordered.map(s => s.id);
-        await api.post(`/products/${currentStoreId}/${productId}/sections/reorder/`, {
+        await api.post(`/products/${currentStoreId}/${activeId}/sections/reorder/`, {
           section_ids: sectionIds,
         });
       } catch {
-        fetchSections(productId);
+        fetchSections(activeId);
       }
     } else {
       const newPending = [...pendingSections];

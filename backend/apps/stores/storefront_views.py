@@ -656,6 +656,7 @@ class StorefrontCheckoutView(APIView):
                         'item_price': float(item.price)
                     })
 
+                ab_test_group = request.data.get('ab_test_group')
                 custom_data = {
                     "currency": "DZD",
                     "value": float(order.total),
@@ -663,6 +664,8 @@ class StorefrontCheckoutView(APIView):
                     "contents": contents,
                     "num_items": sum(c['quantity'] for c in contents),
                 }
+                if ab_test_group:
+                    custom_data["ab_test_group"] = ab_test_group
 
                 scheme = 'https' if request.is_secure() else 'http'
                 source_url = f"{scheme}://{request.get_host()}"
