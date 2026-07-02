@@ -1481,6 +1481,20 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
 
   const handleSwitchTab = async (tab: 'A' | 'B') => {
     if (tab === activeTab) return;
+    
+    // If target tab is B and B is not created yet, just switch tab visually
+    if (tab === 'B' && !abTestProductBId) {
+      setActiveTab('B');
+      return;
+    }
+    
+    // If we are on B placeholder and switching to A, just switch tab visually
+    if (activeTab === 'B' && !abTestProductBId) {
+      setActiveTab('A');
+      await loadProductData(productId);
+      return;
+    }
+
     const currentId = activeTab === 'A' ? productId : abTestProductBId;
     if (!currentId) return;
     
@@ -1564,9 +1578,9 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       setAbTestProductBId(newProd.id);
       setEnableAbTest(true);
 
-      // Persist the A/B link on the master product immediately
+      // Persist the A/B link on the master product immediately via PATCH (partial update)
       try {
-        await api.put(`/products/${currentStoreId}/${productId}/`, {
+        await api.patch(`/products/${currentStoreId}/${productId}/`, {
           enable_ab_test: true,
           ab_test_product_b: newProd.id,
         });
@@ -1583,19 +1597,22 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
 
   const handleDeactivateAbTest = async () => {
     setLoading(true);
-    const wasOnB = activeTab === 'B';
-    
-    // Switch state
-    setEnableAbTest(false);
-    
-    if (wasOnB) {
+    try {
+      // Direct PATCH request to deactivate A/B test on master product A
+      await api.patch(`/products/${currentStoreId}/${productId}/`, {
+        enable_ab_test: false,
+        ab_test_product_b: null
+      });
+      
+      setEnableAbTest(false);
+      setAbTestProductBId("");
       setActiveTab('A');
       await loadProductData(productId);
+    } catch (err) {
+      setError(language === 'ar' ? "حدث خطأ أثناء تعطيل اختبار A/B." : "Error deactivating A/B test.");
+    } finally {
+      setLoading(false);
     }
-    
-    // Save master product with enable_ab_test = false
-    await saveProductData(productId, false);
-    setLoading(false);
   };
 
   const toggleLayoutSection = async (sectionType: string, sectionId?: string) => {
