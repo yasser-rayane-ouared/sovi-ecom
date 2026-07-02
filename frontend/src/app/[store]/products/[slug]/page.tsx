@@ -233,9 +233,19 @@ export default function StorefrontProductDetail() {
   const [rawProduct, setRawProduct] = useState<any>(null);
   const [abGroup, setAbGroup] = useState<'A' | 'B' | null>(null);
 
-  const product = (rawProduct?.enable_ab_test && rawProduct.ab_test_product_b_detail && abGroup === 'B')
+  const rawProductObj = (rawProduct?.enable_ab_test && rawProduct.ab_test_product_b_detail && abGroup === 'B')
     ? rawProduct.ab_test_product_b_detail
     : rawProduct;
+
+  const product = rawProductObj ? {
+    ...rawProductObj,
+    title: rawProductObj.title
+      ? rawProductObj.title.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '')
+      : "",
+    name: rawProductObj.name
+      ? rawProductObj.name.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '')
+      : (rawProductObj.title ? rawProductObj.title.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '') : "")
+  } : null;
   const [wilayas, setWilayas] = useState<WilayaOption[]>([]);
   const [communes, setCommunes] = useState<CommuneOption[]>([]);
   const [loading, setLoading] = useState(true);

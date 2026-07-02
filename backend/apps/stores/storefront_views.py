@@ -149,7 +149,17 @@ class StorefrontProductsView(generics.ListAPIView):
         store = get_store_or_404(self.kwargs['subdomain'])
         if not store:
             return Product.objects.none()
-        return Product.objects.filter(store=store, status='active').select_related('store').prefetch_related(
+        
+        # Exclude A/B testing B variants from public listings
+        active_variant_ids = Product.objects.filter(
+            store=store, 
+            enable_ab_test=True, 
+            ab_test_product_b__isnull=False
+        ).values_list('ab_test_product_b_id', flat=True)
+
+        return Product.objects.filter(store=store, status='active').exclude(
+            id__in=active_variant_ids
+        ).select_related('store').prefetch_related(
             'images', 'videos', 'variants__options', 'quantity_offers', 'bundle_offers__items', 'sections'
         )
 
@@ -177,7 +187,17 @@ class StorefrontCategoryDetailView(APIView):
             return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
         try:
             category = Category.objects.get(store=store, slug=slug, is_active=True)
-            products = Product.objects.filter(store=store, category=category, status='active').prefetch_related(
+            
+            # Exclude A/B testing B variants from public listings
+            active_variant_ids = Product.objects.filter(
+                store=store, 
+                enable_ab_test=True, 
+                ab_test_product_b__isnull=False
+            ).values_list('ab_test_product_b_id', flat=True)
+
+            products = Product.objects.filter(store=store, category=category, status='active').exclude(
+                id__in=active_variant_ids
+            ).prefetch_related(
                 'images', 'videos', 'variants__options', 'quantity_offers', 'bundle_offers__items', 'sections'
             )
             

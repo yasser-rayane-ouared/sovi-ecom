@@ -1554,8 +1554,11 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
   // Fetch Section Heatmap Data
   useEffect(() => {
     if (isCreateMode || !productId || !currentStoreId) return;
+    const activeId = activeTab === 'A' ? productId : abTestProductBId;
+    if (!activeId) return;
+
     setHeatmapLoading(true);
-    api.get(`/analytics/${currentStoreId}/product/${productId}/heatmap/`)
+    api.get(`/analytics/${currentStoreId}/product/${activeId}/heatmap/`)
       .then((res) => {
         if (res.data && res.data.heatmap) {
           setHeatmapData(res.data.heatmap);
@@ -1563,7 +1566,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       })
       .catch(() => {})
       .finally(() => setHeatmapLoading(false));
-  }, [productId, currentStoreId, isCreateMode]);
+  }, [productId, currentStoreId, isCreateMode, activeTab, abTestProductBId]);
 
   const [creatingReplica, setCreatingReplica] = useState(false);
 

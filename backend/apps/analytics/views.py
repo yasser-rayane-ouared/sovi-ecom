@@ -285,8 +285,8 @@ class ProductABTestAnalyticsView(APIView):
             improvement = 100.0
 
         winner = 'none'
-        # Declare a winner if we have a reasonable baseline sample size
-        if views_a >= 5 and views_b >= 5:
+        # Declare a winner if we have a reasonable baseline sample size (min 50 views per variant)
+        if views_a >= 50 and views_b >= 50:
             if cr_b > cr_a + 0.1:
                 winner = 'B'
             elif cr_a > cr_b + 0.1:
