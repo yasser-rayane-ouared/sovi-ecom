@@ -98,12 +98,17 @@ export default function StorefrontCheckout() {
     const allPixels = deduplicatePixels([...storePixels, ...productPixels]);
     if (allPixels.length === 0) return;
     initializePixels(allPixels);
+    let abTestGroup = null;
+    if (typeof window !== 'undefined' && items.length > 0) {
+      abTestGroup = localStorage.getItem(`ab_test_group_${items[0].product_id}`) || null;
+    }
     trackPixelEvent(allPixels, 'InitiateCheckout', {
       content_ids: items.map((i: any) => i.product_id),
       content_type: 'product',
       num_items: items.reduce((sum: number, i: any) => sum + i.quantity, 0),
       value: total,
       currency: 'DZD',
+      ab_test_group: abTestGroup,
     });
   }, [store, items]);
 
@@ -195,6 +200,10 @@ export default function StorefrontCheckout() {
           }
         }
 
+        let abTestGroup = null;
+        if (typeof window !== 'undefined' && items.length > 0) {
+          abTestGroup = localStorage.getItem(`ab_test_group_${items[0].product_id}`) || null;
+        }
         trackPixelEvent(allPixels, 'Purchase', {
           content_ids: items.map((i: any) => i.product_id),
           content_names: items.map((i: any) => i.title),
@@ -202,6 +211,7 @@ export default function StorefrontCheckout() {
           value: total,
           currency: 'DZD',
           num_items: items.reduce((sum: number, i: any) => sum + i.quantity, 0),
+          ab_test_group: abTestGroup,
         }, purchaseEventId);
 
         // Clear legacy sessionStorage tracking
@@ -421,6 +431,11 @@ export default function StorefrontCheckout() {
     // Generate shared event_id for browser + CAPI deduplication (#4)
     const purchaseEventId = generateEventId();
 
+    let abTestGroup = null;
+    if (typeof window !== 'undefined' && items.length > 0) {
+      abTestGroup = localStorage.getItem(`ab_test_group_${items[0].product_id}`) || null;
+    }
+
     try {
       const payload = {
         lead_id: leadId,
@@ -434,6 +449,11 @@ export default function StorefrontCheckout() {
         recaptcha_token: recaptchaToken,
         firebase_token: firebaseToken,
         event_id: purchaseEventId,
+        ab_test_group: abTestGroup,
+        session_id: typeof window !== 'undefined' ? (localStorage.getItem('ab_session_id') || '') : '',
+        metadata: {
+          ab_test_group: abTestGroup
+        },
         items: items.map((item) => ({
           product_id: item.product_id,
           variant_id: item.variant?.id || null,
