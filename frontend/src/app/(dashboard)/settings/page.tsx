@@ -647,6 +647,28 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                   {/* reCAPTCHA Keys Input Fields */}
                   {securityEnableCaptcha && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 rounded-2xl border border-border bg-muted/15 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="col-span-1 md:col-span-2 p-4 bg-primary/5 rounded-xl border border-primary/20 text-right text-xs text-foreground/80 leading-relaxed">
+                        <p className="font-bold text-primary mb-1">
+                          {language === 'ar' ? "📋 خطوات الحصول على مفاتيح Google reCAPTCHA v3:" : "📋 How to get Google reCAPTCHA v3 Keys:"}
+                        </p>
+                        <ol className="list-decimal list-inside space-y-1">
+                          {language === 'ar' ? (
+                            <>
+                              <li>اذهب إلى <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">لوحة تحكم Google reCAPTCHA</a>.</li>
+                              <li>اضغط على <b>إنشاء (+)</b> لتسجيل موقع جديد.</li>
+                              <li>اكتب تسمية للموقع، واختر نوع <b>reCAPTCHA v3</b>، وأضف نطاق متجرك (مثال: <code>yourstore.com</code> ونطاق <code>railway.app</code>).</li>
+                              <li>انسخ <b>Site Key</b> و <b>Secret Key</b> الممنوحين والصقهما أدناه.</li>
+                            </>
+                          ) : (
+                            <>
+                              <li>Go to <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Google reCAPTCHA Console</a>.</li>
+                              <li>Click <b>Create (+)</b> to register a new site.</li>
+                              <li>Enter a label, select <b>reCAPTCHA v3</b>, and add your store domain (e.g. <code>yourstore.com</code> and <code>railway.app</code>).</li>
+                              <li>Copy the generated <b>Site Key</b> and <b>Secret Key</b> and paste them below.</li>
+                            </>
+                          )}
+                        </ol>
+                      </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold text-foreground/90">{t("settingsSecurityRecaptchaSiteKey")}</label>
                         <Input
@@ -695,6 +717,28 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                   {/* Firebase Config Input Field */}
                   {securityEnableFirebaseOtp && (
                     <div className="space-y-2 p-5 rounded-2xl border border-border bg-muted/15 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 text-right text-xs text-foreground/80 leading-relaxed space-y-1">
+                        <p className="font-bold text-primary mb-1">
+                          {language === 'ar' ? "📋 خطوات تفعيل التحقق من الهاتف SMS OTP وربط Firebase:" : "📋 How to configure Firebase Phone Auth (SMS OTP):"}
+                        </p>
+                        <ol className="list-decimal list-inside space-y-1">
+                          {language === 'ar' ? (
+                            <>
+                              <li>اذهب إلى <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">منصة Firebase Console</a> واضغط على <b>Add Project</b> لإنشاء مشروع.</li>
+                              <li>من القائمة الجانبية، اذهب إلى <b>Build > Authentication > Sign-in method</b> وقم بتفعيل خيار <b>Phone</b>.</li>
+                              <li>اذهب إلى إعدادات المشروع (أيقونة الترس)، وفي قسم <b>Your Apps</b>، اضغط على رمز <b>{"Web (</>)"}</b> لتسجيل تطبيق جديد.</li>
+                              <li>انسخ كود الإعداد (كائن <code>firebaseConfig</code> بصيغة JSON) والصقه بالكامل في المربع أدناه.</li>
+                            </>
+                          ) : (
+                            <>
+                              <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Firebase Console</a> and click <b>Add Project</b>.</li>
+                              <li>Navigate to <b>Build > Authentication > Sign-in method</b> and enable the <b>Phone</b> sign-in provider.</li>
+                              <li>Go to Project Settings (Gear icon), under <b>Your Apps</b> click on the <b>{"Web (</>)"}</b> icon to register your app.</li>
+                              <li>Copy the <code>firebaseConfig</code> JSON object and paste it below.</li>
+                            </>
+                          )}
+                        </ol>
+                      </div>
                       <label className="text-sm font-bold text-foreground/90 block">{t("settingsSecurityFirebaseConfig")}</label>
                       <textarea
                         required={securityEnableFirebaseOtp}
