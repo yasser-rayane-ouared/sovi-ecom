@@ -1472,6 +1472,11 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
 
     try {
       await api.put(`/products/${currentStoreId}/${id}/`, payload);
+      // Clear localStorage draft on successful save
+      if (typeof window !== "undefined" && currentStoreId) {
+        const draftKey = `sovi_product_draft_${id}_${currentStoreId}`;
+        localStorage.removeItem(draftKey);
+      }
       return true;
     } catch (err) {
       setError(language === 'ar' ? "حدث خطأ أثناء حفظ التغييرات." : (language === 'fr' ? "Erreur lors de l'enregistrement." : "Error saving changes."));
@@ -1499,13 +1504,22 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     if (!currentId) return;
     
     setLoading(true);
-    const saved = await saveProductData(currentId);
-    if (saved) {
+    try {
+      const saved = await saveProductData(currentId);
+      // Switch tab regardless of save result — allow user to navigate
       setActiveTab(tab);
       const targetId = tab === 'A' ? productId : abTestProductBId;
       await loadProductData(targetId);
-    } else {
-      setLoading(false);
+    } catch (err) {
+      console.error("Error during tab switch:", err);
+      // Still switch tab to prevent user from being stuck
+      setActiveTab(tab);
+      const targetId = tab === 'A' ? productId : abTestProductBId;
+      try {
+        await loadProductData(targetId);
+      } catch {
+        setLoading(false);
+      }
     }
   };
 
@@ -1575,13 +1589,17 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     setCreatingReplica(true);
     setError("");
     try {
+      // Step 1: Save current Version A data first before anything else
+      await saveProductData(productId, true);
+
+      // Step 2: Duplicate product A to create B variant on the backend
       const res = await api.post(`/products/${currentStoreId}/${productId}/duplicate/`);
       const newProd = res.data;
       setAllProducts(prev => [newProd, ...prev]);
       setAbTestProductBId(newProd.id);
       setEnableAbTest(true);
 
-      // Persist the A/B link on the master product immediately via PATCH (partial update)
+      // Step 3: Persist the A/B link on the master product immediately via PATCH
       try {
         await api.patch(`/products/${currentStoreId}/${productId}/`, {
           enable_ab_test: true,
@@ -1591,7 +1609,8 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
         console.error("Failed to link B variant to master:", linkErr?.response?.data || linkErr);
       }
 
-      // Load Version B's cloned sections and field values into the editor state
+      // Step 4: Switch to tab B and load B's cloned data into the editor
+      setActiveTab('B');
       await loadProductData(newProd.id);
 
     } catch (err: any) {
@@ -1993,8 +2012,13 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
           }
       }
       if (typeof window !== "undefined" && currentStoreId) {
-        const key = `sovi_product_draft_${productId}_${currentStoreId}`;
-        localStorage.removeItem(key);
+        // Clear drafts for both A and B variants
+        const keyA = `sovi_product_draft_${productId}_${currentStoreId}`;
+        localStorage.removeItem(keyA);
+        if (abTestProductBId) {
+          const keyB = `sovi_product_draft_${abTestProductBId}_${currentStoreId}`;
+          localStorage.removeItem(keyB);
+        }
       }
       router.push("/products");
       }

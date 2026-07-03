@@ -725,14 +725,14 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                           {language === 'ar' ? (
                             <>
                               <li>اذهب إلى <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">منصة Firebase Console</a> واضغط على <b>Add Project</b> لإنشاء مشروع.</li>
-                              <li>من القائمة الجانبية، اذهب إلى <b>Build > Authentication > Sign-in method</b> وقم بتفعيل خيار <b>Phone</b>.</li>
+                              <li>من القائمة الجانبية، اذهب إلى <b>Build &gt; Authentication &gt; Sign-in method</b> وقم بتفعيل خيار <b>Phone</b>.</li>
                               <li>اذهب إلى إعدادات المشروع (أيقونة الترس)، وفي قسم <b>Your Apps</b>، اضغط على رمز <b>{"Web (</>)"}</b> لتسجيل تطبيق جديد.</li>
                               <li>انسخ كود الإعداد (كائن <code>firebaseConfig</code> بصيغة JSON) والصقه بالكامل في المربع أدناه.</li>
                             </>
                           ) : (
                             <>
                               <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Firebase Console</a> and click <b>Add Project</b>.</li>
-                              <li>Navigate to <b>Build > Authentication > Sign-in method</b> and enable the <b>Phone</b> sign-in provider.</li>
+                              <li>Navigate to <b>Build &gt; Authentication &gt; Sign-in method</b> and enable the <b>Phone</b> sign-in provider.</li>
                               <li>Go to Project Settings (Gear icon), under <b>Your Apps</b> click on the <b>{"Web (</>)"}</b> icon to register your app.</li>
                               <li>Copy the <code>firebaseConfig</code> JSON object and paste it below.</li>
                             </>

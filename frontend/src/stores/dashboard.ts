@@ -6,6 +6,7 @@ interface Store {
   subdomain: string;
   language: string;
   logo: string;
+  custom_domain?: string | null;
   user_role?: 'owner' | 'worker';
   user_permissions?: {
     can_manage_products: boolean;
