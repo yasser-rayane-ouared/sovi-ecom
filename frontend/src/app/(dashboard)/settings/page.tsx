@@ -656,14 +656,14 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                             <>
                               <li>اذهب إلى <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">لوحة تحكم Google reCAPTCHA</a>.</li>
                               <li>اضغط على <b>إنشاء (+)</b> لتسجيل موقع جديد.</li>
-                              <li>اكتب تسمية للموقع، واختر نوع <b>reCAPTCHA v3</b>، وأضف نطاق متجرك (مثال: <code>yourstore.com</code> أو <code>athletic-love-production-b2e8.up.railway.app</code>) <b>دون كتابة <code>https://</code> أو أي مسار آخر (يجب كتابة النطاق الصافي فقط)</b>.</li>
+                              <li>اكتب تسمية للموقع، واختر نوع <b>reCAPTCHA v3</b>، وأضف نطاق متجرك (مثال: <code>yourstore.com</code> أو <code>athletic-love-production-b2e8.up.railway.app</code>) <b>دون كتابة <code>https://</code> في البداية ودون كتابة أي مسار أو شرطة في النهاية مثل <code>/mc</code> (يجب كتابة النطاق الصافي فقط)</b>.</li>
                               <li>انسخ <b>Site Key</b> و <b>Secret Key</b> الممنوحين والصقهما أدناه.</li>
                             </>
                           ) : (
                             <>
                               <li>Go to <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Google reCAPTCHA Console</a>.</li>
                               <li>Click <b>Create (+)</b> to register a new site.</li>
-                              <li>Enter a label, select <b>reCAPTCHA v3</b>, and add your store domain (e.g. <code>yourstore.com</code> or <code>athletic-love-production-b2e8.up.railway.app</code>) <b>without <code>https://</code>, protocols, or paths (enter the clean domain host only)</b>.</li>
+                              <li>Enter a label, select <b>reCAPTCHA v3</b>, and add your store domain (e.g. <code>yourstore.com</code> or <code>athletic-love-production-b2e8.up.railway.app</code>) <b>without <code>https://</code> at the beginning and without any paths or slashes at the end like <code>/mc</code> (enter the clean domain host only)</b>.</li>
                               <li>Copy the generated <b>Site Key</b> and <b>Secret Key</b> and paste them below.</li>
                             </>
                           )}
