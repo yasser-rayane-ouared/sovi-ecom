@@ -22,8 +22,40 @@ export default function middleware(req: NextRequest) {
   // Extract subdomain
   let subdomain = hostname.replace(`.${rootDomain}`, '').replace(`:${url.port}`, '');
 
-  // If the host is exactly the root domain, or has www prefix, do not rewrite
-  if (hostname === rootDomain || hostname === `www.${rootDomain}` || subdomain === 'localhost' || !subdomain) {
+  // If the host is exactly the root domain, or has www prefix
+  if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    if (pathParts.length > 0) {
+      const firstPart = pathParts[0];
+      const platformPaths = [
+        'login', 'register', 'forgot-password', 'reset-password',
+        'overview', 'products', 'orders', 'settings', 'workers',
+        'analytics', 'themes', 'pages', 'pixels', 'integrations',
+        'billing', 'ab-testing', 'tools', 'profile', '_next', 'api'
+      ];
+      
+      if (!platformPaths.includes(firstPart)) {
+        // This is a store subdomain request accessed via path! Redirect to the subdomain.
+        const storeSubdomain = firstPart;
+        const remainingPath = '/' + pathParts.slice(1).join('/');
+        
+        // Keep path-based routing on railway.app to avoid nested wildcard SSL errors
+        if (hostname.includes('railway.app')) {
+          return NextResponse.next();
+        }
+        
+        const cleanRoot = rootDomain.split(':')[0];
+        const protocol = req.headers.get('x-forwarded-proto') || 'https';
+        
+        const redirectUrl = new URL(`${protocol}://${storeSubdomain}.${cleanRoot}${remainingPath}${url.search}`);
+        return NextResponse.redirect(redirectUrl, 301);
+      }
+    }
+    return NextResponse.next();
+  }
+
+  // If localhost or no subdomain, do not rewrite
+  if (subdomain === 'localhost' || !subdomain) {
     return NextResponse.next();
   }
 
