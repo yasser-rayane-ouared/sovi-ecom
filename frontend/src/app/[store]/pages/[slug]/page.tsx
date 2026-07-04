@@ -441,20 +441,40 @@ function SectionRenderer({
     /* ─── REVIEWS ─── */
     case "reviews": {
       const reviews = config.reviews || [];
+      const titleColor = config.title_color || "#ffffff";
+      const reviewerNameColor = config.reviewer_name_color || "#ffffff";
+      const reviewTextColor = config.review_text_color || "#cbd5e1"; // slate-300
+      const ratingStarsColor = config.rating_stars_color || "#fbbf24"; // amber-400
+      const cardBgColor = config.card_bg_color || "rgba(255, 255, 255, 0.05)";
+      const cardBorderColor = config.card_border_color || "rgba(255, 255, 255, 0.05)";
+
       return (
         <section className="py-8 md:py-12 container mx-auto px-4 max-w-4xl space-y-6">
-          <h2 className="text-xl md:text-2xl font-bold text-center">{config.title || t("آراء زبائننا", "Avis de nos clients", "Customer Reviews")}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+          <h2 className="text-xl md:text-2xl font-bold text-center" style={{ color: titleColor }}>
+            {config.title || t("آراء زبائننا", "Avis de nos clients", "Customer Reviews")}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {reviews.map((r: any, idx: number) => (
-              <div key={idx} className="bg-white/5 border border-white/5 rounded-2xl p-4 md:p-5 space-y-3 hover:border-white/10 transition-all">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm">{r.name}</span>
-                  <div className="flex text-amber-400 gap-0.5">
-                    {[...Array(r.rating || 5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
+              <div 
+                key={idx} 
+                className="rounded-2xl p-4 md:p-5 space-y-3 border transition-all flex flex-col justify-between"
+                style={{
+                  backgroundColor: cardBgColor,
+                  borderColor: cardBorderColor,
+                  borderWidth: '1px',
+                  borderStyle: 'solid'
+                }}
+              >
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-black text-sm md:text-base" style={{ color: reviewerNameColor }}>{r.name || r.reviewer_name}</span>
+                    <div className="flex gap-0.5" style={{ color: ratingStarsColor }}>
+                      {[...Array(r.rating || 5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
+                    </div>
                   </div>
+                  <p className="text-base md:text-lg font-bold leading-relaxed" style={{ color: reviewTextColor }}>{r.text || r.body}</p>
                 </div>
-                <p className="text-sm md:text-base text-slate-300 leading-relaxed">{r.text}</p>
-                {r.date && <span className="text-[10px] text-slate-500">{r.date}</span>}
+                {r.date && <span className="text-[10px] text-slate-500 self-end mt-2">{r.date}</span>}
               </div>
             ))}
           </div>
@@ -464,12 +484,32 @@ function SectionRenderer({
 
     /* ─── FAQ ─── */
     case "faq": {
+      const titleColor = config.title_color || "#ffffff";
+      const questionColor = config.question_color || "#ffffff";
+      const answerColor = config.answer_color || "#cbd5e1";
+      const faqBgColor = config.faq_bg_color || "rgba(255, 255, 255, 0.05)";
+      const faqBorderColor = config.faq_border_color || "rgba(255, 255, 255, 0.05)";
+      const faqActiveBorderColor = config.faq_active_border_color || primaryColor;
+      const iconColor = config.icon_color || "#94a3b8";
+
       return (
         <section className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4">
-          <h2 className="text-xl md:text-2xl font-bold text-center mb-6">{config.title || t("أسئلة شائعة", "Questions Fréquentes (FAQ)", "Frequently Asked Questions (FAQ)")}</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-center mb-6" style={{ color: titleColor }}>
+            {config.title || t("أسئلة شائعة", "Questions Fréquentes (FAQ)", "Frequently Asked Questions (FAQ)")}
+          </h2>
           <div className="space-y-3">
             {(config.items || []).map((item: any, idx: number) => (
-              <FAQItem key={idx} question={item.q} answer={item.a} />
+              <FAQItem 
+                key={idx} 
+                question={item.q} 
+                answer={item.a} 
+                questionColor={questionColor}
+                answerColor={answerColor}
+                bgColor={faqBgColor}
+                borderColor={faqBorderColor}
+                activeBorderColor={faqActiveBorderColor}
+                iconColor={iconColor}
+              />
             ))}
           </div>
         </section>
@@ -750,16 +790,58 @@ function SectionRenderer({
  * ═══════════════════════════════════════════════ */
 
 /** FAQ Accordion Item */
-function FAQItem({ question, answer }: { question: string; answer: string }) {
+function FAQItem({ 
+  question, 
+  answer,
+  questionColor,
+  answerColor,
+  bgColor,
+  borderColor,
+  activeBorderColor,
+  iconColor
+}: { 
+  question: string; 
+  answer: string;
+  questionColor?: string;
+  answerColor?: string;
+  bgColor?: string;
+  borderColor?: string;
+  activeBorderColor?: string;
+  iconColor?: string;
+}) {
   const [open, setOpen] = useState(false);
+  
+  const bgVal = bgColor || "rgba(255, 255, 255, 0.05)";
+  const borderVal = open ? (activeBorderColor || "rgba(255, 255, 255, 0.1)") : (borderColor || "rgba(255, 255, 255, 0.05)");
+
   return (
-    <div className="border border-white/5 rounded-xl overflow-hidden bg-white/5 hover:border-white/10 transition-all">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 text-right">
-        <span className="font-bold text-sm flex-1">{question}</span>
-        <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-300 flex-shrink-0 mr-3 ${open ? "rotate-180" : ""}`} />
+    <div 
+      className="rounded-xl overflow-hidden transition-all border"
+      style={{
+        backgroundColor: bgVal,
+        borderColor: borderVal,
+        borderWidth: '1px',
+        borderStyle: 'solid'
+      }}
+    >
+      <button 
+        onClick={() => setOpen(!open)} 
+        className="w-full flex items-center justify-between p-4 text-right"
+      >
+        <span className="font-bold text-sm flex-1" style={{ color: questionColor || "#ffffff" }}>{question}</span>
+        <ChevronDown 
+          className={`h-4 w-4 transition-transform duration-300 flex-shrink-0 mr-3 ${open ? "rotate-180" : ""}`} 
+          style={{ color: iconColor || "#94a3b8" }}
+        />
       </button>
       <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
-        <div className="px-4 pb-4 text-xs text-slate-400 leading-relaxed border-t border-white/5 pt-3">
+        <div 
+          className="px-4 pb-4 text-xs leading-relaxed border-t pt-3"
+          style={{ 
+            color: answerColor || "#cbd5e1",
+            borderColor: borderColor || "rgba(255, 255, 255, 0.05)"
+          }}
+        >
           {answer}
         </div>
       </div>

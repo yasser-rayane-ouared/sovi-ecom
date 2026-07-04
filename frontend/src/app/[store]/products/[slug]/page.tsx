@@ -1960,6 +1960,18 @@ export default function StorefrontProductDetail() {
                 : "5.0";
 
               const allowBuyerReviews = config.allow_buyer_reviews !== false;
+              const reviewsConfig = section.config || {};
+
+              // Configuration styling values
+              const titleColor = reviewsConfig.title_color || (hasTheme ? themed.text : '#0f172a');
+              const subtitleColor = reviewsConfig.subtitle_color || (hasTheme ? themed.text : '#64748b');
+              const reviewerNameColor = reviewsConfig.reviewer_name_color || (hasTheme ? themed.text : '#1f2937'); // slate-800
+              const reviewTextColor = reviewsConfig.review_text_color || (hasTheme ? themed.text : '#374151'); // slate-700
+              const reviewDateColor = reviewsConfig.review_date_color || (hasTheme ? themed.text : '#94a3b8');
+              const ratingStarsColor = reviewsConfig.rating_stars_color || '#fbbf24'; // amber-400
+              const averageRatingColor = reviewsConfig.average_rating_color || (hasTheme ? themed.accent : 'rgb(99,102,241)');
+              const cardBgColor = reviewsConfig.card_bg_color || (hasTheme ? `${themed.cardBg}50` : '#f8fafc');
+              const cardBorderColor = reviewsConfig.card_border_color || (hasTheme ? themed.cardBorder : '#f1f5f9');
 
               return (
                 <div
@@ -1968,38 +1980,38 @@ export default function StorefrontProductDetail() {
                   style={getSectionStyle(section)}
                   data-section-type="reviews"
                 >
-                  <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 ${isArabic ? 'flex-row-reverse' : ''}`} style={hasTheme ? { borderColor: themed.cardBorder } : { borderColor: '#f1f5f9' }}>
+                  <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 ${isArabic ? 'flex-row-reverse' : ''}`} style={{ borderColor: cardBorderColor }}>
                     <div>
                       <h3
-                        className={hasTheme ? 'font-extrabold text-lg' : 'font-extrabold text-slate-900 text-lg'}
-                        style={hasTheme ? { color: themed.text } : {}}
+                        className="font-extrabold text-lg"
+                        style={{ color: titleColor }}
                       >
                         {t("آراء العملاء", "Avis des clients", "Customer Reviews")}
                       </h3>
-                      <p className="text-xs mt-1" style={hasTheme ? { color: themed.text, opacity: 0.6 } : { color: '#64748b' }}>
+                      <p className="text-xs mt-1 opacity-75" style={{ color: subtitleColor }}>
                         {t("ماذا يقول زبائننا عن هذا المنتج", "Ce que nos clients disent de ce produit", "What our customers say about this product")}
                       </p>
                     </div>
 
-                    <div className={`flex items-center gap-3 bg-slate-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-slate-150 dark:border-zinc-800 ${isArabic ? 'flex-row-reverse' : ''}`} style={hasTheme ? { backgroundColor: `${themed.accent}05`, borderColor: themed.cardBorder } : {}}>
+                    <div className={`flex items-center gap-3 p-3 rounded-xl border ${isArabic ? 'flex-row-reverse' : ''}`} style={{ backgroundColor: hasTheme ? `${themed.accent}05` : '#f8fafc', borderColor: cardBorderColor }}>
                       <div className="text-center">
-                        <div className="text-2xl font-black" style={hasTheme ? { color: themed.accent } : { color: 'rgb(99,102,241)' }}>
+                        <div className="text-2xl font-black" style={{ color: averageRatingColor }}>
                           {averageRating}
                         </div>
-                        <div className="text-[10px]" style={hasTheme ? { color: themed.text, opacity: 0.6 } : { color: '#64748b' }}>
+                        <div className="text-[10px] opacity-75" style={{ color: subtitleColor }}>
                           {t("من 5 نجوم", "sur 5 étoiles", "out of 5 stars")}
                         </div>
                       </div>
-                      <div className="h-8 w-px bg-slate-200 dark:bg-zinc-800" />
+                      <div className="h-8 w-px" style={{ backgroundColor: cardBorderColor }} />
                       <div>
-                        <div className={`flex text-amber-400 text-sm gap-0.5 ${isArabic ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`flex text-sm gap-0.5 ${isArabic ? 'justify-end' : 'justify-start'}`} style={{ color: ratingStarsColor }}>
                           {Array.from({ length: 5 }).map((_, idx) => (
                             <span key={idx}>
                               {idx < Math.round(Number(averageRating)) ? '★' : '☆'}
                             </span>
                           ))}
                         </div>
-                        <div className={`text-xs ${isArabic ? 'text-right' : 'text-left'} mt-0.5`} style={hasTheme ? { color: themed.text, opacity: 0.8 } : { color: '#475569' }}>
+                        <div className={`text-xs ${isArabic ? 'text-right' : 'text-left'} mt-0.5 opacity-85`} style={{ color: subtitleColor }}>
                           {t("بناءً على", "Basé sur", "Based on")} {totalReviews} {t("تقييم", "avis", "reviews")}
                         </div>
                       </div>
@@ -2007,68 +2019,71 @@ export default function StorefrontProductDetail() {
                   </div>
 
                   {/* Reviews List */}
-                  <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
                     {totalReviews > 0 ? (
                       allReviews.map((r: any, i: number) => (
                         <div
                           key={i}
-                          className="pb-4 last:pb-0 border-b last:border-b-0 border-slate-100 dark:border-zinc-800 flex flex-col gap-2"
-                          style={hasTheme ? { borderColor: themed.cardBorder } : {}}
+                          className="p-4 md:p-5 rounded-2xl border transition-all flex flex-col gap-3"
+                          style={{
+                            backgroundColor: cardBgColor,
+                            borderColor: cardBorderColor,
+                            borderWidth: '1px',
+                            borderStyle: 'solid'
+                          }}
                         >
                           <div className={`flex items-center justify-between ${isArabic ? 'flex-row-reverse' : ''}`}>
-                            <div className={`flex items-center gap-2 ${isArabic ? 'flex-row-reverse' : ''}`}>
+                            <div className={`flex items-center gap-3 ${isArabic ? 'flex-row-reverse' : ''}`}>
                               <div
-                                className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold"
-                                style={hasTheme ? {
-                                  backgroundColor: `${themed.accent}18`,
-                                  color: themed.accent,
-                                } : {
-                                  backgroundColor: 'rgba(99,102,241,0.1)',
-                                  color: 'rgb(99,102,241)',
+                                className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-black shadow-inner"
+                                style={{
+                                  backgroundColor: hasTheme ? `${themed.accent}18` : 'rgba(99,102,241,0.1)',
+                                  color: averageRatingColor,
                                 }}
                               >
                                 {(r.name || "?")[0].toUpperCase()}
                               </div>
                               <div className={isArabic ? 'text-right' : 'text-left'}>
-                                <div className={`flex items-center gap-1.5 ${isArabic ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`flex items-center gap-2 ${isArabic ? 'justify-end' : 'justify-start'}`}>
                                   <span
-                                    className={hasTheme ? 'text-xs font-extrabold' : 'text-xs font-extrabold text-slate-800'}
-                                    style={hasTheme ? { color: themed.text } : {}}
+                                    className="text-sm font-black"
+                                    style={{ color: reviewerNameColor }}
                                   >
                                     {r.name}
                                   </span>
                                   {r.city && (
-                                    <span className="text-[10px] bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-zinc-400">
+                                    <span className="text-[10px] bg-slate-200/50 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-bold text-slate-500 dark:text-zinc-400">
                                       {r.city}
                                     </span>
                                   )}
                                 </div>
-                                <div className={`flex text-amber-400 text-[10px] mt-0.5 ${isArabic ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`flex text-[11px] mt-1 ${isArabic ? 'justify-end' : 'justify-start'}`} style={{ color: ratingStarsColor }}>
                                   {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
                                 </div>
                               </div>
                             </div>
                             {r.date && (
-                              <span className="text-[10px]" style={hasTheme ? { color: themed.text, opacity: 0.5 } : { color: '#94a3b8' }}>
+                              <span className="text-[10px]" style={{ color: reviewDateColor }}>
                                 {r.date}
                               </span>
                             )}
                           </div>
 
                           <p
-                            className={hasTheme ? `text-sm md:text-base ${isArabic ? 'mr-10' : 'ml-10'} opacity-80 leading-relaxed` : `text-sm md:text-base text-slate-600 ${isArabic ? 'mr-10' : 'ml-10'} leading-relaxed`}
-                            style={hasTheme ? { color: themed.text } : {}}
+                            className={`text-base md:text-lg font-bold leading-relaxed ${isArabic ? 'mr-12' : 'ml-12'}`}
+                            style={{ color: reviewTextColor }}
                           >
                             {r.text}
                           </p>
 
                           {r.photo && (
-                            <div className={isArabic ? 'mr-10 mt-1' : 'ml-10 mt-1'}>
+                            <div className={isArabic ? 'mr-12 mt-1' : 'ml-12 mt-1'}>
                               <a href={getFullImageUrl(r.photo)} target="_blank" rel="noopener noreferrer">
                                 <img
                                   src={getFullImageUrl(r.photo)}
                                   alt="Review photo"
-                                  className="h-20 w-20 object-cover rounded-lg border border-slate-200 dark:border-zinc-800 hover:scale-105 transition-transform cursor-pointer"
+                                  className="h-24 w-24 object-cover rounded-xl border hover:scale-105 transition-transform cursor-pointer shadow-sm"
+                                  style={{ borderColor: cardBorderColor }}
                                 />
                               </a>
                             </div>
@@ -2076,7 +2091,9 @@ export default function StorefrontProductDetail() {
                         </div>
                       ))
                     ) : (
-                      <p className={hasTheme ? 'text-xs text-center py-6 opacity-50' : 'text-xs text-slate-400 text-center py-6'}>لا توجد آراء منشورة بعد. كن أول من يشارك رأيه!</p>
+                      <p className="text-xs text-center py-8 opacity-60" style={{ color: subtitleColor }}>
+                        {t("لا توجد آراء منشورة بعد. كن أول من يشارك رأيه!", "Aucun avis publié pour le moment. Soyez le premier à partager votre avis !", "No reviews published yet. Be the first to share your review!")}
+                      </p>
                     )}
                   </div>
 
