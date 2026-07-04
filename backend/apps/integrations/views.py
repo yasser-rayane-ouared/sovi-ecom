@@ -47,9 +47,10 @@ import uuid
 import queue
 import logging
 from django.db import transaction
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from apps.products.models import Product
@@ -346,25 +347,23 @@ class ClaudeChatView(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class McpSseView(APIView):
+class McpSseView(View):
     """
     GET endpoint to establish the Server-Sent Events stream with Claude.
     """
-    authentication_classes = []
-    permission_classes = []
 
     def get(self, request, store_id, token=None):
         if not token:
             token = request.GET.get('token')
         if not token:
-            return Response({'error': 'Authentication token is required.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse({'error': 'Authentication token is required.'}, status=401)
         
         try:
             config = get_object_or_404(ClaudeConfig, store_id=store_id, id=token)
             if not config.is_active:
-                return Response({'error': 'Claude integration is disabled for this store.'}, status=status.HTTP_403_FORBIDDEN)
+                return JsonResponse({'error': 'Claude integration is disabled for this store.'}, status=403)
         except Exception:
-            return Response({'error': 'Invalid token or store configuration.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse({'error': 'Invalid token or store configuration.'}, status=401)
 
         session_id = str(uuid.uuid4())
         session_manager.create_session(session_id)
