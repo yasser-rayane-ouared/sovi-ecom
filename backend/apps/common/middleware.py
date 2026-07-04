@@ -34,3 +34,18 @@ class QueryCountMiddleware:
             )
 
         return response
+
+
+from django.middleware.gzip import GZipMiddleware
+
+class SafeGZipMiddleware(GZipMiddleware):
+    """
+    Subclass of GZipMiddleware that bypasses compression for Server-Sent Events (SSE).
+    This prevents the middleware from buffering the stream, ensuring real-time delivery.
+    """
+    def process_response(self, request, response):
+        content_type = response.get('Content-Type', '')
+        if content_type and content_type.startswith('text/event-stream'):
+            return response
+        return super().process_response(request, response)
+

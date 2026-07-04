@@ -72,7 +72,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # Middleware
 # =============================================================================
 MIDDLEWARE = [
-    'django.middleware.gzip.GZipMiddleware',  # Compress all API responses to save network transit bandwidth
+    'apps.common.middleware.SafeGZipMiddleware',  # Compress API responses except SSE to prevent buffering
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
