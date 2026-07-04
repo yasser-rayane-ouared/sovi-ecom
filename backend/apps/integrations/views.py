@@ -99,7 +99,7 @@ class McpSessionManager:
             if session_id in self.local_sessions:
                 self.local_sessions[session_id].put(message)
 
-    def get_message(self, session_id, timeout=10):
+    def get_message(self, session_id, timeout=2):
         if self.redis_conn:
             key = f"mcp:session:{session_id}"
             res = self.redis_conn.blpop(key, timeout=timeout)
@@ -366,7 +366,7 @@ class McpSseView(APIView):
             
             try:
                 while True:
-                    msg = session_manager.get_message(session_id, timeout=10)
+                    msg = session_manager.get_message(session_id, timeout=2)
                     if msg:
                         yield f"event: message\ndata: {json.dumps(msg)}\n\n"
                     else:
