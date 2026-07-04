@@ -1,6 +1,7 @@
 from apps.themes.models import Theme
 from .registry import register_tool, ToolError
 import json
+import uuid
 
 @register_tool(
     name="get_theme_settings",
@@ -332,4 +333,213 @@ def update_homepage_sections(store, arguments):
     return {
         "message": "Homepage sections updated successfully.",
         "sections": sections
+    }
+
+
+@register_tool(
+    name="list_themes",
+    description="List all available themes in the platform that the store can switch to.",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def list_themes(store, arguments):
+    themes = Theme.objects.filter(is_active=True)
+    themes_list = []
+    for t in themes:
+        themes_list.append({
+            "name": t.name,
+            "slug": t.slug,
+            "description": t.description,
+            "creator": t.creator,
+            "version": t.version,
+            "is_free": t.is_free,
+            "supports_rtl": t.supports_rtl
+        })
+    return {"themes": themes_list}
+
+
+@register_tool(
+    name="add_homepage_section",
+    description="Add a new section (e.g. hero, announcement, featured_products, trust_badges, text, image, banner, categories) to the storefront homepage builder layout.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "section_type": {
+                "type": "string",
+                "enum": ["announcement", "header", "hero", "featured_products", "trust_badges", "footer", "text", "image", "banner", "categories"],
+                "description": "The layout section type to add."
+            },
+            "config": {
+                "type": "object",
+                "description": "JSON configuration object containing text content, styling, colors, and links for the section."
+            },
+            "position": {
+                "type": "integer",
+                "description": "Optional order index position to insert the section. If omitted, appends to the end."
+            }
+        },
+        "required": ["section_type", "config"]
+    }
+)
+def add_homepage_section(store, arguments):
+    section_type = arguments.get("section_type")
+    config = arguments.get("config")
+    position = arguments.get("position")
+    
+    settings = getattr(store, 'settings', None)
+    if not settings:
+        raise ToolError("Store settings configuration object not found.")
+        
+    try:
+        sections = json.loads(settings.homepage_sections) if settings.homepage_sections else []
+    except Exception:
+        sections = []
+        
+    # Generate a unique section ID
+    section_id = f"custom-{section_type}-{uuid.uuid4().hex[:8]}"
+    
+    new_section = {
+        "id": section_id,
+        "section_type": section_type,
+        "config": config,
+        "order": len(sections)
+    }
+    
+    if position is not None:
+        pos = max(0, min(int(position), len(sections)))
+        sections.insert(pos, new_section)
+    else:
+        sections.append(new_section)
+        
+    # Re-normalize orders
+    for idx, sec in enumerate(sections):
+        sec["order"] = idx
+        
+    settings.homepage_sections = json.dumps(sections)
+    settings.save()
+    
+    return {
+        "message": f"Successfully added '{section_type}' section.",
+        "section_id": section_id,
+        "position": position if position is not None else len(sections) - 1,
+        "sections": sections
+    }
+
+
+@register_tool(
+    name="update_homepage_section",
+    description="Update the configuration parameters or reorder position of an existing homepage builder section.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "section_id": {
+                "type": "string",
+                "description": "The exact ID of the homepage section to edit (e.g. 'default-hero' or custom ID)."
+            },
+            "config": {
+                "type": "object",
+                "description": "JSON configuration object containing text fields, colors, font sizes, alignments, or links to merge/update."
+            },
+            "position": {
+                "type": "integer",
+                "description": "Optional new index position order to move the section to."
+            }
+        },
+        "required": ["section_id"]
+    }
+)
+def update_homepage_section(store, arguments):
+    section_id = arguments.get("section_id")
+    config = arguments.get("config")
+    position = arguments.get("position")
+    
+    settings = getattr(store, 'settings', None)
+    if not settings:
+        raise ToolError("Store settings configuration object not found.")
+        
+    try:
+        sections = json.loads(settings.homepage_sections) if settings.homepage_sections else []
+    except Exception:
+        sections = []
+        
+    found_sec = None
+    for sec in sections:
+        if sec.get("id") == section_id:
+            found_sec = sec
+            break
+            
+    if not found_sec:
+        raise ToolError(f"Homepage section with ID '{section_id}' not found.")
+        
+    # Merge config if provided
+    if config is not None:
+        if "config" not in found_sec or not isinstance(found_sec["config"], dict):
+            found_sec["config"] = {}
+        found_sec["config"].update(config)
+        
+    # Handle reordering if position is provided
+    if position is not None:
+        sections.remove(found_sec)
+        pos = max(0, min(int(position), len(sections)))
+        sections.insert(pos, found_sec)
+        
+    # Re-normalize orders
+    for idx, sec in enumerate(sections):
+        sec["order"] = idx
+        
+    settings.homepage_sections = json.dumps(sections)
+    settings.save()
+    
+    return {
+        "message": f"Successfully updated homepage section '{section_id}'.",
+        "section_id": section_id,
+        "config": found_sec.get("config", {}),
+        "order": found_sec.get("order", 0)
+    }
+
+
+@register_tool(
+    name="delete_homepage_section",
+    description="Remove/delete an existing section from the storefront homepage builder layout.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "section_id": {
+                "type": "string",
+                "description": "The exact ID of the homepage section to delete."
+            }
+        },
+        "required": ["section_id"]
+    }
+)
+def delete_homepage_section(store, arguments):
+    section_id = arguments.get("section_id")
+    
+    settings = getattr(store, 'settings', None)
+    if not settings:
+        raise ToolError("Store settings configuration object not found.")
+        
+    try:
+        sections = json.loads(settings.homepage_sections) if settings.homepage_sections else []
+    except Exception:
+        sections = []
+        
+    initial_len = len(sections)
+    sections = [s for s in sections if s.get("id") != section_id]
+    
+    if len(sections) == initial_len:
+        raise ToolError(f"Homepage section with ID '{section_id}' not found.")
+        
+    # Re-normalize orders
+    for idx, sec in enumerate(sections):
+        sec["order"] = idx
+        
+    settings.homepage_sections = json.dumps(sections)
+    settings.save()
+    
+    return {
+        "message": f"Successfully deleted homepage section '{section_id}'.",
+        "section_id": section_id
     }
