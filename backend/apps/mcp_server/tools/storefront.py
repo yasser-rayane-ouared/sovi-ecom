@@ -14,6 +14,16 @@ import uuid
 def get_theme_settings(store, arguments):
     theme = store.active_theme
     if not theme:
+        # Self-healing: assign first active theme if none is set on the store
+        try:
+            theme = Theme.objects.filter(is_active=True).first()
+            if theme:
+                store.active_theme = theme
+                store.save()
+        except Exception:
+            pass
+            
+    if not theme:
         return {
             "active_theme": None,
             "template_config": {}
@@ -64,11 +74,21 @@ def update_theme_settings(store, arguments):
         except Theme.DoesNotExist:
             raise ToolError(f"Active theme with slug '{theme_slug}' not found.")
 
-    if template_config is not None:
-        theme = store.active_theme
-        if not theme:
-            raise ToolError("Cannot update settings: No active theme is currently set for this store.")
+    theme = store.active_theme
+    if not theme:
+        # Self-healing: assign first active theme if none is set on the store
+        try:
+            theme = Theme.objects.filter(is_active=True).first()
+            if theme:
+                store.active_theme = theme
+                store.save()
+        except Exception:
+            pass
+
+    if not theme:
+        raise ToolError("Cannot update settings: No active theme is set and no themes exist in the platform.")
         
+    if template_config is not None:
         if isinstance(theme.template_config, dict):
             theme.template_config.update(template_config)
         else:
