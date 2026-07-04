@@ -195,3 +195,92 @@ def export_orders(store, arguments):
         "content": encoded,
         "total_exported": qs.count()
     }
+
+
+@register_tool(
+    name="update_order_status",
+    description="Update the status of an existing order (e.g. new, confirmed, shipped, delivered, cancelled, returned).",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "order_id": {
+                "type": "string",
+                "description": "The exact UUID of the order to update."
+            },
+            "status": {
+                "type": "string",
+                "enum": ["new", "confirmed", "shipped", "delivered", "cancelled", "returned"],
+                "description": "The new status to set for the order."
+            }
+        },
+        "required": ["order_id", "status"]
+    }
+)
+def update_order_status(store, arguments):
+    order_id = arguments.get("order_id")
+    status = arguments.get("status")
+    
+    try:
+        order = Order.objects.get(id=order_id, store=store)
+    except Order.DoesNotExist:
+        raise ToolError(f"Order with ID '{order_id}' not found.")
+        
+    old_status = order.status
+    order.status = status
+    order.save()
+    
+    return {
+        "message": f"Successfully updated order {order.order_number} status from '{old_status}' to '{status}'.",
+        "order_number": order.order_number,
+        "status": order.status
+    }
+
+
+@register_tool(
+    name="get_order_details",
+    description="Retrieve full details for a specific order by its UUID, including items, customer info, address, and pricing.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "order_id": {
+                "type": "string",
+                "description": "The exact UUID of the order to retrieve."
+            }
+        },
+        "required": ["order_id"]
+    }
+)
+def get_order_details(store, arguments):
+    order_id = arguments.get("order_id")
+    
+    try:
+        order = Order.objects.select_related('wilaya', 'commune').prefetch_related('items').get(id=order_id, store=store)
+    except Order.DoesNotExist:
+        raise ToolError(f"Order with ID '{order_id}' not found.")
+        
+    items_list = []
+    for item in order.items.all():
+        items_list.append({
+            "product_title": item.product_title,
+            "variant_name": item.variant_name,
+            "quantity": item.quantity,
+            "price": float(item.price),
+            "total": float(item.total)
+        })
+        
+    return {
+        "id": str(order.id),
+        "order_number": order.order_number,
+        "full_name": order.full_name,
+        "phone": order.phone,
+        "phone2": order.phone2,
+        "wilaya": order.wilaya.name_fr if order.wilaya else None,
+        "commune": order.commune.name_fr if order.commune else None,
+        "address": order.address,
+        "subtotal": float(order.subtotal),
+        "delivery_price": float(order.delivery_price),
+        "total": float(order.total),
+        "status": order.status,
+        "created_at": order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        "items": items_list
+    }

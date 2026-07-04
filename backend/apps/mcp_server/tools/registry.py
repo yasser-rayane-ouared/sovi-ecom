@@ -46,7 +46,8 @@ def load_all_tools():
         "apps.mcp_server.tools.products",
         "apps.mcp_server.tools.orders",
         "apps.mcp_server.tools.pages",
-        "apps.mcp_server.tools.storefront"
+        "apps.mcp_server.tools.storefront",
+        "apps.mcp_server.tools.integrations"
     ]
     for submodule in submodules:
         try:

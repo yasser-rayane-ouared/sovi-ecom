@@ -79,3 +79,128 @@ def update_theme_settings(store, arguments):
         "active_theme_slug": store.active_theme.slug if store.active_theme else None,
         "template_config": store.active_theme.template_config if store.active_theme else {}
     }
+
+
+@register_tool(
+    name="get_store_settings",
+    description="Retrieve the store's profile settings (name, description, logo, favicon, custom domain, contact phone, contact email, whatsapp number, and social links).",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def get_store_settings(store, arguments):
+    settings = getattr(store, 'settings', None)
+    return {
+        "id": str(store.id),
+        "name": store.name,
+        "description": store.description,
+        "subdomain": store.subdomain,
+        "custom_domain": store.custom_domain,
+        "logo": store.logo,
+        "favicon": store.favicon,
+        "currency": store.currency,
+        "language": store.language,
+        "contact_phone": settings.contact_phone if settings else "",
+        "contact_email": settings.contact_email if settings else "",
+        "whatsapp_number": settings.whatsapp_number if settings else "",
+        "facebook_url": settings.facebook_url if settings else "",
+        "instagram_url": settings.instagram_url if settings else "",
+        "tiktok_url": settings.tiktok_url if settings else ""
+    }
+
+
+@register_tool(
+    name="update_store_settings",
+    description="Update the store's name, description, logo, custom domain, contact phone, contact email, whatsapp number, or social links.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The name of the store."
+            },
+            "description": {
+                "type": "string",
+                "description": "General description of the store."
+            },
+            "logo": {
+                "type": "string",
+                "description": "URL of the store's logo."
+            },
+            "favicon": {
+                "type": "string",
+                "description": "URL of the store's favicon."
+            },
+            "custom_domain": {
+                "type": "string",
+                "description": "Custom domain name (e.g. www.mystore.com). Can be blank to remove."
+            },
+            "contact_phone": {
+                "type": "string",
+                "description": "Support contact phone number."
+            },
+            "contact_email": {
+                "type": "string",
+                "description": "Support contact email address."
+            },
+            "whatsapp_number": {
+                "type": "string",
+                "description": "WhatsApp contact number."
+            },
+            "facebook_url": {
+                "type": "string",
+                "description": "Facebook page URL."
+            },
+            "instagram_url": {
+                "type": "string",
+                "description": "Instagram profile URL."
+            },
+            "tiktok_url": {
+                "type": "string",
+                "description": "TikTok profile URL."
+            }
+        }
+    }
+)
+def update_store_settings(store, arguments):
+    # Update Store fields
+    if "name" in arguments:
+        store.name = arguments["name"]
+    if "description" in arguments:
+        store.description = arguments["description"]
+    if "logo" in arguments:
+        store.logo = arguments["logo"]
+    if "favicon" in arguments:
+        store.favicon = arguments["favicon"]
+    if "custom_domain" in arguments:
+        cd = arguments["custom_domain"]
+        store.custom_domain = cd.strip() if cd and cd.strip() else None
+    store.save()
+    
+    # Update StoreSettings fields
+    settings = getattr(store, 'settings', None)
+    if settings:
+        if "contact_phone" in arguments:
+            settings.contact_phone = arguments["contact_phone"]
+        if "contact_email" in arguments:
+            settings.contact_email = arguments["contact_email"]
+        if "whatsapp_number" in arguments:
+            settings.whatsapp_number = arguments["whatsapp_number"]
+        if "facebook_url" in arguments:
+            settings.facebook_url = arguments["facebook_url"]
+        if "instagram_url" in arguments:
+            settings.instagram_url = arguments["instagram_url"]
+        if "tiktok_url" in arguments:
+            settings.tiktok_url = arguments["tiktok_url"]
+        settings.save()
+        
+    return {
+        "message": "Store settings updated successfully.",
+        "name": store.name,
+        "description": store.description,
+        "custom_domain": store.custom_domain,
+        "contact_phone": settings.contact_phone if settings else "",
+        "contact_email": settings.contact_email if settings else "",
+        "whatsapp_number": settings.whatsapp_number if settings else ""
+    }

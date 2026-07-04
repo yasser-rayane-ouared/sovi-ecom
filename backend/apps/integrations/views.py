@@ -57,6 +57,10 @@ from apps.products.models import Product
 from apps.orders.models import Order
 from .models import ClaudeConfig
 from .serializers import ClaudeConfigSerializer
+from apps.mcp_server.tools.registry import load_all_tools, list_tools, get_tool, ToolError
+
+# Initialize tools registry
+load_all_tools()
 
 logger = logging.getLogger(__name__)
 
@@ -445,94 +449,53 @@ def process_mcp_message(store_id, method, params, request_id):
         
         elif method == 'tools/list':
             result = {
-                "tools": [
-                    {
-                        "name": "update_product_price",
-                        "description": "Updates the price of a specific product in the store.",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "product_id": {
-                                    "type": "string",
-                                    "description": "The exact UUID of the product to update."
-                                },
-                                "new_price": {
-                                    "type": "number",
-                                    "description": "The new price for the product in DZD (Algerian Dinar)."
-                                }
-                            },
-                            "required": ["product_id", "new_price"]
-                        }
-                    },
-                    {
-                        "name": "update_product_description",
-                        "description": "Updates the description of a specific product in the store.",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "product_id": {
-                                    "type": "string",
-                                    "description": "The exact UUID of the product to update."
-                                },
-                                "new_description": {
-                                    "type": "string",
-                                    "description": "The new description text for the product."
-                                }
-                            },
-                            "required": ["product_id", "new_description"]
-                        }
-                    }
-                ]
+                "tools": list_tools()
             }
         
         elif method == 'tools/call':
             tool_name = params.get('name')
             arguments = params.get('arguments', {})
             
-            from apps.stores.models import Store
-            store = Store.objects.get(id=store_id)
-            
-            if tool_name == 'update_product_price':
-                product_id = arguments.get('product_id')
-                new_price = arguments.get('new_price')
-                
-                prod = Product.objects.get(id=product_id, store=store)
-                old_price = prod.price
-                prod.price = new_price
-                prod.save()
-                
-                result = {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"Successfully updated the price of '{prod.title}' (ID: {product_id}) from {old_price} DZD to {new_price} DZD."
-                        }
-                    ],
-                    "isError": False
-                }
-            
-            elif tool_name == 'update_product_description':
-                product_id = arguments.get('product_id')
-                new_description = arguments.get('new_description')
-                
-                prod = Product.objects.get(id=product_id, store=store)
-                prod.description = new_description
-                prod.save()
-                
-                result = {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": f"Successfully updated the description of '{prod.title}' (ID: {product_id})."
-                        }
-                    ],
-                    "isError": False
-                }
-            else:
+            tool = get_tool(tool_name)
+            if not tool:
                 error = {
                     "code": -32601,
                     "message": f"Method not found: tool '{tool_name}' is not supported."
                 }
+            else:
+                from apps.stores.models import Store
+                store = Store.objects.get(id=store_id)
+                try:
+                    result_data = tool["handler"](store, arguments)
+                    result = {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": json.dumps(result_data, ensure_ascii=False)
+                            }
+                        ],
+                        "isError": False
+                    }
+                except ToolError as te:
+                    result = {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": f"Error: {str(te)}"
+                            }
+                        ],
+                        "isError": True
+                    }
+                except Exception as e:
+                    result = {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": f"Unexpected error: {str(e)}"
+                            }
+                        ],
+                        "isError": True
+                    }
         
         elif method == 'resources/list':
             result = {

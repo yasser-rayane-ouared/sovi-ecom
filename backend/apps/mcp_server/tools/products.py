@@ -1,4 +1,4 @@
-from apps.products.models import Product, Category
+from apps.products.models import Product, Category, ProductReview
 from apps.products.serializers import ProductSerializer
 from .registry import register_tool, ToolError
 from django.utils.text import slugify
@@ -183,3 +183,171 @@ def update_product(store, arguments):
         
     updated_product = serializer.save()
     return ProductSerializer(updated_product, context={"store": store}).data
+
+
+@register_tool(
+    name="delete_product",
+    description="Delete an existing product from the store by its UUID.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "product_id": {
+                "type": "string",
+                "description": "The exact UUID of the product to delete."
+            }
+        },
+        "required": ["product_id"]
+    }
+)
+def delete_product(store, arguments):
+    product_id = arguments.get("product_id")
+    try:
+        product = Product.objects.get(id=product_id, store=store)
+    except Product.DoesNotExist:
+        raise ToolError(f"Product with ID '{product_id}' not found.")
+        
+    title = product.title
+    product.delete()
+    
+    return {
+        "message": f"Successfully deleted product '{title}' (ID: {product_id}).",
+        "product_id": product_id,
+        "title": title
+    }
+
+
+@register_tool(
+    name="list_reviews",
+    description="List product reviews for the store, optionally filtered by product_id and approval status.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "product_id": {
+                "type": "string",
+                "description": "Optional UUID of the product to filter reviews."
+            },
+            "is_approved": {
+                "type": "boolean",
+                "description": "Optional approval status filter."
+            },
+            "limit": {
+                "type": "integer",
+                "default": 20,
+                "description": "Maximum number of reviews to return."
+            },
+            "offset": {
+                "type": "integer",
+                "default": 0,
+                "description": "Number of reviews to skip."
+            }
+        }
+    }
+)
+def list_reviews(store, arguments):
+    product_id = arguments.get("product_id")
+    is_approved = arguments.get("is_approved")
+    limit = min(int(arguments.get("limit", 20)), 100)
+    offset = max(int(arguments.get("offset", 0)), 0)
+    
+    qs = ProductReview.objects.filter(store=store).select_related('product')
+    
+    if product_id:
+        qs = qs.filter(product_id=product_id)
+        
+    if is_approved is not None:
+        qs = qs.filter(is_approved=is_approved)
+        
+    total_count = qs.count()
+    reviews_page = qs[offset:offset+limit]
+    
+    reviews_data = []
+    for r in reviews_page:
+        reviews_data.append({
+            "id": str(r.id),
+            "product_id": str(r.product.id),
+            "product_title": r.product.title,
+            "reviewer_name": r.reviewer_name,
+            "reviewer_city": r.reviewer_city,
+            "rating": r.rating,
+            "body": r.body,
+            "photo_url": r.photo_url,
+            "is_approved": r.is_approved,
+            "created_at": r.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(r, 'created_at') and r.created_at else None
+        })
+        
+    return {
+        "reviews": reviews_data,
+        "total_count": total_count,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+@register_tool(
+    name="approve_review",
+    description="Approve or disapprove a customer review so it displays or hides on the storefront.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "review_id": {
+                "type": "string",
+                "description": "The exact UUID of the review to approve/disapprove."
+            },
+            "is_approved": {
+                "type": "boolean",
+                "description": "True to approve and show the review, False to reject/hide it."
+            }
+        },
+        "required": ["review_id", "is_approved"]
+    }
+)
+def approve_review(store, arguments):
+    review_id = arguments.get("review_id")
+    is_approved = arguments.get("is_approved")
+    
+    try:
+        review = ProductReview.objects.get(id=review_id, store=store)
+    except ProductReview.DoesNotExist:
+        raise ToolError(f"Review with ID '{review_id}' not found.")
+        
+    review.is_approved = is_approved
+    review.save()
+    
+    status_str = "approved" if is_approved else "disapproved"
+    return {
+        "message": f"Successfully {status_str} review by {review.reviewer_name} for product '{review.product.title}'.",
+        "review_id": review_id,
+        "is_approved": review.is_approved
+    }
+
+
+@register_tool(
+    name="delete_review",
+    description="Delete a customer product review from the database.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "review_id": {
+                "type": "string",
+                "description": "The exact UUID of the review to delete."
+            }
+        },
+        "required": ["review_id"]
+    }
+)
+def delete_review(store, arguments):
+    review_id = arguments.get("review_id")
+    
+    try:
+        review = ProductReview.objects.get(id=review_id, store=store)
+    except ProductReview.DoesNotExist:
+        raise ToolError(f"Review with ID '{review_id}' not found.")
+        
+    reviewer_name = review.reviewer_name
+    product_title = review.product.title
+    review.delete()
+    
+    return {
+        "message": f"Successfully deleted review by {reviewer_name} for product '{product_title}'.",
+        "review_id": review_id
+    }
