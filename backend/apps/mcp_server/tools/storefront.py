@@ -1,5 +1,6 @@
 from apps.themes.models import Theme
 from .registry import register_tool, ToolError
+import json
 
 @register_tool(
     name="get_theme_settings",
@@ -203,4 +204,55 @@ def update_store_settings(store, arguments):
         "contact_phone": settings.contact_phone if settings else "",
         "contact_email": settings.contact_email if settings else "",
         "whatsapp_number": settings.whatsapp_number if settings else ""
+    }
+
+
+@register_tool(
+    name="get_homepage_sections",
+    description="Retrieve all configured homepage builder sections (JSON layout list).",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def get_homepage_sections(store, arguments):
+    settings = getattr(store, 'settings', None)
+    if not settings:
+        return {"sections": []}
+        
+    try:
+        sections_list = json.loads(settings.homepage_sections) if settings.homepage_sections else []
+    except Exception:
+        sections_list = []
+        
+    return {"sections": sections_list}
+
+
+@register_tool(
+    name="update_homepage_sections",
+    description="Set or completely update the homepage layout builder sections.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "sections": {
+                "type": "array",
+                "description": "An array of homepage section configuration objects (e.g. slider, features, categories, products, banner)."
+            }
+        },
+        "required": ["sections"]
+    }
+)
+def update_homepage_sections(store, arguments):
+    sections = arguments.get("sections")
+    
+    settings = getattr(store, 'settings', None)
+    if not settings:
+        raise ToolError("Store settings configuration object not found.")
+        
+    settings.homepage_sections = json.dumps(sections)
+    settings.save()
+    
+    return {
+        "message": "Homepage sections updated successfully.",
+        "sections": sections
     }

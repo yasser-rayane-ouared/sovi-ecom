@@ -169,3 +169,88 @@ def list_landing_pages(store, arguments):
     return {
         "landing_pages": pages_data
     }
+
+
+@register_tool(
+    name="update_page_section",
+    description="Update the configuration of an existing landing page section.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "section_id": {
+                "type": "string",
+                "description": "The exact UUID of the page section to update."
+            },
+            "config": {
+                "type": "object",
+                "description": "The JSON configuration parameters for this section."
+            },
+            "position": {
+                "type": "integer",
+                "description": "Optional index position to update/move the section."
+            },
+            "is_enabled": {
+                "type": "boolean",
+                "description": "Optional toggle to enable/disable the section."
+            }
+        },
+        "required": ["section_id"]
+    }
+)
+def update_page_section(store, arguments):
+    section_id = arguments.get("section_id")
+    config = arguments.get("config")
+    position = arguments.get("position")
+    is_enabled = arguments.get("is_enabled")
+    
+    try:
+        section = PageSection.objects.get(id=section_id, page__store=store)
+    except PageSection.DoesNotExist:
+        raise ToolError(f"Page section with ID '{section_id}' not found.")
+        
+    if config is not None:
+        section.config = config
+    if position is not None:
+        section.position = int(position)
+    if is_enabled is not None:
+        section.is_enabled = is_enabled
+        
+    section.save()
+    
+    return {
+        "message": "Page section updated successfully.",
+        "section_id": section_id,
+        "section_type": section.section_type,
+        "position": section.position,
+        "is_enabled": section.is_enabled
+    }
+
+
+@register_tool(
+    name="delete_page_section",
+    description="Delete a section from a landing page.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "section_id": {
+                "type": "string",
+                "description": "The exact UUID of the page section to delete."
+            }
+        },
+        "required": ["section_id"]
+    }
+)
+def delete_page_section(store, arguments):
+    section_id = arguments.get("section_id")
+    try:
+        section = PageSection.objects.get(id=section_id, page__store=store)
+    except PageSection.DoesNotExist:
+        raise ToolError(f"Page section with ID '{section_id}' not found.")
+        
+    section_type = section.section_type
+    section.delete()
+    
+    return {
+        "message": f"Successfully deleted landing page section of type '{section_type}'.",
+        "section_id": section_id
+    }

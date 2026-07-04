@@ -1,8 +1,9 @@
-from apps.products.models import Product, Category, ProductReview
+from apps.products.models import Product, Category, ProductReview, ProductSection
 from apps.products.serializers import ProductSerializer
 from .registry import register_tool, ToolError
 from django.utils.text import slugify
 import uuid
+import json
 
 @register_tool(
     name="list_products",
@@ -350,4 +351,186 @@ def delete_review(store, arguments):
     return {
         "message": f"Successfully deleted review by {reviewer_name} for product '{product_title}'.",
         "review_id": review_id
+    }
+
+
+@register_tool(
+    name="list_product_sections",
+    description="List all layout/content sections configured for a specific product page.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "product_id": {
+                "type": "string",
+                "description": "The exact UUID of the product."
+            }
+        },
+        "required": ["product_id"]
+    }
+)
+def list_product_sections(store, arguments):
+    product_id = arguments.get("product_id")
+    try:
+        product = Product.objects.get(id=product_id, store=store)
+    except Product.DoesNotExist:
+        raise ToolError(f"Product with ID '{product_id}' not found.")
+        
+    sections = ProductSection.objects.filter(product=product).order_by('order')
+    
+    sections_list = []
+    for sec in sections:
+        try:
+            config_dict = json.loads(sec.config) if sec.config else {}
+        except Exception:
+            config_dict = {}
+        sections_list.append({
+            "id": str(sec.id),
+            "section_type": sec.section_type,
+            "order": sec.order,
+            "config": config_dict
+        })
+        
+    return {
+        "product_id": product_id,
+        "product_title": product.title,
+        "sections": sections_list
+    }
+
+
+@register_tool(
+    name="add_product_section",
+    description="Add a new layout/content section to a product page.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "product_id": {
+                "type": "string",
+                "description": "The exact UUID of the product."
+            },
+            "section_type": {
+                "type": "string",
+                "description": "The type of the section (e.g. details, gallery, reviews, features, banner, accordion)."
+            },
+            "config": {
+                "type": "object",
+                "description": "JSON configuration object for this section."
+            },
+            "order": {
+                "type": "integer",
+                "default": 0,
+                "description": "The display order position of this section."
+            }
+        },
+        "required": ["product_id", "section_type", "config"]
+    }
+)
+def add_product_section(store, arguments):
+    product_id = arguments.get("product_id")
+    section_type = arguments.get("section_type")
+    config = arguments.get("config")
+    order = int(arguments.get("order", 0))
+    
+    try:
+        product = Product.objects.get(id=product_id, store=store)
+    except Product.DoesNotExist:
+        raise ToolError(f"Product with ID '{product_id}' not found.")
+        
+    config_json = json.dumps(config)
+    sec = ProductSection.objects.create(
+        product=product,
+        section_type=section_type,
+        config=config_json,
+        order=order
+    )
+    
+    return {
+        "message": "Product section added successfully.",
+        "id": str(sec.id),
+        "section_type": sec.section_type,
+        "order": sec.order,
+        "config": config
+    }
+
+
+@register_tool(
+    name="update_product_section",
+    description="Update the configuration or order position of an existing product page section.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "section_id": {
+                "type": "string",
+                "description": "The exact UUID of the product section to update."
+            },
+            "config": {
+                "type": "object",
+                "description": "Updated configuration parameters."
+            },
+            "order": {
+                "type": "integer",
+                "description": "Updated display order position."
+            }
+        },
+        "required": ["section_id"]
+    }
+)
+def update_product_section(store, arguments):
+    section_id = arguments.get("section_id")
+    config = arguments.get("config")
+    order = arguments.get("order")
+    
+    try:
+        sec = ProductSection.objects.get(id=section_id, product__store=store)
+    except ProductSection.DoesNotExist:
+        raise ToolError(f"Product section with ID '{section_id}' not found.")
+        
+    if config is not None:
+        sec.config = json.dumps(config)
+    if order is not None:
+        sec.order = int(order)
+        
+    sec.save()
+    
+    try:
+        config_dict = json.loads(sec.config) if sec.config else {}
+    except Exception:
+        config_dict = {}
+        
+    return {
+        "message": "Product section updated successfully.",
+        "id": str(sec.id),
+        "section_type": sec.section_type,
+        "order": sec.order,
+        "config": config_dict
+    }
+
+
+@register_tool(
+    name="delete_product_section",
+    description="Delete a layout/content section from a product page.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "section_id": {
+                "type": "string",
+                "description": "The exact UUID of the product section to delete."
+            }
+        },
+        "required": ["section_id"]
+    }
+)
+def delete_product_section(store, arguments):
+    section_id = arguments.get("section_id")
+    
+    try:
+        sec = ProductSection.objects.get(id=section_id, product__store=store)
+    except ProductSection.DoesNotExist:
+        raise ToolError(f"Product section with ID '{section_id}' not found.")
+        
+    section_type = sec.section_type
+    sec.delete()
+    
+    return {
+        "message": f"Successfully deleted product section of type '{section_type}'.",
+        "section_id": section_id
     }
