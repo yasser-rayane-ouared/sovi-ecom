@@ -225,8 +225,7 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
     if (!apiBase && typeof window !== "undefined") {
       apiBase = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ":" + window.location.port : ""}/api`;
     }
-    const cleanBase = apiBase ? (apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase) : "";
-    return `${cleanBase}/integrations/${currentStoreId}/mcp/sse/?token=${claudeId}`;
+    return `${cleanBase}/integrations/${currentStoreId}/mcp/sse/${claudeId}/`;
   })();
 
   // Multilingual local translations for Claude Card

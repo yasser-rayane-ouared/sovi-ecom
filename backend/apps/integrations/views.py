@@ -353,8 +353,9 @@ class McpSseView(APIView):
     authentication_classes = []
     permission_classes = []
 
-    def get(self, request, store_id):
-        token = request.GET.get('token')
+    def get(self, request, store_id, token=None):
+        if not token:
+            token = request.GET.get('token')
         if not token:
             return Response({'error': 'Authentication token is required.'}, status=status.HTTP_401_UNAUTHORIZED)
         
@@ -369,8 +370,15 @@ class McpSseView(APIView):
         session_manager.create_session(session_id)
 
         def event_stream():
-            post_path = reverse('mcp-message', kwargs={'store_id': store_id})
-            post_url = request.build_absolute_uri(post_path) + f"?session_id={session_id}&token={token}"
+            token_in_path = request.resolver_match.url_name == 'mcp-sse-token' or 'token' in request.resolver_match.kwargs
+            if token_in_path:
+                post_path = reverse('mcp-message-token', kwargs={'store_id': store_id, 'token': token})
+                post_url = request.build_absolute_uri(post_path)
+            else:
+                post_path = reverse('mcp-message', kwargs={'store_id': store_id})
+                post_url = request.build_absolute_uri(post_path) + f"?token={token}"
+                
+            post_url += f"{'&' if '?' in post_url else '?'}session_id={session_id}"
             
             yield f"event: endpoint\ndata: {post_url}\n\n"
             
@@ -400,8 +408,9 @@ class McpMessageView(APIView):
     authentication_classes = []
     permission_classes = []
 
-    def post(self, request, store_id):
-        token = request.GET.get('token')
+    def post(self, request, store_id, token=None):
+        if not token:
+            token = request.GET.get('token')
         session_id = request.GET.get('session_id')
         
         if not token or not session_id:
