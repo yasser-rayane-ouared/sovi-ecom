@@ -398,6 +398,268 @@ class McpSseView(View):
         response['X-Accel-Buffering'] = 'no'
         return response
 
+    def post(self, request, store_id, token=None):
+        if not token:
+            token = request.GET.get('token')
+        if not token:
+            return JsonResponse({'error': 'Authentication token is required.'}, status=401)
+        
+        try:
+            config = get_object_or_404(ClaudeConfig, store_id=store_id, id=token)
+            if not config.is_active:
+                return JsonResponse({'error': 'Claude integration is disabled for this store.'}, status=403)
+        except Exception:
+            return JsonResponse({'error': 'Invalid token or store configuration.'}, status=401)
+
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            method = data.get('method')
+            request_id = data.get('id')
+            params = data.get('params', {})
+        except Exception as e:
+            return JsonResponse({'error': f'Invalid JSON payload: {str(e)}'}, status=400)
+
+        response_payload = process_mcp_message(store_id, method, params, request_id)
+        return JsonResponse(response_payload)
+
+
+def process_mcp_message(store_id, method, params, request_id):
+    result = None
+    error = None
+    
+    try:
+        if method == 'initialize':
+            result = {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "tools": {},
+                    "resources": {}
+                },
+                "serverInfo": {
+                    "name": "Sovi-Store-MCP-Server",
+                    "version": "1.0"
+                }
+            }
+        elif method == 'notifications/initialized':
+            pass
+        
+        elif method == 'tools/list':
+            result = {
+                "tools": [
+                    {
+                        "name": "update_product_price",
+                        "description": "Updates the price of a specific product in the store.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "product_id": {
+                                    "type": "string",
+                                    "description": "The exact UUID of the product to update."
+                                },
+                                "new_price": {
+                                    "type": "number",
+                                    "description": "The new price for the product in DZD (Algerian Dinar)."
+                                }
+                            },
+                            "required": ["product_id", "new_price"]
+                        }
+                    },
+                    {
+                        "name": "update_product_description",
+                        "description": "Updates the description of a specific product in the store.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "product_id": {
+                                    "type": "string",
+                                    "description": "The exact UUID of the product to update."
+                                },
+                                "new_description": {
+                                    "type": "string",
+                                    "description": "The new description text for the product."
+                                }
+                            },
+                            "required": ["product_id", "new_description"]
+                        }
+                    }
+                ]
+            }
+        
+        elif method == 'tools/call':
+            tool_name = params.get('name')
+            arguments = params.get('arguments', {})
+            
+            from apps.stores.models import Store
+            store = Store.objects.get(id=store_id)
+            
+            if tool_name == 'update_product_price':
+                product_id = arguments.get('product_id')
+                new_price = arguments.get('new_price')
+                
+                prod = Product.objects.get(id=product_id, store=store)
+                old_price = prod.price
+                prod.price = new_price
+                prod.save()
+                
+                result = {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Successfully updated the price of '{prod.title}' (ID: {product_id}) from {old_price} DZD to {new_price} DZD."
+                        }
+                    ],
+                    "isError": False
+                }
+            
+            elif tool_name == 'update_product_description':
+                product_id = arguments.get('product_id')
+                new_description = arguments.get('new_description')
+                
+                prod = Product.objects.get(id=product_id, store=store)
+                prod.description = new_description
+                prod.save()
+                
+                result = {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Successfully updated the description of '{prod.title}' (ID: {product_id})."
+                        }
+                    ],
+                    "isError": False
+                }
+            else:
+                error = {
+                    "code": -32601,
+                    "message": f"Method not found: tool '{tool_name}' is not supported."
+                }
+        
+        elif method == 'resources/list':
+            result = {
+                "resources": [
+                    {
+                        "uri": "s-platform://products",
+                        "name": "Store Products",
+                        "description": "A list of all active products in the store, including their IDs, titles, prices, and descriptions.",
+                        "mimeType": "application/json"
+                    },
+                    {
+                        "uri": "s-platform://orders/recent",
+                        "name": "Recent Orders",
+                        "description": "A list of the 10 most recent orders in the store, including customer names, order numbers, totals, and statuses.",
+                        "mimeType": "application/json"
+                    },
+                    {
+                        "uri": "s-platform://analytics/kpis",
+                        "name": "Store KPIs and Analytics",
+                        "description": "Key business metrics for the store: total sales, total orders, average order value (AOV).",
+                        "mimeType": "application/json"
+                    }
+                ]
+            }
+        
+        elif method == 'resources/read':
+            uri = params.get('uri')
+            from apps.stores.models import Store
+            store = Store.objects.get(id=store_id)
+            
+            if uri == 's-platform://products':
+                products = Product.objects.filter(store=store, status='active')
+                products_list = []
+                for p in products:
+                    products_list.append({
+                        'id': str(p.id),
+                        'title': p.title,
+                        'price': float(p.price),
+                        'cost_price': float(p.cost_price or 0.0),
+                        'description': p.description
+                    })
+                
+                result = {
+                    "contents": [
+                        {
+                            "uri": uri,
+                            "mimeType": "application/json",
+                            "text": json.dumps(products_list, ensure_ascii=False)
+                        }
+                    ]
+                }
+            
+            elif uri == 's-platform://orders/recent':
+                orders = Order.objects.filter(store=store, is_abandoned=False).order_by('-created_at')[:10]
+                orders_list = []
+                for o in orders:
+                    orders_list.append({
+                        'order_number': o.order_number,
+                        'total': float(o.total),
+                        'status': o.status,
+                        'customer_name': o.full_name,
+                        'created_at': o.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                    })
+                
+                result = {
+                    "contents": [
+                        {
+                            "uri": uri,
+                            "mimeType": "application/json",
+                            "text": json.dumps(orders_list, ensure_ascii=False)
+                        }
+                    ]
+                }
+            
+            elif uri == 's-platform://analytics/kpis':
+                from django.db.models import Sum
+                confirmed_orders = Order.objects.filter(store=store, is_abandoned=False, status='delivered')
+                total_sales = float(confirmed_orders.aggregate(Sum('total'))['total__sum'] or 0.0)
+                total_orders = Order.objects.filter(store=store, is_abandoned=False).count()
+                aov = total_sales / total_orders if total_orders > 0 else 0.0
+                
+                kpis = {
+                    'total_sales_dzd': total_sales,
+                    'total_orders_count': total_orders,
+                    'average_order_value_dzd': aov
+                }
+                
+                result = {
+                    "contents": [
+                        {
+                            "uri": uri,
+                            "mimeType": "application/json",
+                            "text": json.dumps(kpis, ensure_ascii=False)
+                        }
+                    ]
+                }
+            else:
+                error = {
+                    "code": -32602,
+                    "message": f"Resource not found: URI '{uri}' is not supported."
+                }
+        
+        else:
+            error = {
+                "code": -32601,
+                "message": f"Method not found: '{method}'"
+            }
+
+    except Exception as e:
+        error = {
+            "code": -32603,
+            "message": f"Internal error: {str(e)}"
+        }
+
+    response_payload = {
+        "jsonrpc": "2.0"
+    }
+    if request_id is not None:
+        response_payload["id"] = request_id
+    
+    if error:
+        response_payload["error"] = error
+    else:
+        response_payload["result"] = result
+        
+    return response_payload
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class McpMessageView(APIView):
@@ -430,239 +692,7 @@ class McpMessageView(APIView):
         except Exception as e:
             return Response({'error': f'Invalid JSON payload: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
-        result = None
-        error = None
-        
-        try:
-            if method == 'initialize':
-                result = {
-                    "protocolVersion": "2024-11-05",
-                    "capabilities": {
-                        "tools": {},
-                        "resources": {}
-                    },
-                    "serverInfo": {
-                        "name": "Sovi-Store-MCP-Server",
-                        "version": "1.0"
-                    }
-                }
-            elif method == 'notifications/initialized':
-                return Response(status=status.HTTP_202_ACCEPTED)
-            
-            elif method == 'tools/list':
-                result = {
-                    "tools": [
-                        {
-                            "name": "update_product_price",
-                            "description": "Updates the price of a specific product in the store.",
-                            "inputSchema": {
-                                "type": "object",
-                                "properties": {
-                                    "product_id": {
-                                        "type": "string",
-                                        "description": "The exact UUID of the product to update."
-                                    },
-                                    "new_price": {
-                                        "type": "number",
-                                        "description": "The new price for the product in DZD (Algerian Dinar)."
-                                    }
-                                },
-                                "required": ["product_id", "new_price"]
-                            }
-                        },
-                        {
-                            "name": "update_product_description",
-                            "description": "Updates the description of a specific product in the store.",
-                            "inputSchema": {
-                                "type": "object",
-                                "properties": {
-                                    "product_id": {
-                                        "type": "string",
-                                        "description": "The exact UUID of the product to update."
-                                    },
-                                    "new_description": {
-                                        "type": "string",
-                                        "description": "The new description text for the product."
-                                    }
-                                },
-                                "required": ["product_id", "new_description"]
-                            }
-                        }
-                    ]
-                }
-            
-            elif method == 'tools/call':
-                tool_name = params.get('name')
-                arguments = params.get('arguments', {})
-                
-                from apps.stores.models import Store
-                store = Store.objects.get(id=store_id)
-                
-                if tool_name == 'update_product_price':
-                    product_id = arguments.get('product_id')
-                    new_price = arguments.get('new_price')
-                    
-                    prod = Product.objects.get(id=product_id, store=store)
-                    old_price = prod.price
-                    prod.price = new_price
-                    prod.save()
-                    
-                    result = {
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": f"Successfully updated the price of '{prod.title}' (ID: {product_id}) from {old_price} DZD to {new_price} DZD."
-                            }
-                        ],
-                        "isError": False
-                    }
-                
-                elif tool_name == 'update_product_description':
-                    product_id = arguments.get('product_id')
-                    new_desc = arguments.get('new_description')
-                    
-                    prod = Product.objects.get(id=product_id, store=store)
-                    prod.description = new_desc
-                    prod.save()
-                    
-                    result = {
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": f"Successfully updated the description of '{prod.title}' (ID: {product_id})."
-                            }
-                        ],
-                        "isError": False
-                    }
-                else:
-                    error = {
-                        "code": -32601,
-                        "message": f"Method not found: tool '{tool_name}' is not supported."
-                    }
-            
-            elif method == 'resources/list':
-                result = {
-                    "resources": [
-                        {
-                            "uri": "s-platform://products",
-                            "name": "Store Products",
-                            "description": "A list of all active products in the store, including their IDs, titles, prices, and descriptions.",
-                            "mimeType": "application/json"
-                        },
-                        {
-                            "uri": "s-platform://orders/recent",
-                            "name": "Recent Orders",
-                            "description": "A list of the 10 most recent orders in the store, including customer names, order numbers, totals, and statuses.",
-                            "mimeType": "application/json"
-                        },
-                        {
-                            "uri": "s-platform://analytics/kpis",
-                            "name": "Store KPIs and Analytics",
-                            "description": "Key business metrics for the store: total sales, total orders, average order value (AOV).",
-                            "mimeType": "application/json"
-                        }
-                    ]
-                }
-            
-            elif method == 'resources/read':
-                uri = params.get('uri')
-                from apps.stores.models import Store
-                store = Store.objects.get(id=store_id)
-                
-                if uri == 's-platform://products':
-                    products = Product.objects.filter(store=store, status='active')
-                    products_list = []
-                    for p in products:
-                        products_list.append({
-                            'id': str(p.id),
-                            'title': p.title,
-                            'price': float(p.price),
-                            'cost_price': float(p.cost_price or 0.0),
-                            'description': p.description
-                        })
-                    
-                    result = {
-                        "contents": [
-                            {
-                                "uri": uri,
-                                "mimeType": "application/json",
-                                "text": json.dumps(products_list, ensure_ascii=False)
-                            }
-                        ]
-                    }
-                
-                elif uri == 's-platform://orders/recent':
-                    orders = Order.objects.filter(store=store, is_abandoned=False).order_by('-created_at')[:10]
-                    orders_list = []
-                    for o in orders:
-                        orders_list.append({
-                            'order_number': o.order_number,
-                            'total': float(o.total),
-                            'status': o.status,
-                            'customer_name': o.full_name,
-                            'created_at': o.created_at.strftime('%Y-%m-%d %H:%M:%S')
-                        })
-                    
-                    result = {
-                        "contents": [
-                            {
-                                "uri": uri,
-                                "mimeType": "application/json",
-                                "text": json.dumps(orders_list, ensure_ascii=False)
-                            }
-                        ]
-                    }
-                
-                elif uri == 's-platform://analytics/kpis':
-                    from django.db.models import Sum
-                    confirmed_orders = Order.objects.filter(store=store, is_abandoned=False, status='delivered')
-                    total_sales = float(confirmed_orders.aggregate(Sum('total'))['total__sum'] or 0.0)
-                    total_orders = Order.objects.filter(store=store, is_abandoned=False).count()
-                    aov = total_sales / total_orders if total_orders > 0 else 0.0
-                    
-                    kpis = {
-                        'total_sales_dzd': total_sales,
-                        'total_orders_count': total_orders,
-                        'average_order_value_dzd': aov
-                    }
-                    
-                    result = {
-                        "contents": [
-                            {
-                                "uri": uri,
-                                "mimeType": "application/json",
-                                "text": json.dumps(kpis, ensure_ascii=False)
-                            }
-                        ]
-                    }
-                else:
-                    error = {
-                        "code": -32602,
-                        "message": f"Resource not found: URI '{uri}' is not supported."
-                    }
-            
-            else:
-                error = {
-                    "code": -32601,
-                    "message": f"Method not found: '{method}'"
-                }
-
-        except Exception as e:
-            error = {
-                "code": -32603,
-                "message": f"Internal error: {str(e)}"
-            }
-
-        response_payload = {
-            "jsonrpc": "2.0"
-        }
-        if request_id is not None:
-            response_payload["id"] = request_id
-        
-        if error:
-            response_payload["error"] = error
-        else:
-            response_payload["result"] = result
+        response_payload = process_mcp_message(store_id, method, params, request_id)
 
         if session_manager.is_active(session_id):
             session_manager.put_message(session_id, response_payload)
