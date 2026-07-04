@@ -40,7 +40,10 @@ export default function RegisterPage() {
       await initializeAuth();
       router.push("/overview");
     } catch (err: any) {
-      setError(err.response?.data?.error || "حدث خطأ أثناء التسجيل بواسطة Google. يرجى المحاولة لاحقاً.");
+      const serverError = err.response?.data?.error || err.response?.data?.detail || err.response?.statusText || err.message || "";
+      const statusText = err.response?.status ? `Status: ${err.response.status}` : "";
+      const details = [serverError, statusText].filter(Boolean).join(" - ");
+      setError("حدث خطأ أثناء التسجيل بواسطة Google. يرجى المحاولة لاحقاً." + (details ? ` [${details}]` : ""));
     } finally {
       setLoading(false);
     }

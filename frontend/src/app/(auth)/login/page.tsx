@@ -41,7 +41,10 @@ export default function LoginPage() {
       await initializeAuth();
       router.push("/overview");
     } catch (err: any) {
-      setError(err.response?.data?.error || (isRtl ? "خطأ في تسجيل الدخول بواسطة Google. يرجى المحاولة لاحقاً." : "Google Sign-In failed. Please try again later."));
+      const serverError = err.response?.data?.error || err.response?.data?.detail || err.response?.statusText || err.message || "";
+      const statusText = err.response?.status ? `Status: ${err.response.status}` : "";
+      const details = [serverError, statusText].filter(Boolean).join(" - ");
+      setError((isRtl ? "خطأ في تسجيل الدخول بواسطة Google. يرجى المحاولة لاحقاً." : "Google Sign-In failed. Please try again later.") + (details ? ` [${details}]` : ""));
     } finally {
       setLoading(false);
     }
