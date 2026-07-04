@@ -219,6 +219,16 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
   const [credSuccess, setCredSuccess] = useState("");
   const [credError, setCredError] = useState("");
 
+  // Construct MCP Server URL using NEXT_PUBLIC_API_URL if available, else fallback to window.location
+  const mcpServerUrl = (() => {
+    let apiBase = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiBase && typeof window !== "undefined") {
+      apiBase = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ":" + window.location.port : ""}/api`;
+    }
+    const cleanBase = apiBase ? (apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase) : "";
+    return `${cleanBase}/integrations/${currentStoreId}/mcp/sse/?token=${claudeId}`;
+  })();
+
   // Multilingual local translations for Claude Card
   const claudeLabels = {
     title: isRtl ? "مساعد الذكاء الاصطناعي (Claude Connector)" : "Claude AI Connector (MCP)",
@@ -977,15 +987,14 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
                   <div className="flex gap-2">
                     <Input
                       readOnly
-                      value={`${window.location.protocol}//${window.location.hostname}${window.location.port ? ":" + window.location.port : ""}/api/integrations/${currentStoreId}/mcp/sse/?token=${claudeId}`}
+                      value={mcpServerUrl}
                       className="font-outfit bg-muted/20 border-border text-foreground flex-1 select-all text-xs"
                     />
                     <Button
                       type="button"
                       variant="glow"
                       onClick={() => {
-                        const url = `${window.location.protocol}//${window.location.hostname}${window.location.port ? ":" + window.location.port : ""}/api/integrations/${currentStoreId}/mcp/sse/?token=${claudeId}`;
-                        navigator.clipboard.writeText(url);
+                        navigator.clipboard.writeText(mcpServerUrl);
                         setCopiedMcpUrl(true);
                         setTimeout(() => setCopiedMcpUrl(false), 2000);
                       }}
