@@ -132,6 +132,8 @@ class GoogleLoginView(APIView):
             return Response({'error': 'Google credential token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         client_id = getattr(settings, 'GOOGLE_CLIENT_ID', None)
+        if not client_id:
+            client_id = None
         
         try:
             # Verify the ID token

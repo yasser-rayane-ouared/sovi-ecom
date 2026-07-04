@@ -201,6 +201,35 @@ def get_active_limits(store):
     }
 
     if not active_subs.exists():
+        # If the store has no subscriptions at all, auto-seed a starter trial subscription
+        if not StoreSubscription.objects.filter(store=store).exists():
+            try:
+                starter_plan = Plan.objects.filter(name='starter').first()
+                if not starter_plan:
+                    seed_default_plans_if_empty()
+                    starter_plan = Plan.objects.filter(name='starter').first()
+                
+                if starter_plan:
+                    from datetime import timedelta
+                    StoreSubscription.objects.create(
+                        store=store,
+                        plan=starter_plan,
+                        is_trial=True,
+                        status='trial',
+                        start_date=now - timedelta(days=1),
+                        end_date=now + timedelta(days=starter_plan.trial_days or 30)
+                    )
+                    # Re-query active_subs
+                    active_subs = StoreSubscription.objects.filter(
+                        store=store,
+                        status__in=['trial', 'active'],
+                        start_date__lte=now,
+                        end_date__gte=now
+                    ).select_related('plan')
+            except Exception:
+                pass
+
+    if not active_subs.exists():
         return limits
 
     limits['has_active_subscription'] = True
