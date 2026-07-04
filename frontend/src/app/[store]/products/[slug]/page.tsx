@@ -1356,6 +1356,17 @@ export default function StorefrontProductDetail() {
               const offersDisplayMode = offersConfig.offers_display_mode || 'grid';
               const offersSectionTitle = offersConfig.offers_section_title || '';
               const defaultOffersTitle = t("عروض الكمية (اختر الكمية لتخفيض السعر)", "Offres de quantité (Choisissez la quantité pour réduire le prix)", "Quantity Offers (Select quantity to reduce price)");
+              
+              // Color variables controlled by config
+              const titleColor = offersConfig.title_color || (hasTheme ? themed.text : '#0f172a');
+              const textColor = offersConfig.text_color || (hasTheme ? themed.text : '#1e293b');
+              const priceColor = offersConfig.price_color || (hasTheme ? themed.text : '#0f172a');
+              const accentColor = offersConfig.accent_color || (hasTheme ? themed.accent : 'var(--primary)');
+              const offerBgColor = offersConfig.offer_bg_color || 'transparent';
+              const offerBorderColor = offersConfig.offer_border_color || (hasTheme ? themed.cardBorder : '#e2e8f0');
+              const saveBadgeTextColor = offersConfig.save_badge_text_color || '#16a34a';
+              const saveBadgeBgColor = offersConfig.save_badge_bg_color || '#f0fdf4';
+
               return offers.length > 0 ? (
                 <div
                   key={section.id || "quantity_offers"}
@@ -1363,8 +1374,8 @@ export default function StorefrontProductDetail() {
                   style={getSectionStyle(section)}
                 >
                   <h3
-                    className={hasTheme ? 'text-sm font-extrabold' : 'text-sm font-extrabold text-slate-900'}
-                    style={hasTheme ? { color: themed.text } : {}}
+                    className="text-sm font-extrabold"
+                    style={{ color: titleColor }}
                   >
                     {offersSectionTitle || defaultOffersTitle}
                   </h3>
@@ -1374,30 +1385,24 @@ export default function StorefrontProductDetail() {
                       {/* Base 1-piece row */}
                       <div
                         onClick={() => setQuantity(1)}
-                        className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all ${
-                          hasTheme ? '' : (quantity === 1 ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
-                        }`}
-                        style={hasTheme ? {
+                        className="flex items-center justify-between px-4 py-3 cursor-pointer transition-all"
+                        style={{
                           borderWidth: '2px',
                           borderStyle: 'solid',
-                          borderColor: quantity === 1 ? themed.accent : themed.cardBorder,
+                          borderColor: quantity === 1 ? accentColor : offerBorderColor,
                           borderRadius: themed.sectionRadius || '12px',
-                          backgroundColor: quantity === 1 ? `${themed.accent}10` : 'transparent',
-                        } : {
-                          borderWidth: '2px',
-                          borderStyle: 'solid',
-                          borderRadius: '12px',
+                          backgroundColor: quantity === 1 ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
                         }}
                       >
                         <div className="flex items-center gap-2">
-                          <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all`}
-                            style={hasTheme ? { borderColor: quantity === 1 ? themed.accent : themed.cardBorder } : { borderColor: quantity === 1 ? 'var(--primary)' : '#e2e8f0' }}
+                          <div className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                            style={{ borderColor: quantity === 1 ? accentColor : offerBorderColor }}
                           >
-                            {quantity === 1 && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: hasTheme ? themed.accent : 'var(--primary)' }} />}
+                            {quantity === 1 && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} />}
                           </div>
-                          <span className={hasTheme ? 'text-sm font-bold' : 'text-sm font-bold text-slate-900'} style={hasTheme ? { color: themed.text } : {}}>{t("1 قطعة", "1 pièce", "1 piece")}</span>
+                          <span className="text-sm font-bold" style={{ color: textColor }}>{t("1 قطعة", "1 pièce", "1 piece")}</span>
                         </div>
-                        <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(productPrice)}</div>
+                        <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(productPrice)}</div>
                       </div>
                       {offers.map((offer: any) => {
                         const savePct = productPrice > 0 ? Math.round((1 - offer.price / offer.quantity / productPrice) * 100) : 0;
@@ -1405,33 +1410,35 @@ export default function StorefrontProductDetail() {
                           <div
                             key={offer.id || offer.quantity}
                             onClick={() => setQuantity(offer.quantity)}
-                            className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all ${
-                              hasTheme ? '' : (quantity === offer.quantity ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
-                            }`}
-                            style={hasTheme ? {
+                            className="flex items-center justify-between px-4 py-3 cursor-pointer transition-all"
+                            style={{
                               borderWidth: '2px',
                               borderStyle: 'solid',
-                              borderColor: quantity === offer.quantity ? themed.accent : themed.cardBorder,
+                              borderColor: quantity === offer.quantity ? accentColor : offerBorderColor,
                               borderRadius: themed.sectionRadius || '12px',
-                              backgroundColor: quantity === offer.quantity ? `${themed.accent}10` : 'transparent',
-                            } : {
-                              borderWidth: '2px',
-                              borderStyle: 'solid',
-                              borderRadius: '12px',
+                              backgroundColor: quantity === offer.quantity ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
                             }}
                           >
                             <div className="flex items-center gap-2">
-                              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all`}
-                                style={hasTheme ? { borderColor: quantity === offer.quantity ? themed.accent : themed.cardBorder } : { borderColor: quantity === offer.quantity ? 'var(--primary)' : '#e2e8f0' }}
+                              <div className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                                style={{ borderColor: quantity === offer.quantity ? accentColor : offerBorderColor }}
                               >
-                                {quantity === offer.quantity && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: hasTheme ? themed.accent : 'var(--primary)' }} />}
+                                {quantity === offer.quantity && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} />}
                               </div>
-                              <span className={hasTheme ? 'text-sm font-bold' : 'text-sm font-bold text-slate-900'} style={hasTheme ? { color: themed.text } : {}}>{offer.quantity} {t("قطع", "pièces", "pieces")}</span>
+                              <span className="text-sm font-bold" style={{ color: textColor }}>{offer.quantity} {t("قطع", "pièces", "pieces")}</span>
                               {savePct > 0 && (
-                                <span className="text-[10px] text-green-600 font-bold px-1.5 py-0.5 bg-green-50 rounded-full">-{savePct}%</span>
+                                <span 
+                                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                                  style={{
+                                    color: saveBadgeTextColor,
+                                    backgroundColor: saveBadgeBgColor
+                                  }}
+                                >
+                                  -{savePct}%
+                                </span>
                               )}
                             </div>
-                            <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(offer.price)}</div>
+                            <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(offer.price)}</div>
                           </div>
                         );
                       })}
@@ -1441,52 +1448,52 @@ export default function StorefrontProductDetail() {
                     <div className="grid grid-cols-2 gap-2">
                       <div
                         onClick={() => setQuantity(1)}
-                        className={`p-3 text-center cursor-pointer transition-all ${
-                          hasTheme ? '' : (quantity === 1 ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
-                        }`}
-                        style={hasTheme ? {
+                        className="p-3 text-center cursor-pointer transition-all"
+                        style={{
                           borderWidth: '2px',
                           borderStyle: 'solid',
-                          borderColor: quantity === 1 ? themed.accent : themed.cardBorder,
+                          borderColor: quantity === 1 ? accentColor : offerBorderColor,
                           borderRadius: themed.sectionRadius || '12px',
-                          backgroundColor: quantity === 1 ? `${themed.accent}10` : 'transparent',
-                        } : {
-                          borderWidth: '2px',
-                          borderStyle: 'solid',
-                          borderRadius: '12px',
+                          backgroundColor: quantity === 1 ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
                         }}
                       >
-                        <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(productPrice)}</div>
-                        <div className={hasTheme ? 'text-xs opacity-60' : 'text-xs text-slate-500'} style={hasTheme ? { color: themed.text } : {}}>{t("1 قطعة", "1 pièce", "1 piece")}</div>
+                        <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(productPrice)}</div>
+                        <div className="text-xs opacity-80" style={{ color: textColor }}>{t("1 قطعة", "1 pièce", "1 piece")}</div>
                       </div>
-                      {offers.map((offer: any) => (
-                        <div
-                          key={offer.id || offer.quantity}
-                          onClick={() => setQuantity(offer.quantity)}
-                          className={`p-3 text-center cursor-pointer transition-all ${
-                            hasTheme ? '' : (quantity === offer.quantity ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200')
-                          }`}
-                          style={hasTheme ? {
-                            borderWidth: '2px',
-                            borderStyle: 'solid',
-                            borderColor: quantity === offer.quantity ? themed.accent : themed.cardBorder,
-                            borderRadius: themed.sectionRadius || '12px',
-                            backgroundColor: quantity === offer.quantity ? `${themed.accent}10` : 'transparent',
-                          } : {
-                            borderWidth: '2px',
-                            borderStyle: 'solid',
-                            borderRadius: '12px',
-                          }}
-                        >
-                          <div className={hasTheme ? 'text-lg font-black font-outfit' : 'text-lg font-black text-slate-900 font-outfit'} style={hasTheme ? { color: themed.text } : {}}>{formatCurrency(offer.price)}</div>
-                          <div className={hasTheme ? 'text-xs opacity-60' : 'text-xs text-slate-500'} style={hasTheme ? { color: themed.text } : {}}>{offer.quantity} {t("قطع", "pièces", "pieces")}</div>
-                          {productPrice > 0 && (
-                            <div className="text-[10px] text-green-600 font-bold mt-0.5">
-                              {t("وفر", "Économisez", "Save")} {Math.round((1 - offer.price / offer.quantity / productPrice) * 100)}%
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                      {offers.map((offer: any) => {
+                        const savePct = productPrice > 0 ? Math.round((1 - offer.price / offer.quantity / productPrice) * 100) : 0;
+                        return (
+                          <div
+                            key={offer.id || offer.quantity}
+                            onClick={() => setQuantity(offer.quantity)}
+                            className="p-3 text-center cursor-pointer transition-all"
+                            style={{
+                              borderWidth: '2px',
+                              borderStyle: 'solid',
+                              borderColor: quantity === offer.quantity ? accentColor : offerBorderColor,
+                              borderRadius: themed.sectionRadius || '12px',
+                              backgroundColor: quantity === offer.quantity ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
+                            }}
+                          >
+                            <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(offer.price)}</div>
+                            <div className="text-xs opacity-80" style={{ color: textColor }}>{offer.quantity} {t("قطع", "pièces", "pieces")}</div>
+                            {productPrice > 0 && (
+                              <div 
+                                className="text-[10px] font-bold mt-0.5"
+                                style={{
+                                  color: saveBadgeTextColor,
+                                  backgroundColor: offersConfig.save_badge_bg_color ? saveBadgeBgColor : 'transparent',
+                                  padding: offersConfig.save_badge_bg_color ? '2px 6px' : '0px',
+                                  borderRadius: offersConfig.save_badge_bg_color ? '9999px' : '0px',
+                                  display: 'inline-block'
+                                }}
+                              >
+                                {t("وفر", "Économisez", "Save")} {savePct}%
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -2049,7 +2056,7 @@ export default function StorefrontProductDetail() {
                           </div>
 
                           <p
-                            className={hasTheme ? `text-xs md:text-sm ${isArabic ? 'mr-10' : 'ml-10'} opacity-80 leading-relaxed` : `text-xs md:text-sm text-slate-600 ${isArabic ? 'mr-10' : 'ml-10'} leading-relaxed`}
+                            className={hasTheme ? `text-sm md:text-base ${isArabic ? 'mr-10' : 'ml-10'} opacity-80 leading-relaxed` : `text-sm md:text-base text-slate-600 ${isArabic ? 'mr-10' : 'ml-10'} leading-relaxed`}
                             style={hasTheme ? { color: themed.text } : {}}
                           >
                             {r.text}

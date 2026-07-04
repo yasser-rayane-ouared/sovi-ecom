@@ -453,7 +453,7 @@ function SectionRenderer({
                     {[...Array(r.rating || 5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{r.text}</p>
+                <p className="text-sm md:text-base text-slate-300 leading-relaxed">{r.text}</p>
                 {r.date && <span className="text-[10px] text-slate-500">{r.date}</span>}
               </div>
             ))}
@@ -538,39 +538,63 @@ function SectionRenderer({
     case "quantity_offers": {
       const offers = product?.quantity_offers || [];
       if (offers.length === 0) return null;
+
+      // Color variables controlled by config
+      const titleColor = config.title_color || "#ffffff";
+      const textColor = config.text_color || "#e2e8f0";
+      const priceColor = config.price_color || "#ffffff";
+      const accentColor = config.accent_color || primaryColor;
+      const offerBgColor = config.offer_bg_color || "rgba(255, 255, 255, 0.05)";
+      const offerBorderColor = config.offer_border_color || "rgba(255, 255, 255, 0.05)";
+      const saveBadgeTextColor = config.save_badge_text_color || "#34d399";
+      const saveBadgeBgColor = config.save_badge_bg_color || "rgba(52, 211, 153, 0.1)";
+
       return (
         <section className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4">
-          <h2 className="text-xl md:text-2xl font-bold text-center">{config.title || t("عروض الكمية", "Offres de quantité", "Quantity Offers")}</h2>
-          {config.subtitle && <p className="text-sm text-slate-400 text-center">{config.subtitle}</p>}
+          <h2 className="text-xl md:text-2xl font-bold text-center" style={{ color: titleColor }}>
+            {config.title || t("عروض الكمية", "Offres de quantité", "Quantity Offers")}
+          </h2>
+          {config.subtitle && <p className="text-sm text-center opacity-75" style={{ color: textColor }}>{config.subtitle}</p>}
           <div className="space-y-3">
             {offers.map((offer: any, idx: number) => {
               const isHighlight = idx === (config.highlight_index ?? -1);
               const unitPrice = parseFloat(offer.price) / offer.quantity;
               const originalUnit = parseFloat(product.price);
               const savings = Math.round(((originalUnit - unitPrice) / originalUnit) * 100);
+              
+              const borderCol = isHighlight ? accentColor : offerBorderColor;
+              const bgCol = isHighlight ? (config.active_bg_color || `${accentColor}15`) : offerBgColor;
+
               return (
                 <div
                   key={offer.id || idx}
-                  className={`relative flex items-center justify-between p-4 md:p-5 rounded-2xl border transition-all ${
-                    isHighlight
-                      ? "border-2 bg-gradient-to-l from-primary/10 to-transparent shadow-lg"
-                      : "border-white/5 bg-white/5 hover:border-white/10"
-                  }`}
-                  style={isHighlight ? { borderColor: primaryColor } : {}}
+                  className="relative flex items-center justify-between p-4 md:p-5 rounded-2xl border transition-all"
+                  style={{
+                    borderColor: borderCol,
+                    backgroundColor: bgCol,
+                    borderWidth: isHighlight ? '2px' : '1px'
+                  }}
                 >
                   {isHighlight && config.highlight_badge && (
-                    <span className="absolute -top-3 right-4 text-[10px] font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: primaryColor }}>
+                    <span className="absolute -top-3 right-4 text-[10px] font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: accentColor }}>
                       {config.highlight_badge}
                     </span>
                   )}
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl font-black font-outfit" style={isHighlight ? { color: primaryColor } : {}}>{offer.quantity}x</span>
+                    <span className="text-2xl font-black font-outfit" style={{ color: isHighlight ? accentColor : textColor }}>{offer.quantity}x</span>
                     <div>
-                      <span className="font-bold text-sm">{offer.label || t(`${offer.quantity} قطع`, `${offer.quantity} pièces`, `${offer.quantity} pieces`)}</span>
-                      {savings > 0 && <span className="text-xs text-emerald-400 block mt-0.5">{t("وفر", "Économisez", "Save")} {savings}%</span>}
+                      <span className="font-bold text-sm" style={{ color: textColor }}>{offer.label || t(`${offer.quantity} قطع`, `${offer.quantity} pièces`, `${offer.quantity} pieces`)}</span>
+                      {savings > 0 && (
+                        <span 
+                          className="text-xs block mt-0.5 font-bold"
+                          style={{ color: saveBadgeTextColor }}
+                        >
+                          {t("وفر", "Économisez", "Save")} {savings}%
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="font-black text-lg font-outfit" style={isHighlight ? { color: primaryColor } : {}}>
+                  <span className="font-black text-lg font-outfit" style={{ color: isHighlight ? accentColor : priceColor }}>
                     {formatCurrency(parseFloat(offer.price))}
                   </span>
                 </div>
