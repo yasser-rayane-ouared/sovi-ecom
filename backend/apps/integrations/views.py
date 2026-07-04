@@ -40,6 +40,7 @@ class TestSheetsConnectionView(APIView):
 
 
 import re
+import time
 import json
 import requests
 import uuid
@@ -102,9 +103,18 @@ class McpSessionManager:
     def get_message(self, session_id, timeout=2):
         if self.redis_conn:
             key = f"mcp:session:{session_id}"
-            res = self.redis_conn.blpop(key, timeout=timeout)
-            if res:
-                return json.loads(res[1])
+            start_time = time.time()
+            while time.time() - start_time < timeout:
+                try:
+                    res = self.redis_conn.lpop(key)
+                    if res:
+                        if isinstance(res, bytes):
+                            res = res.decode('utf-8')
+                        return json.loads(res)
+                except Exception as e:
+                    logger.error(f"Error reading from Redis: {e}")
+                    break
+                time.sleep(0.2)
             return None
         else:
             if session_id in self.local_sessions:
