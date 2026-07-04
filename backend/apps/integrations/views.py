@@ -58,8 +58,63 @@ from .serializers import ClaudeConfigSerializer
 
 logger = logging.getLogger(__name__)
 
-# Thread-safe dictionary of active SSE streams
-active_sessions = {}
+# Thread-safe session manager that uses Redis if available, else falls back to process-local memory
+class McpSessionManager:
+    def __init__(self):
+        try:
+            from django_redis import get_redis_connection
+            self.redis_conn = get_redis_connection("default")
+            self.redis_conn.ping()
+        except Exception:
+            self.redis_conn = None
+            logger.info("Redis not available for MCP sessions, falling back to local memory.")
+        self.local_sessions = {}
+
+    def create_session(self, session_id):
+        if self.redis_conn:
+            self.redis_conn.sadd("mcp:active_sessions", session_id)
+        else:
+            self.local_sessions[session_id] = queue.Queue()
+
+    def delete_session(self, session_id):
+        if self.redis_conn:
+            self.redis_conn.srem("mcp:active_sessions", session_id)
+            self.redis_conn.delete(f"mcp:session:{session_id}")
+        else:
+            if session_id in self.local_sessions:
+                del self.local_sessions[session_id]
+
+    def is_active(self, session_id):
+        if self.redis_conn:
+            return self.redis_conn.sismember("mcp:active_sessions", session_id)
+        else:
+            return session_id in self.local_sessions
+
+    def put_message(self, session_id, message):
+        if self.redis_conn:
+            key = f"mcp:session:{session_id}"
+            self.redis_conn.rpush(key, json.dumps(message))
+            self.redis_conn.expire(key, 120)
+        else:
+            if session_id in self.local_sessions:
+                self.local_sessions[session_id].put(message)
+
+    def get_message(self, session_id, timeout=10):
+        if self.redis_conn:
+            key = f"mcp:session:{session_id}"
+            res = self.redis_conn.blpop(key, timeout=timeout)
+            if res:
+                return json.loads(res[1])
+            return None
+        else:
+            if session_id in self.local_sessions:
+                try:
+                    return self.local_sessions[session_id].get(timeout=timeout)
+                except queue.Empty:
+                    return None
+            return None
+
+session_manager = McpSessionManager()
 
 class ClaudeConfigView(generics.RetrieveUpdateAPIView):
     serializer_class = ClaudeConfigSerializer
@@ -301,8 +356,7 @@ class McpSseView(APIView):
             return Response({'error': 'Invalid token or store configuration.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         session_id = str(uuid.uuid4())
-        q = queue.Queue()
-        active_sessions[session_id] = q
+        session_manager.create_session(session_id)
 
         def event_stream():
             post_path = reverse('mcp-message', kwargs={'store_id': store_id})
@@ -312,16 +366,15 @@ class McpSseView(APIView):
             
             try:
                 while True:
-                    try:
-                        msg = q.get(timeout=20)
+                    msg = session_manager.get_message(session_id, timeout=10)
+                    if msg:
                         yield f"event: message\ndata: {json.dumps(msg)}\n\n"
-                    except queue.Empty:
+                    else:
                         yield ": ping\n\n"
             except GeneratorExit:
                 logger.info(f"SSE client disconnected for session {session_id}")
             finally:
-                if session_id in active_sessions:
-                    del active_sessions[session_id]
+                session_manager.delete_session(session_id)
 
         response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
@@ -593,8 +646,8 @@ class McpMessageView(APIView):
         else:
             response_payload["result"] = result
 
-        if session_id in active_sessions:
-            active_sessions[session_id].put(response_payload)
+        if session_manager.is_active(session_id):
+            session_manager.put_message(session_id, response_payload)
             return Response(status=status.HTTP_200_OK)
         else:
             logger.warning(f"Session {session_id} not found in active sessions")
