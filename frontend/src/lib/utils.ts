@@ -25,7 +25,17 @@ export function getStorefrontLink(subdomain: string, path: string) {
   const isMainDomain = hostname === cleanRoot || hostname === `www.${cleanRoot}`;
   
   if (isMainDomain) {
-    return `/${subdomain}${path === '/' ? '' : path}`;
+    if (hostname.includes('railway.app')) {
+      return `/${subdomain}${path === '/' ? '' : path}`;
+    }
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      const port = window.location.port ? `:${window.location.port}` : '';
+      return `http://${subdomain}.localhost${port}${path}`;
+    }
+    
+    const protocol = window.location.protocol;
+    return `${protocol}//${subdomain}.${cleanRoot}${path}`;
   } else {
     return path;
   }
@@ -56,10 +66,10 @@ export function getAbsoluteStorefrontLink(subdomain: string, path: string, custo
     return `${window.location.protocol}//${hostname}/${subdomain}${path}`;
   }
   
-  // In production: return http:// by default to avoid hostname certificate mismatch errors
-  // on subdomains that do not have wildcard SSL configured yet.
+  // In production: return current protocol to support HTTPS on subdomains
   const cleanRoot = rootDomain.split(':')[0];
-  return `http://${subdomain}.${cleanRoot}${path}`;
+  const protocol = window.location.protocol;
+  return `${protocol}//${subdomain}.${cleanRoot}${path}`;
 }
 
 export function getRootDomain() {
