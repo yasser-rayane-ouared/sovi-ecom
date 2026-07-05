@@ -1,15 +1,20 @@
 from django.apps import AppConfig
 
 
-def create_default_superadmin(sender, **kwargs):
+def create_default_superadmin():
     import os
     from django.contrib.auth import get_user_model
-    User = get_user_model()
-    
-    email = os.environ.get('SUPERADMIN_EMAIL', 'admin@sovi-dz.com')
-    password = os.environ.get('SUPERADMIN_PASSWORD', 'admin1234')
+    from django.db import connection
     
     try:
+        # Check if the users table exists before querying to avoid AppRegistryNotReady / db errors
+        if 'users' not in connection.introspection.table_names():
+            return
+            
+        User = get_user_model()
+        email = os.environ.get('SUPERADMIN_EMAIL', 'admin@sovi-dz.com')
+        password = os.environ.get('SUPERADMIN_PASSWORD', 'admin1234')
+        
         if not User.objects.filter(email=email).exists():
             User.objects.create_superuser(
                 email=email,
@@ -39,5 +44,7 @@ class AccountsConfig(AppConfig):
     verbose_name = 'Accounts'
 
     def ready(self):
-        from django.db.models.signals import post_migrate
-        post_migrate.connect(create_default_superadmin, sender=self)
+        try:
+            create_default_superadmin()
+        except Exception:
+            pass
