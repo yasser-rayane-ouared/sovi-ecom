@@ -89,6 +89,48 @@ class VerifyEmailView(APIView):
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ResendVerificationView(APIView):
+    """Resend email verification link."""
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(email=email)
+            if user.is_verified:
+                return Response({'message': 'Account is already verified.'})
+            
+            # Generate new token if not present
+            if not user.verification_token:
+                user.verification_token = uuid.uuid4()
+                user.save()
+            
+            # Send verification email
+            frontend_url = 'https://sovi-dz.com'
+            if getattr(settings, 'CORS_ALLOWED_ORIGINS', None) and len(settings.CORS_ALLOWED_ORIGINS) > 0:
+                frontend_url = settings.CORS_ALLOWED_ORIGINS[0]
+            if frontend_url.endswith('/'):
+                frontend_url = frontend_url[:-1]
+
+            send_mail(
+                subject='Verify your S Platform account',
+                message=f'Click to verify: {frontend_url}/verify?token={user.verification_token}',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            return Response({'message': 'Verification email resent successfully.'})
+        except User.DoesNotExist:
+            return Response({'error': 'No user found with this email.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to resend verification email to {email}: {str(e)}", exc_info=True)
+            return Response({'error': 'Failed to send email. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class ForgotPasswordView(APIView):
     """Send password reset email."""
     permission_classes = [permissions.AllowAny]

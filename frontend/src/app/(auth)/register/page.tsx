@@ -22,6 +22,24 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendError, setResendError] = useState("");
+
+  const handleResendEmail = async () => {
+    setResending(true);
+    setResendMessage("");
+    setResendError("");
+    try {
+      const res = await api.post("/auth/resend-verification/", { email });
+      setResendMessage(res.data.message || "تم إعادة إرسال رابط التحقق بنجاح!");
+    } catch (err: any) {
+      setResendError(err.response?.data?.error || "فشل إعادة إرسال الرابط. يرجى المحاولة لاحقاً.");
+    } finally {
+      setResending(false);
+    }
+  };
+
   const initializeAuth = useAuthStore((state) => state.initialize);
 
   const [isMock, setIsMock] = useState(true);
@@ -163,9 +181,32 @@ export default function RegisterPage() {
           <p className="text-muted-foreground leading-relaxed">
             تم إرسال رابط تأكيد الحساب إلى بريدك الإلكتروني. يرجى تأكيد الحساب لتتمكن من إنشاء متجرك الأول.
           </p>
-          <Link href="/login" className="block">
-            <Button variant="glow" className="w-full">تسجيل الدخول</Button>
-          </Link>
+          
+          {resendMessage && (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+              {resendMessage}
+            </div>
+          )}
+          
+          {resendError && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {resendError}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 pt-2">
+            <Link href="/login" className="block w-full">
+              <Button variant="glow" className="w-full py-6 text-base font-bold">تسجيل الدخول</Button>
+            </Link>
+            
+            <button
+              onClick={handleResendEmail}
+              disabled={resending}
+              className="text-sm text-accent hover:underline font-semibold disabled:opacity-50 mt-1"
+            >
+              {resending ? "جاري إعادة إرسال الرابط..." : "إعادة إرسال رابط التحقق"}
+            </button>
+          </div>
         </div>
       </div>
     );
