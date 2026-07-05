@@ -9,7 +9,7 @@ import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { Plus, Trash2, Edit2, Image, Sparkles, AlertCircle, GripVertical, EyeOff, Layers, Text, Camera, Star, SplitSquareHorizontal, Gift, CheckSquare, ChevronDown, Palette, Check, Shield, Smartphone, Tablet, Monitor, Tag, ShoppingCart, User, Phone, MapPin, Truck, Save, Loader2 } from "lucide-react";
-import { formatCurrency, getFullImageUrl } from "../../../../lib/utils";
+import { formatCurrency, getFullImageUrl, getRootDomain } from "../../../../lib/utils";
 import {
   DndContext,
   closestCenter,
