@@ -20,6 +20,32 @@ interface SettingsProps {
 
 type SettingsTab = "identity" | "shipping" | "domain" | "security" | "storefront";
 
+function cleanFirebaseConfig(input: string): string {
+  if (!input) return "";
+  try {
+    JSON.parse(input);
+    return input;
+  } catch (e) {
+    const keys = ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"];
+    const config: Record<string, string> = {};
+    let found = false;
+
+    keys.forEach((key) => {
+      const regex = new RegExp(`['"]?${key}['"]?\\s*:\\s*['"]([^'"]+)['"]`);
+      const match = input.match(regex);
+      if (match) {
+        config[key] = match[1];
+        found = true;
+      }
+    });
+
+    if (found) {
+      return JSON.stringify(config, null, 2);
+    }
+    return input;
+  }
+}
+
 export default function SettingsDashboard({ storeId }: SettingsProps) {
   const { selectedStore, setSelectedStore } = useDashboardStore();
   const { t, isRtl } = useLanguageStore();
@@ -176,7 +202,7 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
         security_enable_captcha: securityEnableCaptcha,
         security_captcha_site_key: securityCaptchaSiteKey,
         security_enable_firebase_otp: securityEnableFirebaseOtp,
-        security_firebase_config_json: securityFirebaseConfigJson,
+        security_firebase_config_json: cleanFirebaseConfig(securityFirebaseConfigJson),
         security_max_orders_per_day: parseInt(securityMaxOrdersPerDay) || 0,
         security_block_non_algerian_ips: securityBlockNonAlgerianIps,
         announcement_text: announcementText,

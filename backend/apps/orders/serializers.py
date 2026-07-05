@@ -156,7 +156,12 @@ class OrderCreateSerializer(serializers.Serializer):
                     config_data = json.loads(config_json)
                     api_key = config_data.get('apiKey')
                 except Exception:
-                    pass
+                    import re
+                    match = re.search(r'apiKey\s*:\s*["\']([^"\']+)["\']', config_json)
+                    if not match:
+                        match = re.search(r'"apiKey"\s*:\s*["\']([^"\']+)["\']', config_json)
+                    if match:
+                        api_key = match.group(1)
             
             if not api_key:
                 raise serializers.ValidationError({'non_field_errors': 'فشل التحقق بسبب عدم تهيئة إعدادات Firebase بشكل صحيح.'})
