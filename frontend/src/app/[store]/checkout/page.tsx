@@ -329,7 +329,8 @@ export default function StorefrontCheckout() {
         document.getElementById("recaptcha-container")!.innerHTML = "";
       }
       setRecaptchaVerifier(null);
-      setError(t("فشل إرسال رمز التحقق. يرجى مراجعة إعدادات الهاتف والمحاولة لاحقاً.", "Échec de l'envoi du code de vérification. Veuillez vérifier les paramètres de votre téléphone.", "Failed to send verification code. Please check phone settings and try again."));
+      const rawErr = err?.code || err?.message || 'unknown';
+      setError(`${t("فشل إرسال رمز التحقق. يرجى مراجعة إعدادات الهاتف والمحاولة لاحقاً.", "Échec de l'envoi du code de vérification. Veuillez vérifier les paramètres de votre téléphone.", "Failed to send verification code. Please check phone settings and try again.")} [${rawErr}]`);
     } finally {
       setSendingOtp(false);
     }
