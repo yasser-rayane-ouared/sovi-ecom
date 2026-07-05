@@ -34,8 +34,8 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Auto-verify in demo/testing if SMTP is not configured
-        if not settings.EMAIL_HOST_USER:
+        # Auto-verify in demo/testing if SMTP and Resend are not configured
+        if not settings.EMAIL_HOST_USER and not getattr(settings, 'RESEND_API_KEY', ''):
             user.is_verified = True
             user.save(update_fields=['is_verified'])
 
