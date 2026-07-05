@@ -69,7 +69,14 @@ class VerifyEmailView(APIView):
             user.is_verified = True
             user.verification_token = None
             user.save()
-            return Response({'message': 'Email verified successfully.'})
+            
+            # Generate JWT tokens for auto-login
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'message': 'Email verified successfully.',
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            })
         except User.DoesNotExist:
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
 

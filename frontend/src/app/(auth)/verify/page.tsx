@@ -31,6 +31,12 @@ export default function VerifyPage() {
         setStatus("success");
         setMessage(res.data.message || "تم تأكيد بريدك الإلكتروني بنجاح!");
         
+        // Auto-login: store returned JWT tokens
+        if (res.data.access && res.data.refresh) {
+          localStorage.setItem("access_token", res.data.access);
+          localStorage.setItem("refresh_token", res.data.refresh);
+        }
+        
         // Refresh local auth state to reflect is_verified=true
         await initializeAuth();
         
