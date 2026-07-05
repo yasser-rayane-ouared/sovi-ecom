@@ -3,17 +3,23 @@ from django.apps import AppConfig
 
 def create_default_superadmin():
     import os
+    import logging
     from django.contrib.auth import get_user_model
-    from django.db import connection
+    
+    logger = logging.getLogger(__name__)
     
     try:
-        # Check if the users table exists before querying to avoid AppRegistryNotReady / db errors
-        if 'users' not in connection.introspection.table_names():
-            return
-            
         User = get_user_model()
+        # Check if the users table exists before querying to avoid AppRegistryNotReady / db errors
+        User.objects.exists()
+    except Exception:
+        return
+        
+    try:
         email = os.environ.get('SUPERADMIN_EMAIL', 'admin@sovi-dz.com')
         password = os.environ.get('SUPERADMIN_PASSWORD', 'admin1234')
+        
+        logger.warning(f"Checking/seeding superadmin account: '{email}'")
         
         if not User.objects.filter(email=email).exists():
             User.objects.create_superuser(
@@ -22,7 +28,7 @@ def create_default_superadmin():
                 first_name='System',
                 last_name='Admin'
             )
-            print(f"Default superadmin account '{email}' created successfully.")
+            logger.warning(f"Default superadmin account '{email}' created successfully.")
         else:
             user = User.objects.get(email=email)
             if not user.is_superadmin or not user.is_staff or not user.is_superuser or not user.is_verified:
@@ -31,10 +37,8 @@ def create_default_superadmin():
                 user.is_superuser = True
                 user.is_verified = True
                 user.save()
-                print(f"Updated superadmin permissions for '{email}'.")
+                logger.warning(f"Updated superadmin permissions for existing account '{email}'.")
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Failed to auto-seed superadmin: {str(e)}", exc_info=True)
 
 
