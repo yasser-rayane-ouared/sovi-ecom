@@ -103,12 +103,17 @@ class StoreWorkerSerializer(serializers.ModelSerializer):
 
 
 class StoreSettingsSerializer(serializers.ModelSerializer):
+    has_captcha_secret_key = serializers.SerializerMethodField()
+
     class Meta:
         model = StoreSettings
         exclude = ['id', 'store', 'created_at', 'updated_at']
         extra_kwargs = {
             'security_captcha_secret_key': {'write_only': True}
         }
+
+    def get_has_captcha_secret_key(self, obj):
+        return bool(obj.security_captcha_secret_key)
 
 
 class StoreSerializer(serializers.ModelSerializer):

@@ -2658,7 +2658,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                             ? "💡 Configuration : Allez dans Paramètres Généraux > Sécurité > Saisissez la Site Key et Secret Key. (Note: Ajoutez le domaine dans Google SANS https:// et sans chemin comme /mc)" 
                             : "💡 Setup steps: Go to General Settings > Security > Enter Site Key and Secret Key to enable automatic bot protection. (Note: Register domain in Google WITHOUT the https:// prefix and without any path/suffix like /mc)")}
                     </p>
-                    {hasCaptcha && (!(selectedStore?.settings as any)?.security_captcha_site_key || !(selectedStore?.settings as any)?.security_captcha_secret_key) && (
+                    {hasCaptcha && (!(selectedStore?.settings as any)?.security_captcha_site_key || (!(selectedStore?.settings as any)?.security_captcha_secret_key && !(selectedStore?.settings as any)?.has_captcha_secret_key)) && (
                       <p className="text-[9px] text-amber-500 mr-2 leading-tight">{language === 'ar' ? "⚠️ لم يتم إعداد مفاتيح الكابتشا في إعدادات المتجر العامة بعد." : (language === 'fr' ? "⚠️ Clés reCAPTCHA non configurées dans les paramètres." : "⚠️ reCAPTCHA keys not configured in general settings.")}</p>
                     )}
                   </div>
@@ -3408,7 +3408,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
               }
 
               if (section.section_type === 'security_captcha') {
-                const hasNoCaptchaKeys = !(selectedStore?.settings as any)?.security_captcha_site_key || !(selectedStore?.settings as any)?.security_captcha_secret_key;
+                const hasNoCaptchaKeys = !(selectedStore?.settings as any)?.security_captcha_site_key || (!(selectedStore?.settings as any)?.security_captcha_secret_key && !(selectedStore?.settings as any)?.has_captcha_secret_key);
                 return (
                   <div key={section.id} id={`section-card-${section.id}`} className="bg-card border border-border rounded-2xl p-5 space-y-4 text-right shadow-sm">
                     <div className="flex items-center justify-between border-b border-border pb-3">

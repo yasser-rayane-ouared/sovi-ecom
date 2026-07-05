@@ -123,7 +123,7 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
           setSecurityEnablePhoneValidation(!!s.security_enable_phone_validation);
           setSecurityEnableCaptcha(!!s.security_enable_captcha);
           setSecurityCaptchaSiteKey(s.security_captcha_site_key || "");
-          setSecurityCaptchaSecretKey(s.security_captcha_secret_key || "");
+          setSecurityCaptchaSecretKey(s.security_captcha_secret_key ? s.security_captcha_secret_key : (s.has_captcha_secret_key ? "••••••••••••" : ""));
           setSecurityEnableFirebaseOtp(!!s.security_enable_firebase_otp);
           setSecurityFirebaseConfigJson(s.security_firebase_config_json || "");
           setSecurityMaxOrdersPerDay((s.security_max_orders_per_day !== undefined ? s.security_max_orders_per_day : 5).toString());
@@ -167,7 +167,7 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
         custom_domain: cleanDomain || null,
       });
 
-      await api.post(`/stores/${currentStoreId}/setup/`, {
+      const setupPayload: any = {
         whatsapp_number: whatsapp,
         currency,
         default_delivery_price: parseFloat(defaultDeliveryPrice) || 0,
@@ -175,7 +175,6 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
         security_enable_phone_validation: securityEnablePhoneValidation,
         security_enable_captcha: securityEnableCaptcha,
         security_captcha_site_key: securityCaptchaSiteKey,
-        security_captcha_secret_key: securityCaptchaSecretKey,
         security_enable_firebase_otp: securityEnableFirebaseOtp,
         security_firebase_config_json: securityFirebaseConfigJson,
         security_max_orders_per_day: parseInt(securityMaxOrdersPerDay) || 0,
@@ -189,14 +188,16 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
         badge_2_desc: badge2Desc,
         badge_3_title: badge3Title,
         badge_3_desc: badge3Desc,
-      });
+      };
+
+      if (securityCaptchaSecretKey !== "••••••••••••") {
+        setupPayload.security_captcha_secret_key = securityCaptchaSecretKey;
+      }
+
+      const setupRes = await api.post(`/stores/${currentStoreId}/setup/`, setupPayload);
 
       if (selectedStore && selectedStore.id === currentStoreId) {
-        setSelectedStore({
-          ...selectedStore,
-          name: storeName,
-          logo: logo,
-        });
+        setSelectedStore(setupRes.data);
       }
 
       setSuccess(t("settingsSaveSuccess"));
