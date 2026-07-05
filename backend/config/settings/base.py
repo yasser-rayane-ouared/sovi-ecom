@@ -260,7 +260,13 @@ CELERY_BEAT_SCHEDULE = {
 # =============================================================================
 # Email
 # =============================================================================
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+
+if RESEND_API_KEY:
+    EMAIL_BACKEND = 'apps.accounts.email_backends.ResendEmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
