@@ -41,15 +41,23 @@ class RegisterView(generics.CreateAPIView):
 
         # Send verification email
         try:
+            frontend_url = 'https://sovi-dz.com'
+            if getattr(settings, 'CORS_ALLOWED_ORIGINS', None) and len(settings.CORS_ALLOWED_ORIGINS) > 0:
+                frontend_url = settings.CORS_ALLOWED_ORIGINS[0]
+            if frontend_url.endswith('/'):
+                frontend_url = frontend_url[:-1]
+
             send_mail(
                 subject='Verify your S Platform account',
-                message=f'Click to verify: {settings.CORS_ALLOWED_ORIGINS[0]}/verify?token={user.verification_token}',
+                message=f'Click to verify: {frontend_url}/verify?token={user.verification_token}',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=True,
+                fail_silently=False,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send verification email to {user.email}: {str(e)}", exc_info=True)
 
         return Response(
             {'message': 'Account created. Please check your email to verify.'},
