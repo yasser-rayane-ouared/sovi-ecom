@@ -43,7 +43,8 @@ export default function middleware(req: NextRequest) {
         'login', 'register', 'forgot-password', 'reset-password',
         'overview', 'products', 'orders', 'settings', 'workers',
         'analytics', 'themes', 'pages', 'pixels', 'integrations',
-        'billing', 'ab-testing', 'tools', 'profile', '_next', 'api'
+        'billing', 'ab-testing', 'tools', 'profile', '_next', 'api',
+        'admin'
       ];
       
       if (!platformPaths.includes(firstPart)) {
