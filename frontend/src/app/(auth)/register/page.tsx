@@ -96,7 +96,8 @@ export default function RegisterPage() {
       if (!isMainDomain && !hostname.includes("localhost") && !hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
         const port = window.location.port ? `:${window.location.port}` : '';
         const protocol = window.location.protocol;
-        const targetUrl = `${protocol}//${cleanRoot}${port}${window.location.pathname}${window.location.search}`;
+        const targetHost = cleanRoot.includes('.') && !cleanRoot.startsWith('www.') ? `www.${cleanRoot}` : cleanRoot;
+        const targetUrl = `${protocol}//${targetHost}${port}${window.location.pathname}${window.location.search}`;
         window.location.replace(targetUrl);
       }
     }

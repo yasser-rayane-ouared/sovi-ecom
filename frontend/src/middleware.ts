@@ -27,10 +27,12 @@ export default function middleware(req: NextRequest) {
   const firstPathPart = url.pathname.split('/').filter(Boolean)[0];
   if (subdomain && subdomain !== 'www' && subdomain !== 'localhost' && authPaths.includes(firstPathPart)) {
     const cleanRoot = rootDomain.split(':')[0];
+    const targetHost = cleanRoot.includes('.') && !cleanRoot.startsWith('www.') ? `www.${cleanRoot}` : cleanRoot;
     const protocol = req.headers.get('x-forwarded-proto') || 'https';
     const port = url.port ? `:${url.port}` : '';
     return NextResponse.redirect(
-      new URL(`${protocol}://${cleanRoot}${port}${url.pathname}${url.search}`)
+      new URL(`${protocol}://${targetHost}${port}${url.pathname}${url.search}`),
+      307
     );
   }
 
