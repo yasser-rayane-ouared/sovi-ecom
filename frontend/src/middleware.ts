@@ -42,7 +42,7 @@ export default function middleware(req: NextRequest) {
     if (pathParts.length > 0) {
       const firstPart = pathParts[0];
       const platformPaths = [
-        'login', 'register', 'forgot-password', 'reset-password',
+        'login', 'register', 'forgot-password', 'reset-password', 'verify',
         'overview', 'products', 'orders', 'settings', 'workers',
         'analytics', 'themes', 'pages', 'pixels', 'integrations',
         'billing', 'ab-testing', 'tools', 'profile', '_next', 'api',

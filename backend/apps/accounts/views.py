@@ -24,6 +24,25 @@ from .serializers import (
 User = get_user_model()
 
 
+def get_frontend_url():
+    frontend_url = 'https://www.sovi-dz.com'
+    if hasattr(settings, 'CORS_ALLOWED_ORIGINS') and settings.CORS_ALLOWED_ORIGINS:
+        origin = settings.CORS_ALLOWED_ORIGINS[0]
+        if 'localhost' in origin or '127.0.0.1' in origin:
+            frontend_url = origin
+        else:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(origin)
+            netloc = parsed.netloc
+            if netloc and not netloc.startswith('www.') and '.' in netloc:
+                netloc = f"www.{netloc}"
+            frontend_url = f"{parsed.scheme}://{netloc}"
+    if frontend_url.endswith('/'):
+        frontend_url = frontend_url[:-1]
+    return frontend_url
+
+
+
 class RegisterView(generics.CreateAPIView):
     """Register a new user account."""
     serializer_class = RegisterSerializer
@@ -41,11 +60,7 @@ class RegisterView(generics.CreateAPIView):
 
         # Send verification email
         try:
-            frontend_url = 'https://sovi-dz.com'
-            if getattr(settings, 'CORS_ALLOWED_ORIGINS', None) and len(settings.CORS_ALLOWED_ORIGINS) > 0:
-                frontend_url = settings.CORS_ALLOWED_ORIGINS[0]
-            if frontend_url.endswith('/'):
-                frontend_url = frontend_url[:-1]
+            frontend_url = get_frontend_url()
 
             send_mail(
                 subject='Verify your S Platform account',
@@ -108,11 +123,7 @@ class ResendVerificationView(APIView):
                 user.save()
             
             # Send verification email
-            frontend_url = 'https://sovi-dz.com'
-            if getattr(settings, 'CORS_ALLOWED_ORIGINS', None) and len(settings.CORS_ALLOWED_ORIGINS) > 0:
-                frontend_url = settings.CORS_ALLOWED_ORIGINS[0]
-            if frontend_url.endswith('/'):
-                frontend_url = frontend_url[:-1]
+            frontend_url = get_frontend_url()
 
             send_mail(
                 subject='Verify your S Platform account',
@@ -142,9 +153,10 @@ class ForgotPasswordView(APIView):
             user = User.objects.get(email=serializer.validated_data['email'])
             user.password_reset_token = uuid.uuid4()
             user.save()
+            frontend_url = get_frontend_url()
             send_mail(
                 subject='Reset your S Platform password',
-                message=f'Reset link: {settings.CORS_ALLOWED_ORIGINS[0]}/reset-password?token={user.password_reset_token}',
+                message=f'Reset link: {frontend_url}/reset-password?token={user.password_reset_token}',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
                 fail_silently=True,
