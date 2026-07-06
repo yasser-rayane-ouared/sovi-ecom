@@ -60,7 +60,8 @@ class ResendEmailBackend(BaseEmailBackend):
                     data=json.dumps(payload).encode('utf-8'),
                     headers={
                         "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "User-Agent": "sovi-platform/1.0"
                     },
                     method="POST"
                 )
