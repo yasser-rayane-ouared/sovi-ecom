@@ -22,6 +22,18 @@ export default function middleware(req: NextRequest) {
   // Extract subdomain
   let subdomain = hostname.replace(`.${rootDomain}`, '').replace(`:${url.port}`, '');
 
+  // Redirect authentication/platform pages accessed on subdomains back to the root domain
+  const authPaths = ['login', 'register', 'forgot-password', 'reset-password'];
+  const firstPathPart = url.pathname.split('/').filter(Boolean)[0];
+  if (subdomain && subdomain !== 'www' && subdomain !== 'localhost' && authPaths.includes(firstPathPart)) {
+    const cleanRoot = rootDomain.split(':')[0];
+    const protocol = req.headers.get('x-forwarded-proto') || 'https';
+    const port = url.port ? `:${url.port}` : '';
+    return NextResponse.redirect(
+      new URL(`${protocol}://${cleanRoot}${port}${url.pathname}${url.search}`)
+    );
+  }
+
   // If the host is exactly the root domain, or has www prefix
   if (hostname === rootDomain || hostname === `www.${rootDomain}`) {
     const pathParts = url.pathname.split('/').filter(Boolean);
