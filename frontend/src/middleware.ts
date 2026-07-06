@@ -61,7 +61,7 @@ export default function middleware(req: NextRequest) {
         const protocol = req.headers.get('x-forwarded-proto') || 'https';
         
         const redirectUrl = new URL(`${protocol}://${storeSubdomain}.${cleanRoot}${remainingPath}${url.search}`);
-        return NextResponse.redirect(redirectUrl, 301);
+        return NextResponse.redirect(redirectUrl, 307);
       }
     }
     return NextResponse.next();
