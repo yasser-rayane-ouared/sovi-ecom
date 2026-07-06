@@ -23,7 +23,7 @@ export default function middleware(req: NextRequest) {
   let subdomain = hostname.replace(`.${rootDomain}`, '').replace(`:${url.port}`, '');
 
   // Redirect authentication/platform pages accessed on subdomains back to the root domain
-  const authPaths = ['login', 'register', 'forgot-password', 'reset-password'];
+  const authPaths = ['login', 'register', 'forgot-password', 'reset-password', 'verify', 'create-store'];
   const firstPathPart = url.pathname.split('/').filter(Boolean)[0];
   if (subdomain && subdomain !== 'www' && subdomain !== 'localhost' && authPaths.includes(firstPathPart)) {
     const cleanRoot = rootDomain.split(':')[0];
@@ -42,7 +42,7 @@ export default function middleware(req: NextRequest) {
     if (pathParts.length > 0) {
       const firstPart = pathParts[0];
       const platformPaths = [
-        'login', 'register', 'forgot-password', 'reset-password', 'verify',
+        'login', 'register', 'forgot-password', 'reset-password', 'verify', 'create-store',
         'overview', 'products', 'orders', 'settings', 'workers',
         'analytics', 'themes', 'pages', 'pixels', 'integrations',
         'billing', 'ab-testing', 'tools', 'profile', '_next', 'api',
