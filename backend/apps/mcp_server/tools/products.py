@@ -1,5 +1,5 @@
-from apps.products.models import Product, Category, ProductReview, ProductSection
-from apps.products.serializers import ProductSerializer
+from apps.products.models import Product, Category, ProductReview, ProductSection, ProductImage, ProductVariant, VariantOption
+from apps.products.serializers import ProductSerializer, CategorySerializer, ProductImageSerializer, ProductVariantSerializer
 from .registry import register_tool, ToolError
 from django.utils.text import slugify
 import uuid
@@ -534,3 +534,419 @@ def delete_product_section(store, arguments):
         "message": f"Successfully deleted product section of type '{section_type}'.",
         "section_id": section_id
     }
+
+
+@register_tool(
+    name="get_product",
+    description="Retrieve details of a single product using either its product_id (UUID) or slug.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "product_id": {
+                "type": "string",
+                "description": "Optional UUID of the product."
+            },
+            "slug": {
+                "type": "string",
+                "description": "Optional URL slug of the product."
+            }
+        }
+    }
+)
+def get_product(store, arguments):
+    product_id = arguments.get("product_id")
+    slug = arguments.get("slug")
+
+    if not product_id and not slug:
+        raise ToolError("You must provide either product_id or slug to retrieve a product.")
+
+    try:
+        if product_id:
+            product = Product.objects.get(id=product_id, store=store)
+        else:
+            product = Product.objects.get(slug=slug, store=store)
+    except Product.DoesNotExist:
+        id_or_slug = product_id or slug
+        raise ToolError(f"Product with identifier '{id_or_slug}' not found.")
+
+    return ProductSerializer(product, context={"store": store}).data
+
+
+@register_tool(
+    name="list_categories",
+    description="List all product categories in the store.",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def list_categories(store, arguments):
+    categories = Category.objects.filter(store=store)
+    return {
+        "categories": CategorySerializer(categories, many=True).data
+    }
+
+
+@register_tool(
+    name="create_category",
+    description="Create a new product category in the store.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The name of the category."
+            },
+            "slug": {
+                "type": "string",
+                "description": "Optional unique slug. Generated from name if not provided."
+            },
+            "description": {
+                "type": "string",
+                "description": "Optional description of the category."
+            },
+            "image_url": {
+                "type": "string",
+                "description": "Optional image URL of the category."
+            }
+        },
+        "required": ["name"]
+    }
+)
+def create_category(store, arguments):
+    name = arguments.get("name")
+    slug = arguments.get("slug")
+    description = arguments.get("description", "")
+    image_url = arguments.get("image_url", "")
+
+    if not slug:
+        slug = slugify(name, allow_unicode=True) or str(uuid.uuid4())[:8]
+
+    orig_slug = slug
+    counter = 1
+    while Category.objects.filter(store=store, slug=slug).exists():
+        slug = f"{orig_slug}-{counter}"
+        counter += 1
+
+    category = Category.objects.create(
+        store=store,
+        name=name,
+        slug=slug,
+        description=description,
+        image_url=image_url
+    )
+    return CategorySerializer(category).data
+
+
+@register_tool(
+    name="update_category",
+    description="Update an existing category's details.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "category_id": {
+                "type": "string",
+                "description": "The exact UUID of the category to update."
+            },
+            "name": {
+                "type": "string",
+                "description": "Updated category name."
+            },
+            "slug": {
+                "type": "string",
+                "description": "Updated unique slug."
+            },
+            "description": {
+                "type": "string",
+                "description": "Updated description."
+            },
+            "image_url": {
+                "type": "string",
+                "description": "Updated image URL."
+            },
+            "is_active": {
+                "type": "boolean",
+                "description": "Whether the category is active."
+            }
+        },
+        "required": ["category_id"]
+    }
+)
+def update_category(store, arguments):
+    category_id = arguments.pop("category_id")
+    try:
+        category = Category.objects.get(id=category_id, store=store)
+    except Category.DoesNotExist:
+        raise ToolError(f"Category with ID '{category_id}' not found.")
+
+    for k, v in arguments.items():
+        if k == 'slug' and v:
+            orig_slug = v
+            slug = v
+            counter = 1
+            while Category.objects.filter(store=store, slug=slug).exclude(id=category.id).exists():
+                slug = f"{orig_slug}-{counter}"
+                counter += 1
+            category.slug = slug
+        elif hasattr(category, k) and v is not None:
+            setattr(category, k, v)
+
+    category.save()
+    return CategorySerializer(category).data
+
+
+@register_tool(
+    name="delete_category",
+    description="Delete a product category from the database.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "category_id": {
+                "type": "string",
+                "description": "The exact UUID of the category to delete."
+            }
+        },
+        "required": ["category_id"]
+    }
+)
+def delete_category(store, arguments):
+    category_id = arguments.get("category_id")
+    try:
+        category = Category.objects.get(id=category_id, store=store)
+    except Category.DoesNotExist:
+        raise ToolError(f"Category with ID '{category_id}' not found.")
+
+    category_name = category.name
+    category.delete()
+    return {
+        "message": f"Successfully deleted category '{category_name}'.",
+        "category_id": category_id
+    }
+
+
+@register_tool(
+    name="add_product_image",
+    description="Add a new image to a product.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "product_id": {
+                "type": "string",
+                "description": "The UUID of the product."
+            },
+            "image_url": {
+                "type": "string",
+                "description": "The URL of the image."
+            },
+            "alt_text": {
+                "type": "string",
+                "default": "",
+                "description": "Optional alternative text for SEO."
+            },
+            "is_primary": {
+                "type": "boolean",
+                "default": False,
+                "description": "Whether this should be the main primary image of the product."
+            }
+        },
+        "required": ["product_id", "image_url"]
+    }
+)
+def add_product_image(store, arguments):
+    product_id = arguments.get("product_id")
+    image_url = arguments.get("image_url")
+    alt_text = arguments.get("alt_text", "")
+    is_primary = arguments.get("is_primary", False)
+
+    try:
+        product = Product.objects.get(id=product_id, store=store)
+    except Product.DoesNotExist:
+        raise ToolError(f"Product with ID '{product_id}' not found.")
+
+    position = product.images.count()
+
+    if is_primary:
+        product.images.all().update(is_primary=False)
+
+    img = ProductImage.objects.create(
+        product=product,
+        image_url=image_url,
+        alt_text=alt_text,
+        position=position,
+        is_primary=is_primary
+    )
+    return ProductImageSerializer(img).data
+
+
+@register_tool(
+    name="add_product_variant",
+    description="Create a new variant/SKU option for a product.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "product_id": {
+                "type": "string",
+                "description": "The UUID of the product."
+            },
+            "name": {
+                "type": "string",
+                "description": "The name/label of the variant (e.g. 'Large / Blue')."
+            },
+            "price": {
+                "type": "number",
+                "description": "The variant price."
+            },
+            "sku": {
+                "type": "string",
+                "description": "Optional SKU code."
+            },
+            "stock_quantity": {
+                "type": "integer",
+                "default": 100,
+                "description": "The variant stock quantity."
+            },
+            "is_active": {
+                "type": "boolean",
+                "default": True,
+                "description": "Whether this variant is active."
+            }
+        },
+        "required": ["product_id", "name", "price"]
+    }
+)
+def add_product_variant(store, arguments):
+    product_id = arguments.get("product_id")
+    name = arguments.get("name")
+    price = arguments.get("price")
+    sku = arguments.get("sku", "")
+    stock_quantity = int(arguments.get("stock_quantity", 100))
+    is_active = arguments.get("is_active", True)
+
+    try:
+        product = Product.objects.get(id=product_id, store=store)
+    except Product.DoesNotExist:
+        raise ToolError(f"Product with ID '{product_id}' not found.")
+
+    variant = ProductVariant.objects.create(
+        product=product,
+        name=name,
+        price=price,
+        sku=sku,
+        stock_quantity=stock_quantity,
+        is_active=is_active
+    )
+    return ProductVariantSerializer(variant).data
+
+
+@register_tool(
+    name="update_product_variant",
+    description="Update details of an existing product variant.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "variant_id": {
+                "type": "string",
+                "description": "The exact UUID of the product variant to update."
+            },
+            "name": {
+                "type": "string",
+                "description": "Updated variant name/label."
+            },
+            "price": {
+                "type": "number",
+                "description": "Updated price."
+            },
+            "sku": {
+                "type": "string",
+                "description": "Updated SKU."
+            },
+            "stock_quantity": {
+                "type": "integer",
+                "description": "Updated stock quantity."
+            },
+            "is_active": {
+                "type": "boolean",
+                "description": "Updated status."
+            }
+        },
+        "required": ["variant_id"]
+    }
+)
+def update_product_variant(store, arguments):
+    variant_id = arguments.pop("variant_id")
+    try:
+        variant = ProductVariant.objects.get(id=variant_id, product__store=store)
+    except ProductVariant.DoesNotExist:
+        raise ToolError(f"Product variant with ID '{variant_id}' not found.")
+
+    for k, v in arguments.items():
+        if hasattr(variant, k) and v is not None:
+            if k == 'stock_quantity':
+                setattr(variant, k, int(v))
+            else:
+                setattr(variant, k, v)
+
+    variant.save()
+    return ProductVariantSerializer(variant).data
+
+
+@register_tool(
+    name="bulk_create_products",
+    description="Create multiple products in batch for store setup.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "products": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "price": { "type": "number" },
+                    "compare_price": { "type": "number" },
+                    "cost_price": { "type": "number" },
+                    "stock_quantity": { "type": "integer" },
+                    "category_name": { "type": "string" },
+                    "status": { "type": "string", "enum": ["draft", "active"] }
+                  },
+                  "required": ["title", "price"]
+                }
+            }
+        },
+        "required": ["products"]
+    }
+)
+def bulk_create_products(store, arguments):
+    products_data = arguments.get("products", [])
+    created_products = []
+
+    for product_args in products_data:
+        category_name = product_args.pop("category_name", None)
+
+        if category_name:
+            category, created = Category.objects.get_or_create(store=store, name=category_name)
+            if created:
+                slug = slugify(category_name, allow_unicode=True) or str(uuid.uuid4())[:8]
+                orig_slug = slug
+                counter = 1
+                while Category.objects.filter(store=store, slug=slug).exists():
+                    slug = f"{orig_slug}-{counter}"
+                    counter += 1
+                category.slug = slug
+                category.save()
+            product_args["category"] = category.id
+
+        # Make sure context has store
+        serializer = ProductSerializer(data=product_args, context={"store": store})
+        if serializer.is_valid():
+            product = serializer.save()
+            created_products.append(ProductSerializer(product, context={"store": store}).data)
+        else:
+            raise ToolError(f"Validation failed for product '{product_args.get('title')}': {serializer.errors}")
+
+    return {
+        "message": f"Successfully created {len(created_products)} products.",
+        "products": created_products
+    }
+

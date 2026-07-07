@@ -563,3 +563,71 @@ def delete_homepage_section(store, arguments):
         "message": f"Successfully deleted homepage section '{section_id}'.",
         "section_id": section_id
     }
+
+
+def get_absolute_storefront_link(subdomain, path, custom_domain=None):
+    import os
+    root_domain = os.environ.get('NEXT_PUBLIC_ROOT_DOMAIN', 'localhost:3000')
+    
+    if custom_domain:
+        protocol = 'http' if 'localhost' in root_domain or '127.0.0.1' in root_domain else 'https'
+        return f"{protocol}://{custom_domain}{path}"
+        
+    if 'localhost' in root_domain or '127.0.0.1' in root_domain:
+        port_suffix = ''
+        if ':' in root_domain:
+            port_suffix = ':' + root_domain.split(':')[1]
+        return f"http://{subdomain}.localhost{port_suffix}{path}"
+        
+    if 'railway.app' in root_domain:
+        return f"https://{root_domain}/{subdomain}{path}"
+        
+    clean_root = root_domain.split(':')[0]
+    return f"https://{subdomain}.{clean_root}{path}"
+
+
+@register_tool(
+    name="get_storefront_links",
+    description="Retrieve live storefront links (home, products, categories, pages) for previewing and testing.",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def get_storefront_links(store, arguments):
+    from apps.products.models import Product, Category
+    from apps.pages.models import LandingPage
+
+    subdomain = store.subdomain
+    custom_domain = store.custom_domain
+
+    links = {
+        "home": get_absolute_storefront_link(subdomain, "/", custom_domain),
+        "products": [],
+        "categories": [],
+        "pages": []
+    }
+
+    active_products = Product.objects.filter(store=store, status='active')
+    for p in active_products:
+        links["products"].append({
+            "title": p.title,
+            "url": get_absolute_storefront_link(subdomain, f"/products/{p.slug}", custom_domain)
+        })
+
+    categories = Category.objects.filter(store=store, is_active=True)
+    for c in categories:
+        links["categories"].append({
+            "name": c.name,
+            "url": get_absolute_storefront_link(subdomain, f"/categories/{c.slug}", custom_domain)
+        })
+
+    landing_pages = LandingPage.objects.filter(store=store, is_active=True)
+    for lp in landing_pages:
+        links["pages"].append({
+            "title": lp.title,
+            "url": get_absolute_storefront_link(subdomain, f"/pages/{lp.slug}", custom_domain)
+        })
+
+    return links
+
