@@ -1,5 +1,6 @@
 import json
 import threading
+# Use DjangoJSONEncoder to support serializing UUID fields (like category) in MCP tool responses
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import close_old_connections
 from rest_framework.views import APIView
