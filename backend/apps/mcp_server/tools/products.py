@@ -99,6 +99,27 @@ def list_products(store, arguments):
                 "enum": ["draft", "active"],
                 "default": "active",
                 "description": "Initial status of the product."
+            },
+            "enable_quantity_offers": {
+                "type": "boolean",
+                "description": "Whether quantity offers (discount tiers) are active for this product."
+            },
+            "quantity_offers": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "quantity": { "type": "integer", "description": "The threshold quantity." },
+                        "price": { "type": "number", "description": "The discounted price per unit in DZD." },
+                        "label": { "type": "string", "description": "Optional display label (e.g. 'Recommended')." }
+                    },
+                    "required": ["quantity", "price"]
+                },
+                "description": "List of quantity discount tiers."
+            },
+            "enable_bundle_offers": {
+                "type": "boolean",
+                "description": "Whether product bundle offers are active."
             }
         },
         "required": ["title", "price"]
@@ -166,6 +187,27 @@ def create_product(store, arguments):
                 "type": "string",
                 "enum": ["draft", "active", "archived"],
                 "description": "Updated status."
+            },
+            "enable_quantity_offers": {
+                "type": "boolean",
+                "description": "Whether quantity offers (discount tiers) are active for this product."
+            },
+            "quantity_offers": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "quantity": { "type": "integer", "description": "The threshold quantity." },
+                        "price": { "type": "number", "description": "The discounted price per unit in DZD." },
+                        "label": { "type": "string", "description": "Optional display label (e.g. 'Recommended')." }
+                    },
+                    "required": ["quantity", "price"]
+                },
+                "description": "List of quantity discount tiers."
+            },
+            "enable_bundle_offers": {
+                "type": "boolean",
+                "description": "Whether product bundle offers are active."
             }
         },
         "required": ["product_id"]

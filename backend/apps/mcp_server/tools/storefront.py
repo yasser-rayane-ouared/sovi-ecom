@@ -631,3 +631,208 @@ def get_storefront_links(store, arguments):
 
     return links
 
+
+@register_tool(
+    name="get_section_schemas",
+    description="Retrieve the exact JSON configuration schemas (fields, types, defaults, and requirements) for all homepage and product page section types.",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def get_section_schemas(store, arguments):
+    return {
+        "homepage_and_product_sections": {
+            "hero": {
+                "description": "Main title banner with subtitle, badge, pricing toggle, and call-to-action button.",
+                "fields": {
+                    "title": { "type": "string", "default": "عنوان المنتج الرئيسي" },
+                    "subtitle": { "type": "string", "default": "وصف مختصر وجذاب للمنتج" },
+                    "badge_text": { "type": "string", "default": "" },
+                    "show_price": { "type": "boolean", "default": True },
+                    "show_discount": { "type": "boolean", "default": True },
+                    "bg_style": { "type": "string", "enum": ["gradient", "dark", "white"], "default": "gradient" },
+                    "cta_text": { "type": "string", "default": "أطلب الآن!" }
+                }
+            },
+            "video": {
+                "description": "Video player for advertising or product walkthrough. Accepts YouTube or raw video links.",
+                "fields": {
+                    "title": { "type": "string", "default": "" },
+                    "video_url": { "type": "string", "default": "" },
+                    "autoplay": { "type": "boolean", "default": False },
+                    "muted": { "type": "boolean", "default": True },
+                    "aspect_ratio": { "type": "string", "default": "16/9" }
+                }
+            },
+            "reviews": {
+                "description": "Customer reviews section with ratings and review descriptions.",
+                "fields": {
+                    "title": { "type": "string", "default": "آراء زبائننا" },
+                    "reviews": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": { "type": "string", "description": "Reviewer name and city (e.g. 'أحمد - وهران')" },
+                                "text": { "type": "string", "description": "Review content text" },
+                                "rating": { "type": "integer", "enum": [1, 2, 3, 4, 5], "default": 5 },
+                                "date": { "type": "string", "default": "منذ يوم" }
+                            },
+                            "required": ["name", "text"]
+                        }
+                    }
+                }
+            },
+            "faq": {
+                "description": "Frequently asked questions accordion.",
+                "fields": {
+                    "title": { "type": "string", "default": "أسئلة شائعة" },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "q": { "type": "string", "description": "Question text" },
+                                "a": { "type": "string", "description": "Answer text" }
+                            },
+                            "required": ["q", "a"]
+                        }
+                    }
+                }
+            },
+            "benefits": {
+                "description": "Key selling points or product benefits with icons.",
+                "fields": {
+                    "title": { "type": "string", "default": "لماذا تختارنا؟" },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "icon": { "type": "string", "description": "Emoji icon (e.g. '✅', '🚚')" },
+                                "title": { "type": "string", "description": "Benefit title" },
+                                "desc": { "type": "string", "description": "Benefit description" }
+                            },
+                            "required": ["icon", "title", "desc"]
+                        }
+                    }
+                }
+            },
+            "before_after": {
+                "description": "Side-by-side or slider comparison of before/after photos.",
+                "fields": {
+                    "title": { "type": "string", "default": "قبل وبعد" },
+                    "before_label": { "type": "string", "default": "قبل" },
+                    "after_label": { "type": "string", "default": "بعد" },
+                    "before_image": { "type": "string", "description": "Before image URL" },
+                    "after_image": { "type": "string", "description": "After image URL" }
+                }
+            },
+            "countdown": {
+                "description": "Urgency countdown timer section.",
+                "fields": {
+                    "title": { "type": "string", "default": "العرض ينتهي خلال:" },
+                    "hours": { "type": "integer", "default": 2 },
+                    "minutes": { "type": "integer", "default": 0 },
+                    "seconds": { "type": "integer", "default": 0 },
+                    "bg_color": { "type": "string", "default": "#dc2626" },
+                    "text_color": { "type": "string", "default": "#ffffff" },
+                    "urgency_text": { "type": "string", "default": "الكمية محدودة!" }
+                }
+            },
+            "quantity_offers": {
+                "description": "Styling configurations for quantity discounts display. NOTE: Actual quantity tiers must be added via get_product / update_product under the product's 'quantity_offers' field (not in this config).",
+                "fields": {
+                    "title": { "type": "string", "default": "عروض الكمية" },
+                    "subtitle": { "type": "string", "default": "" },
+                    "highlight_index": { "type": "integer", "default": 0, "description": "Zero-based index of the offer to highlight as best seller" },
+                    "highlight_badge": { "type": "string", "default": "الأفضل" }
+                }
+            },
+            "bundle_offers": {
+                "description": "Styling configurations for product bundles display. NOTE: Actual bundle structures must be added via the backend (not in this config).",
+                "fields": {
+                    "title": { "type": "string", "default": "عروض الباقات" },
+                    "subtitle": { "type": "string", "default": "" },
+                    "highlight_text": { "type": "string", "default": "الأكثر طلباً" }
+                }
+            },
+            "delivery_info": {
+                "description": "Shipping and payment methods delivery information list.",
+                "fields": {
+                    "title": { "type": "string", "default": "معلومات التوصيل" },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "icon": { "type": "string", "description": "Emoji icon" },
+                                "text": { "type": "string", "description": "Delivery terms explanation" }
+                            },
+                            "required": ["icon", "text"]
+                        }
+                    }
+                }
+            },
+            "comparison": {
+                "description": "A comparative table showing why your product is better than competitors.",
+                "fields": {
+                    "title": { "type": "string", "default": "جدول المقارنة" },
+                    "columns": { "type": "array", "items": { "type": "string" }, "default": ["المميزات", "منتجنا", "المنافس"] },
+                    "rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        },
+                        "default": [["الجودة", "ممتازة ✅", "عادية ❌"]]
+                    }
+                }
+            },
+            "text": {
+                "description": "Free text section with custom alignment and size.",
+                "fields": {
+                    "title": { "type": "string", "default": "" },
+                    "content": { "type": "string", "default": "اكتب النص هنا..." },
+                    "align": { "type": "string", "enum": ["right", "center", "left"], "default": "right" },
+                    "size": { "type": "string", "enum": ["sm", "base", "lg", "xl"], "default": "base" }
+                }
+            },
+            "image": {
+                "description": "Full-width or restricted-width image block.",
+                "fields": {
+                    "image_url": { "type": "string", "default": "" },
+                    "alt_text": { "type": "string", "default": "" },
+                    "caption": { "type": "string", "default": "" },
+                    "full_width": { "type": "boolean", "default": True }
+                }
+            },
+            "product_gallery": {
+                "description": "Interactive product photos swipe gallery.",
+                "fields": {
+                    "title": { "type": "string", "default": "صور المنتج" },
+                    "show_zoom": { "type": "boolean", "default": True },
+                    "layout": { "type": "string", "enum": ["swipe", "grid"], "default": "swipe" }
+                }
+            },
+            "sticky_cta": {
+                "description": "A call-to-action bar pinned at the bottom of the screen.",
+                "fields": {
+                    "text": { "type": "string", "default": "أطلب الآن!" },
+                    "bg_color": { "type": "string", "default": "#6366f1" },
+                    "show_price": { "type": "boolean", "default": True },
+                    "scroll_to": { "type": "string", "default": "#checkout", "description": "Element ID to scroll to (default is #checkout)" }
+                }
+            },
+            "floating_order_button": {
+                "description": "A shopping cart call-to-action button that appears on scroll.",
+                "fields": {
+                    "text": { "type": "string", "default": "🛒 أطلب الآن!" },
+                    "scroll_to": { "type": "string", "default": "#checkout" }
+                }
+            }
+        }
+    }
+
+
