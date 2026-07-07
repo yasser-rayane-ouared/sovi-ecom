@@ -56,7 +56,8 @@ export default function DeliveryDashboard() {
         }
       }
       
-      const active = (companiesRes.data || []).filter(
+      const companyData = Array.isArray(companiesRes.data) ? companiesRes.data : (companiesRes.data?.results || []);
+      const active = companyData.filter(
         (c: any) => c.name !== "manual" && activeConfigCompanyIds.has(c.id)
       );
       setCompanies(active);
@@ -75,7 +76,8 @@ export default function DeliveryDashboard() {
     api
       .get(`/delivery/${storeId}/pricing/`)
       .then((res) => {
-        const data: WilayaPricing[] = (res.data || []).map((item: any) => ({
+        const pricingList = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+        const data: WilayaPricing[] = pricingList.map((item: any) => ({
           id: item.id,
           code: item.wilaya_code ?? item.code ?? 0,
           name_ar: item.wilaya_name ?? item.name_ar ?? "",

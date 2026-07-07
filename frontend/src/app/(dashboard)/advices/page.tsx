@@ -23,7 +23,7 @@ export default function MerchantAdvicesFeedPage() {
     setLoading(true);
     try {
       const res = await api.get("/marketing-advices/");
-      setAdvices(res.data?.results || res.data || []);
+      setAdvices(Array.isArray(res.data) ? res.data : (res.data?.results || []));
     } catch (err) {
       console.error("Error fetching advices feed:", err);
     } finally {
