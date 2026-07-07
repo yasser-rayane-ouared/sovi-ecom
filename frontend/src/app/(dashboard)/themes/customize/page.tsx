@@ -11,7 +11,8 @@ import {
   Layers, Plus, Trash2, Edit2, Sparkles, AlertCircle, CheckCircle2,
   Palette, GripVertical, Image as ImageIcon, Truck,
   ShieldCheck, Phone, Layout, Star, ExternalLink,
-  SidebarClose, SidebarOpen
+  SidebarClose, SidebarOpen, Video, HelpCircle, Clock,
+  Percent, Table, Play
 } from "lucide-react";
 import { useLanguageStore } from "../../../../stores/language";
 import { getFullImageUrl } from "../../../../lib/utils";
@@ -48,16 +49,29 @@ export default function HomepageCustomizer() {
   };
 
   const sectionTypeMeta: Record<string, { label: string; icon: React.ReactNode }> = {
-    announcement: { label: `${t('announcementSection')} (Announcement)`, icon: <Truck className="h-4 w-4 text-primary" /> },
-    header: { label: `${t('headerSection')} (Header)`, icon: <Layout className="h-4 w-4 text-primary" /> },
-    hero: { label: `${t('heroSection')} (Hero)`, icon: <Sparkles className="h-4 w-4 text-primary" /> },
-    featured_products: { label: `${t('featuredProductsSection')} (Products Grid)`, icon: <Star className="h-4 w-4 text-primary" /> },
-    trust_badges: { label: `${t('trustBadgesSection')} (Trust Badges)`, icon: <ShieldCheck className="h-4 w-4 text-primary" /> },
-    footer: { label: `${t('footerSection')} (Footer)`, icon: <Layers className="h-4 w-4 text-primary" /> },
-    text: { label: `${t('customTextSection')} (Custom Text)`, icon: <Edit2 className="h-4 w-4 text-primary" /> },
-    image: { label: `${t('customImageSection')} (Custom Image)`, icon: <ImageIcon className="h-4 w-4 text-primary" /> },
-    banner: { label: `${t('bannerSection')} (Promo Banner)`, icon: <Sparkles className="h-4 w-4 text-primary" /> },
+    announcement: { label: `${t('announcementSection') || 'Announcement'} (Announcement)`, icon: <Truck className="h-4 w-4 text-primary" /> },
+    header: { label: `${t('headerSection') || 'Header'} (Header)`, icon: <Layout className="h-4 w-4 text-primary" /> },
+    hero: { label: `${t('heroSection') || 'Hero Banner'} (Hero)`, icon: <Sparkles className="h-4 w-4 text-primary" /> },
+    featured_products: { label: `${t('featuredProductsSection') || 'Products Grid'} (Products Grid)`, icon: <Star className="h-4 w-4 text-primary" /> },
+    trust_badges: { label: `${t('trustBadgesSection') || 'Trust Badges'} (Trust Badges)`, icon: <ShieldCheck className="h-4 w-4 text-primary" /> },
+    footer: { label: `${t('footerSection') || 'Footer'} (Footer)`, icon: <Layers className="h-4 w-4 text-primary" /> },
+    text: { label: `${t('customTextSection') || 'Custom Text'} (Custom Text)`, icon: <Edit2 className="h-4 w-4 text-primary" /> },
+    image: { label: `${t('customImageSection') || 'Custom Image'} (Custom Image)`, icon: <ImageIcon className="h-4 w-4 text-primary" /> },
+    banner: { label: `${t('bannerSection') || 'Promo Banner'} (Promo Banner)`, icon: <Sparkles className="h-4 w-4 text-primary" /> },
     categories: { label: `${t('categoriesSection') || 'Product Categories'} (Categories)`, icon: <Layers className="h-4 w-4 text-primary" /> },
+    video: { label: `${isRtl ? 'فيديو ترويجي' : 'Video Player'} (Video)`, icon: <Video className="h-4 w-4 text-primary" /> },
+    reviews: { label: `${t('builderEditorReviews') || 'Customer Reviews'} (Reviews)`, icon: <Star className="h-4 w-4 text-primary" /> },
+    faq: { label: `${t('builderEditorFaqItems') || 'FAQ Accordion'} (FAQ)`, icon: <HelpCircle className="h-4 w-4 text-primary" /> },
+    benefits: { label: `${t('builderEditorBenefits') || 'Key Features'} (Benefits)`, icon: <ShieldCheck className="h-4 w-4 text-primary" /> },
+    before_after: { label: `${isRtl ? 'قبل وبعد' : 'Before & After'} (Comparison)`, icon: <ImageIcon className="h-4 w-4 text-primary" /> },
+    countdown: { label: `${isRtl ? 'عداد تنازلي' : 'Countdown Timer'} (Countdown)`, icon: <Clock className="h-4 w-4 text-primary" /> },
+    quantity_offers: { label: `${isRtl ? 'عروض الكمية' : 'Quantity Discounts'} (Offers)`, icon: <Percent className="h-4 w-4 text-primary" /> },
+    bundle_offers: { label: `${isRtl ? 'عروض الباقات' : 'Bundle Offers'} (Bundles)`, icon: <Layers className="h-4 w-4 text-primary" /> },
+    delivery_info: { label: `${t('builderEditorDeliveryItems') || 'Delivery Info'} (Delivery)`, icon: <Truck className="h-4 w-4 text-primary" /> },
+    comparison: { label: `${t('builderEditorComparisonCols') || 'Comparison Table'} (Comparison)`, icon: <Table className="h-4 w-4 text-primary" /> },
+    product_gallery: { label: `${isRtl ? 'معرض الصور' : 'Interactive Gallery'} (Gallery)`, icon: <ImageIcon className="h-4 w-4 text-primary" /> },
+    sticky_cta: { label: `${isRtl ? 'شريط الشراء العائم' : 'Sticky Order Bar'} (Sticky CTA)`, icon: <Plus className="h-4 w-4 text-primary" /> },
+    floating_order_button: { label: `${isRtl ? 'زر الشراء العائم' : 'Floating Order Button'} (Floating Button)`, icon: <Plus className="h-4 w-4 text-primary" /> },
   };
 
   useEffect(() => {
@@ -283,6 +297,73 @@ export default function HomepageCustomizer() {
       config.image_opacity = 40;
       config.text_align = "center";
       config.height = "medium";
+    } else if (sectionType === "video") {
+      config.title = "";
+      config.video_url = "";
+      config.autoplay = false;
+      config.muted = true;
+      config.aspect_ratio = "16/9";
+    } else if (sectionType === "reviews") {
+      config.title = isRtl ? "آراء زبائننا" : "Customer Reviews";
+      config.reviews = [
+        { name: isRtl ? "أحمد — وهران" : "Ahmed — Oran", text: isRtl ? "منتج ممتاز وتوصيل سريع جداً، أنصح به!" : "Excellent product and very fast delivery, highly recommended!", rating: 5, date: isRtl ? "منذ يوم" : "1 day ago" }
+      ];
+    } else if (sectionType === "faq") {
+      config.title = isRtl ? "أسئلة شائعة" : "FAQ Accordion";
+      config.items = [
+        { q: isRtl ? "كم يستغرق التوصيل؟" : "How long does shipping take?", a: isRtl ? "يستغرق التوصيل عادة من يومين إلى 4 أيام عمل." : "Delivery usually takes 2 to 4 business days." }
+      ];
+    } else if (sectionType === "benefits") {
+      config.title = isRtl ? "لماذا تختارنا؟" : "Why Choose Us?";
+      config.items = [
+        { icon: "✅", title: isRtl ? "جودة مضمونة" : "Guaranteed Quality", desc: isRtl ? "منتجاتنا أصلية وبأعلى جودة في السوق." : "Our products are authentic and of the highest quality." }
+      ];
+    } else if (sectionType === "before_after") {
+      config.title = isRtl ? "قبل وبعد" : "Before & After";
+      config.before_label = isRtl ? "قبل" : "Before";
+      config.after_label = isRtl ? "بعد" : "After";
+      config.before_image = "";
+      config.after_image = "";
+    } else if (sectionType === "countdown") {
+      config.title = isRtl ? "العرض ينتهي خلال:" : "Offer expires in:";
+      config.hours = 2;
+      config.minutes = 0;
+      config.seconds = 0;
+      config.bg_color = "#dc2626";
+      config.text_color = "#ffffff";
+      config.urgency_text = isRtl ? "الكمية محدودة جداً!" : "Very limited quantity!";
+    } else if (sectionType === "quantity_offers") {
+      config.title = isRtl ? "عروض الكمية" : "Quantity Discounts";
+      config.subtitle = isRtl ? "اطلب أكثر ووفر أكثر" : "Order more, save more";
+      config.highlight_index = 0;
+      config.highlight_badge = isRtl ? "الأكثر طلباً" : "Best Seller";
+    } else if (sectionType === "bundle_offers") {
+      config.title = isRtl ? "عروض الباقات" : "Bundle Offers";
+      config.subtitle = "";
+      config.highlight_text = isRtl ? "الأكثر طلباً" : "Most Popular";
+    } else if (sectionType === "delivery_info") {
+      config.title = isRtl ? "معلومات التوصيل والضمان" : "Shipping & Delivery Info";
+      config.items = [
+        { icon: "🚚", text: isRtl ? "التوصيل متوفر لجميع الولايات الجزائرية" : "Shipping is available to all Algerian provinces" }
+      ];
+    } else if (sectionType === "comparison") {
+      config.title = isRtl ? "جدول المقارنة" : "Comparison Table";
+      config.columns = isRtl ? ["المميزات", "منتجنا", "المنافس"] : ["Features", "Our Product", "Competitors"];
+      config.rows = [
+        [isRtl ? "جودة الصنع" : "Build Quality", isRtl ? "ممتازة ✅" : "Premium ✅", isRtl ? "عادية ❌" : "Normal ❌"]
+      ];
+    } else if (sectionType === "product_gallery") {
+      config.title = isRtl ? "صور المنتج" : "Product Gallery";
+      config.show_zoom = true;
+      config.layout = "swipe";
+    } else if (sectionType === "sticky_cta") {
+      config.text = isRtl ? "أطلب الآن!" : "Order Now!";
+      config.bg_color = "#6366f1";
+      config.show_price = true;
+      config.scroll_to = "#checkout";
+    } else if (sectionType === "floating_order_button") {
+      config.text = isRtl ? "🛒 أطلب الآن!" : "🛒 Order Now!";
+      config.scroll_to = "#checkout";
     }
 
     const tempId = `custom-${sectionType}-${Date.now()}`;
@@ -311,7 +392,7 @@ export default function HomepageCustomizer() {
     setDragIndex(null);
   };
 
-  const handleImageUpload = async (sectionId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (sectionId: string, e: React.ChangeEvent<HTMLInputElement>, fieldName: string = "image_url") => {
     const file = e.target.files?.[0];
     if (!file || !currentStoreId) return;
 
@@ -331,7 +412,7 @@ export default function HomepageCustomizer() {
       
       const targetSection = sections.find(s => s.id === sectionId);
       const currentConfig = targetSection?.config || {};
-      handleUpdateSection(sectionId, { config: { ...currentConfig, image_url: res.data.image_url } });
+      handleUpdateSection(sectionId, { config: { ...currentConfig, [fieldName]: res.data.image_url } });
       setSuccess(t('uploadSuccess'));
     } catch (err) {
       setError(t('uploadError'));
@@ -565,32 +646,22 @@ export default function HomepageCustomizer() {
                 <div className="pt-2 border-t border-border">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 text-start">{t('addCustomSection')}</p>
                   {showAddSection ? (
-                    <div className="bg-muted/30 rounded-xl p-2 border border-border space-y-1 shadow-md">
-                      <button
-                        type="button"
-                        onClick={() => handleAddSection("text")}
-                        className={`flex items-center gap-2 w-full p-2 rounded hover:bg-secondary border border-border text-xs text-foreground bg-transparent transition-colors ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}
-                      >
-                        <Edit2 className="h-3.5 w-3.5 text-primary" />
-                        <span>{t('customTextDefaultTitle')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddSection("image")}
-                        className={`flex items-center gap-2 w-full p-2 rounded hover:bg-secondary border border-border text-xs text-foreground bg-transparent transition-colors ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}
-                      >
-                        <ImageIcon className="h-3.5 w-3.5 text-primary" />
-                        <span>{t('customImageDefaultTitle')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAddSection("banner")}
-                        className={`flex items-center gap-2 w-full p-2 rounded hover:bg-secondary border border-border text-xs text-foreground bg-transparent transition-colors ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}
-                      >
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        <span>{t('bannerSection')}</span>
-                      </button>
-                      <button type="button" onClick={() => setShowAddSection(false)} className="text-[10px] text-muted-foreground hover:text-foreground block w-full text-center mt-1">{t('cancel')}</button>
+                    <div className="bg-muted/30 rounded-xl p-2 border border-border grid grid-cols-2 gap-1.5 shadow-md">
+                      {Object.keys(sectionTypeMeta).filter(k => !["announcement", "header", "footer"].includes(k)).map((type) => {
+                        const meta = sectionTypeMeta[type];
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => handleAddSection(type)}
+                            className={`flex items-center gap-1.5 p-1.5 rounded hover:bg-secondary border border-border text-[10px] text-foreground bg-transparent transition-colors truncate justify-start`}
+                          >
+                            {meta.icon}
+                            <span className="truncate">{meta.label.split(" (")[0]}</span>
+                          </button>
+                        );
+                      })}
+                      <button type="button" onClick={() => setShowAddSection(false)} className="col-span-2 text-[10px] text-muted-foreground hover:text-foreground block w-full text-center mt-1">{t('cancel')}</button>
                     </div>
                   ) : (
                     <Button
@@ -1339,6 +1410,659 @@ export default function HomepageCustomizer() {
                           </div>
                         )}
 
+                        {/* 11. Video Section Editor */}
+                        {section.section_type === 'video' && (
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorVideoUrl') || "رابط الفيديو"}</label>
+                              <Input
+                                placeholder="YouTube / TikTok / Direct Video URL"
+                                value={editingSection.config.video_url || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, video_url: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="flex items-center gap-2 pt-2 text-start">
+                                <input
+                                  type="checkbox"
+                                  id={`autoplay-${section.id}`}
+                                  checked={!!editingSection.config.autoplay}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, autoplay: e.target.checked } })}
+                                  className="rounded border-border"
+                                />
+                                <label htmlFor={`autoplay-${section.id}`} className="text-xs font-medium cursor-pointer">{t('builderEditorAutoplay') || "تشغيل تلقائي"}</label>
+                              </div>
+                              <div className="flex items-center gap-2 pt-2 text-start">
+                                <input
+                                  type="checkbox"
+                                  id={`muted-${section.id}`}
+                                  checked={!!editingSection.config.muted}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, muted: e.target.checked } })}
+                                  className="rounded border-border"
+                                />
+                                <label htmlFor={`muted-${section.id}`} className="text-xs font-medium cursor-pointer">{t('builderEditorMuted') || "كتم الصوت"}</label>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 12. Countdown Section Editor */}
+                        {section.section_type === 'countdown' && (
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-start">
+                              <div>
+                                <label className="text-[10px] text-muted-foreground">{t('builderEditorCountdownHours') || "ساعات"}</label>
+                                <Input
+                                  type="number"
+                                  value={editingSection.config.hours ?? 2}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, hours: parseInt(e.target.value) || 0 } })}
+                                  className="text-xs text-center"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-muted-foreground">{t('builderEditorCountdownMinutes') || "دقائق"}</label>
+                                <Input
+                                  type="number"
+                                  value={editingSection.config.minutes ?? 0}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, minutes: parseInt(e.target.value) || 0 } })}
+                                  className="text-xs text-center"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-muted-foreground">{t('builderEditorCountdownSeconds') || "ثواني"}</label>
+                                <Input
+                                  type="number"
+                                  value={editingSection.config.seconds ?? 0}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, seconds: parseInt(e.target.value) || 0 } })}
+                                  className="text-xs text-center"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorCountdownUrgency') || "نص الاستعجال"}</label>
+                              <Input
+                                value={editingSection.config.urgency_text || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, urgency_text: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('builderEditorCountdownBg') || "لون خلفية التعداد"}</label>
+                                <Input
+                                  type="color"
+                                  value={editingSection.config.bg_color || "#dc2626"}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, bg_color: e.target.value } })}
+                                  className="w-full h-8 p-0 border-0 cursor-pointer rounded bg-transparent"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('builderEditorCountdownText') || "لون نص التعداد"}</label>
+                                <Input
+                                  type="color"
+                                  value={editingSection.config.text_color || "#ffffff"}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, text_color: e.target.value } })}
+                                  className="w-full h-8 p-0 border-0 cursor-pointer rounded bg-transparent"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 13. Quantity Offers & Bundle Offers Editor */}
+                        {(section.section_type === 'quantity_offers' || section.section_type === 'bundle_offers' || section.section_type === 'product_gallery') && (
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            {editingSection.config.subtitle !== undefined && (
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('builderEditorSubtitle') || "العنوان الفرعي"}</label>
+                                <Input
+                                  value={editingSection.config.subtitle || ""}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, subtitle: e.target.value } })}
+                                  className="text-xs text-start"
+                                />
+                              </div>
+                            )}
+                            {editingSection.config.highlight_badge !== undefined && (
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{isRtl ? "شارة التمييز" : "Highlight Badge"}</label>
+                                <Input
+                                  value={editingSection.config.highlight_badge || ""}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, highlight_badge: e.target.value } })}
+                                  className="text-xs text-start"
+                                />
+                              </div>
+                            )}
+                            {editingSection.config.highlight_text !== undefined && (
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{isRtl ? "نص التمييز" : "Highlight Text"}</label>
+                                <Input
+                                  value={editingSection.config.highlight_text || ""}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, highlight_text: e.target.value } })}
+                                  className="text-xs text-start"
+                                />
+                              </div>
+                            )}
+                            <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-start">
+                              <p className="text-[10px] text-muted-foreground">
+                                {section.section_type === 'quantity_offers' 
+                                  ? (isRtl ? "تعتمد عروض الكميات المخصصة على إعدادات المنتج المرتبط وتظهر تلقائياً." : "Quantity discounts are dynamic and depend on the linked product settings.")
+                                  : section.section_type === 'bundle_offers'
+                                  ? (isRtl ? "تعتمد الباقات على إعدادات الباقات في المنتج المرتبط." : "Bundles depend on the linked product's configured bundles.")
+                                  : (isRtl ? "يعرض معرض الصور صور المنتج المرتبط تلقائياً." : "Product gallery automatically displays the linked product images.")
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 14. Sticky CTA & Floating Order Button Editor */}
+                        {(section.section_type === 'sticky_cta' || section.section_type === 'floating_order_button') && (
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{isRtl ? "نص الزر" : "Button Text"}</label>
+                              <Input
+                                value={editingSection.config.text || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, text: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            {editingSection.config.show_price !== undefined && (
+                              <div className="flex items-center gap-2 pt-2 text-start">
+                                <input
+                                  type="checkbox"
+                                  id={`show-price-${section.id}`}
+                                  checked={!!editingSection.config.show_price}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, show_price: e.target.checked } })}
+                                  className="rounded border-border"
+                                />
+                                <label htmlFor={`show-price-${section.id}`} className="text-xs font-medium cursor-pointer">{t('builderEditorShowPrice') || "عرض السعر"}</label>
+                              </div>
+                            )}
+                            {editingSection.config.bg_color !== undefined && (
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('backgroundColor') || "لون الخلفية"}</label>
+                                <Input
+                                  type="color"
+                                  value={editingSection.config.bg_color || "#6366f1"}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, bg_color: e.target.value } })}
+                                  className="w-full h-8 p-0 border-0 cursor-pointer rounded bg-transparent"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 15. FAQ Items Editor */}
+                        {section.section_type === 'faq' && (
+                          <div className="space-y-3 text-start">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <label className="text-xs font-semibold text-muted-foreground block">{t('builderEditorFaqItems') || "الأسئلة الشائعة"}</label>
+                            <div className="space-y-2.5">
+                              {(editingSection.config.items || []).map((item: any, idx: number) => {
+                                const updateArrayItem = (field: string, val: any) => {
+                                  const arr = [...(editingSection.config.items || [])];
+                                  arr[idx] = { ...arr[idx], [field]: val };
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                                };
+                                const removeArrayItem = () => {
+                                  const arr = (editingSection.config.items || []).filter((_: any, i: number) => i !== idx);
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                                };
+                                return (
+                                  <div key={idx} className="p-3 rounded-xl border border-border bg-muted/20 space-y-2 relative">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-muted-foreground">{isRtl ? `سؤال #${idx + 1}` : `Question #${idx + 1}`}</span>
+                                      <button type="button" onClick={removeArrayItem} className="text-red-400 hover:text-red-500">
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                    <Input
+                                      value={item.q || ""}
+                                      onChange={(e) => updateArrayItem("q", e.target.value)}
+                                      placeholder={t('builderEditorFaqQPl') || "السؤال"}
+                                      className="text-xs text-start"
+                                    />
+                                    <textarea
+                                      value={item.a || ""}
+                                      onChange={(e) => updateArrayItem("a", e.target.value)}
+                                      placeholder={t('builderEditorFaqAPl') || "الإجابة"}
+                                      className="w-full rounded-lg border border-border bg-input p-2 text-xs text-foreground resize-none h-16"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const arr = [...(editingSection.config.items || []), { q: "", a: "" }];
+                                handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> {t('builderEditorAddFaqBtn') || "إضافة سؤال"}
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* 16. Benefits Editor */}
+                        {section.section_type === 'benefits' && (
+                          <div className="space-y-3 text-start">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <label className="text-xs font-semibold text-muted-foreground block">{t('builderEditorBenefits') || "المميزات"}</label>
+                            <div className="space-y-2.5">
+                              {(editingSection.config.items || []).map((item: any, idx: number) => {
+                                const updateArrayItem = (field: string, val: any) => {
+                                  const arr = [...(editingSection.config.items || [])];
+                                  arr[idx] = { ...arr[idx], [field]: val };
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                                };
+                                const removeArrayItem = () => {
+                                  const arr = (editingSection.config.items || []).filter((_: any, i: number) => i !== idx);
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                                };
+                                return (
+                                  <div key={idx} className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-muted-foreground">{isRtl ? `ميزة #${idx + 1}` : `Benefit #${idx + 1}`}</span>
+                                      <button type="button" onClick={removeArrayItem} className="text-red-400 hover:text-red-500">
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                    <div className="grid grid-cols-[60px_1fr] gap-2">
+                                      <Input
+                                        value={item.icon || "✅"}
+                                        onChange={(e) => updateArrayItem("icon", e.target.value)}
+                                        placeholder="✅"
+                                        className="text-xs text-center font-emoji"
+                                      />
+                                      <Input
+                                        value={item.title || ""}
+                                        onChange={(e) => updateArrayItem("title", e.target.value)}
+                                        placeholder={t('builderEditorBenefitTitlePl') || "عنوان الميزة"}
+                                        className="text-xs text-start"
+                                      />
+                                    </div>
+                                    <Input
+                                      value={item.desc || ""}
+                                      onChange={(e) => updateArrayItem("desc", e.target.value)}
+                                      placeholder={t('builderEditorBenefitDescPl') || "وصف الميزة"}
+                                      className="text-xs text-start"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const arr = [...(editingSection.config.items || []), { icon: "✅", title: "", desc: "" }];
+                                handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> {t('builderEditorAddBenefitBtn') || "إضافة ميزة"}
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* 17. Delivery Info Editor */}
+                        {section.section_type === 'delivery_info' && (
+                          <div className="space-y-3 text-start">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <label className="text-xs font-semibold text-muted-foreground block">{t('builderEditorDeliveryItems') || "معلومات التوصيل"}</label>
+                            <div className="space-y-2">
+                              {(editingSection.config.items || []).map((item: any, idx: number) => {
+                                const updateArrayItem = (field: string, val: any) => {
+                                  const arr = [...(editingSection.config.items || [])];
+                                  arr[idx] = { ...arr[idx], [field]: val };
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                                };
+                                const removeArrayItem = () => {
+                                  const arr = (editingSection.config.items || []).filter((_: any, i: number) => i !== idx);
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                                };
+                                return (
+                                  <div key={idx} className="flex items-center gap-2 bg-muted/10 p-1.5 border border-border rounded-lg">
+                                    <Input
+                                      value={item.icon || "🚚"}
+                                      onChange={(e) => updateArrayItem("icon", e.target.value)}
+                                      className="w-12 text-center text-xs h-9"
+                                    />
+                                    <Input
+                                      value={item.text || ""}
+                                      onChange={(e) => updateArrayItem("text", e.target.value)}
+                                      placeholder="مثال: التوصيل متوفر لجميع الولايات"
+                                      className="flex-1 text-xs h-9 text-start"
+                                    />
+                                    <button type="button" onClick={removeArrayItem} className="text-red-400 hover:text-red-500 p-1">
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const arr = [...(editingSection.config.items || []), { icon: "🚚", text: "" }];
+                                handleUpdateSection(section.id, { config: { ...editingSection.config, items: arr } });
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> {t('builderEditorAddDeliveryBtn') || "إضافة معلومة توصيل"}
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* 18. Comparison Table Editor */}
+                        {section.section_type === 'comparison' && (
+                          <div className="space-y-3 text-start">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <label className="text-xs font-semibold text-muted-foreground block">{t('builderEditorComparisonCols') || "أعمدة المقارنة"}</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {(editingSection.config.columns || ["المميزات", "منتجنا", "المنافس"]).map((col: string, idx: number) => (
+                                <Input
+                                  key={idx}
+                                  value={col}
+                                  onChange={(e) => {
+                                    const cols = [...(editingSection.config.columns || ["المميزات", "منتجنا", "المنافس"])];
+                                    cols[idx] = e.target.value;
+                                    handleUpdateSection(section.id, { config: { ...editingSection.config, columns: cols } });
+                                  }}
+                                  className="text-xs text-center"
+                                />
+                              ))}
+                            </div>
+                            <label className="text-xs font-semibold text-muted-foreground block">{t('builderEditorComparisonRows') || "سطور المقارنة"}</label>
+                            <div className="space-y-2">
+                              {(editingSection.config.rows || [["الجودة", "ممتازة ✅", "عادية ❌"]]).map((row: string[], rIdx: number) => {
+                                const removeRow = () => {
+                                  const rows = (editingSection.config.rows || []).filter((_: any, i: number) => i !== rIdx);
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, rows } });
+                                };
+                                return (
+                                  <div key={rIdx} className="p-2 border border-border bg-muted/10 rounded-xl space-y-1.5 relative">
+                                    <div className="flex items-center justify-between border-b border-border pb-1">
+                                      <span className="text-[10px] text-muted-foreground">{isRtl ? `صف #${rIdx + 1}` : `Row #${rIdx + 1}`}</span>
+                                      <button type="button" onClick={removeRow} className="text-red-400 p-0.5"><Trash2 className="h-3.5 w-3.5" /></button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                      {row.map((cell: string, cIdx: number) => (
+                                        <Input
+                                          key={cIdx}
+                                          value={cell}
+                                          onChange={(e) => {
+                                            const rows = [...(editingSection.config.rows || [])];
+                                            rows[rIdx] = [...rows[rIdx]];
+                                            rows[rIdx][cIdx] = e.target.value;
+                                            handleUpdateSection(section.id, { config: { ...editingSection.config, rows } });
+                                          }}
+                                          placeholder={editingSection.config.columns?.[cIdx] || ""}
+                                          className="text-xs text-center"
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const newRow = (editingSection.config.columns || ["المميزات", "منتجنا", "المنافس"]).map(() => "");
+                                const rows = [...(editingSection.config.rows || []), newRow];
+                                handleUpdateSection(section.id, { config: { ...editingSection.config, rows } });
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> {t('builderEditorAddComparisonRowBtn') || "إضافة سطر مقارنة"}
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* 19. Before & After Editor */}
+                        {section.section_type === 'before_after' && (
+                          <div className="space-y-3 text-start">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('builderEditorBeforeAfterBeforeLabel') || "علامة قبل"}</label>
+                                <Input
+                                  value={editingSection.config.before_label || ""}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, before_label: e.target.value } })}
+                                  className="text-xs text-start"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('builderEditorBeforeAfterAfterLabel') || "علامة بعد"}</label>
+                                <Input
+                                  value={editingSection.config.after_label || ""}
+                                  onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, after_label: e.target.value } })}
+                                  className="text-xs text-start"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-3 pt-2">
+                              {/* Before Image */}
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('builderEditorBeforeAfterBeforeImg') || "صورة قبل"}</label>
+                                {editingSection.config.before_image ? (
+                                  <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-border group bg-muted/20">
+                                    <img src={getFullImageUrl(editingSection.config.before_image)} alt="" className="w-full h-full object-cover" />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateSection(section.id, { config: { ...editingSection.config, before_image: "" } })}
+                                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-lg p-1.5 shadow-md opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full text-xs gap-1.5 h-10 border-dashed"
+                                    disabled={imageUploading === section.id}
+                                    onClick={() => document.getElementById(`before-image-upload-${section.id}`)?.click()}
+                                  >
+                                    <Plus className="h-4 w-4" /> {t('uploadFromDevice') || "Upload Image"}
+                                  </Button>
+                                )}
+                                <input
+                                  id={`before-image-upload-${section.id}`}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => handleImageUpload(section.id, e, "before_image")}
+                                />
+                              </div>
+                              {/* After Image */}
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">{t('builderEditorBeforeAfterAfterImg') || "صورة بعد"}</label>
+                                {editingSection.config.after_image ? (
+                                  <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-border group bg-muted/20">
+                                    <img src={getFullImageUrl(editingSection.config.after_image)} alt="" className="w-full h-full object-cover" />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateSection(section.id, { config: { ...editingSection.config, after_image: "" } })}
+                                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-lg p-1.5 shadow-md opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full text-xs gap-1.5 h-10 border-dashed"
+                                    disabled={imageUploading === section.id}
+                                    onClick={() => document.getElementById(`after-image-upload-${section.id}`)?.click()}
+                                  >
+                                    <Plus className="h-4 w-4" /> {t('uploadFromDevice') || "Upload Image"}
+                                  </Button>
+                                )}
+                                <input
+                                  id={`after-image-upload-${section.id}`}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => handleImageUpload(section.id, e, "after_image")}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 20. Reviews List Editor */}
+                        {section.section_type === 'reviews' && (
+                          <div className="space-y-3 text-start">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">{t('builderEditorTitle') || "العنوان"}</label>
+                              <Input
+                                value={editingSection.config.title || ""}
+                                onChange={(e) => handleUpdateSection(section.id, { config: { ...editingSection.config, title: e.target.value } })}
+                                className="text-xs text-start"
+                              />
+                            </div>
+                            <label className="text-xs font-semibold text-muted-foreground block">{t('builderEditorReviews') || "التقييمات وآراء الزبائن"}</label>
+                            <div className="space-y-2.5">
+                              {(editingSection.config.reviews || []).map((review: any, idx: number) => {
+                                const updateArrayItem = (field: string, val: any) => {
+                                  const arr = [...(editingSection.config.reviews || [])];
+                                  arr[idx] = { ...arr[idx], [field]: val };
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, reviews: arr } });
+                                };
+                                const removeArrayItem = () => {
+                                  const arr = (editingSection.config.reviews || []).filter((_: any, i: number) => i !== idx);
+                                  handleUpdateSection(section.id, { config: { ...editingSection.config, reviews: arr } });
+                                };
+                                return (
+                                  <div key={idx} className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-muted-foreground">{isRtl ? `تقييم #${idx + 1}` : `Review #${idx + 1}`}</span>
+                                      <button type="button" onClick={removeArrayItem} className="text-red-400 hover:text-red-500">
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                    <Input
+                                      value={review.name || ""}
+                                      onChange={(e) => updateArrayItem("name", e.target.value)}
+                                      placeholder={t('builderEditorReviewNamePl') || "اسم الزبون والولاية"}
+                                      className="text-xs text-start"
+                                    />
+                                    <textarea
+                                      value={review.text || ""}
+                                      onChange={(e) => updateArrayItem("text", e.target.value)}
+                                      placeholder={t('builderEditorReviewTextPl') || "نص التقييم"}
+                                      className="w-full rounded-lg border border-border bg-input p-2 text-xs text-foreground resize-none h-16"
+                                    />
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <select
+                                        value={review.rating || 5}
+                                        onChange={(e) => updateArrayItem("rating", parseInt(e.target.value) || 5)}
+                                        className="h-9 rounded-lg border border-border bg-input text-xs"
+                                      >
+                                        <option value="5">⭐⭐⭐⭐⭐</option>
+                                        <option value="4">⭐⭐⭐⭐</option>
+                                        <option value="3">⭐⭐⭐</option>
+                                        <option value="2">⭐⭐</option>
+                                        <option value="1">⭐</option>
+                                      </select>
+                                      <Input
+                                        value={review.date || ""}
+                                        onChange={(e) => updateArrayItem("date", e.target.value)}
+                                        placeholder="منذ يوم"
+                                        className="text-xs h-9 text-start"
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const arr = [...(editingSection.config.reviews || []), { name: "", text: "", rating: 5, date: isRtl ? "منذ يوم" : "1 day ago" }];
+                                handleUpdateSection(section.id, { config: { ...editingSection.config, reviews: arr } });
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> {t('builderEditorAddReviewBtn') || "إضافة تقييم جديد"}
+                            </Button>
+                          </div>
+                        )}
+
                         <div className={`flex gap-2 pt-2 border-t border-border ${isRtl ? 'flex-row-reverse' : 'flex-row'}`}>
                           <Button type="button" onClick={handleSave} size="sm" className="text-xs bg-primary text-white">{t('save')}</Button>
                           <Button type="button" onClick={() => setEditingSection(null)} size="sm" variant="outline" className="text-xs">{t('close')}</Button>
@@ -1743,6 +2467,238 @@ export default function HomepageCustomizer() {
                                   </span>
                                 </div>
                               )}
+                            </div>
+                          </div>
+                        );
+
+                      case "video":
+                        return (
+                          <div className="p-3 border-b border-slate-100 bg-slate-950 text-white select-none relative aspect-video flex flex-col items-center justify-center">
+                            <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{ backgroundImage: "url('/placeholder-video.png')" }}></div>
+                            <div className="h-10 w-10 rounded-full bg-primary/90 flex items-center justify-center z-10 shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-all">
+                              <Play className="h-5 w-5 text-white ml-0.5 fill-white" />
+                            </div>
+                            <span className="text-[10px] mt-2 font-bold z-10 text-slate-200">{config.title || "Video Presentation"}</span>
+                          </div>
+                        );
+
+                      case "countdown":
+                        return (
+                          <div
+                            className="p-2 border-b select-none flex flex-col items-center justify-center space-y-1"
+                            style={{
+                              backgroundColor: config.bg_color || '#dc2626',
+                              color: config.text_color || '#ffffff'
+                            }}
+                          >
+                            <span className="text-[8px] font-black uppercase tracking-wider">{config.urgency_text || "الكمية محدودة جداً!"}</span>
+                            <span className="text-[9px] font-bold">{config.title || "ينتهي العرض في:"}</span>
+                            <div className="flex gap-1.5 text-[9px] font-black font-mono">
+                              <span className="bg-black/20 px-1 py-0.5 rounded">{config.hours ?? 2}h</span>
+                              <span>:</span>
+                              <span className="bg-black/20 px-1 py-0.5 rounded">{config.minutes ?? 0}m</span>
+                              <span>:</span>
+                              <span className="bg-black/20 px-1 py-0.5 rounded">{config.seconds ?? 0}s</span>
+                            </div>
+                          </div>
+                        );
+
+                      case "quantity_offers":
+                        return (
+                          <div className="p-3 border-b border-slate-150 select-none bg-slate-50 text-slate-800 text-start">
+                            <span className="text-[9px] font-black block border-b border-slate-200 pb-1 mb-2">{config.title || "عروض خاصة للدفع عند الاستلام"}</span>
+                            <div className="space-y-1.5">
+                              <div className="p-2 rounded border border-primary bg-primary/5 flex items-center justify-between text-[10px]">
+                                <div className="flex items-center gap-1.5">
+                                  <input type="radio" checked readOnly />
+                                  <span className="font-bold">{isRtl ? "قطعتين (2)" : "2 Pieces"}</span>
+                                  <span className="text-[8px] bg-primary text-white px-1 rounded-sm">{config.highlight_badge || "الأكثر طلباً"}</span>
+                                </div>
+                                <span className="font-black text-primary">6900 DZD</span>
+                              </div>
+                              <div className="p-2 rounded border border-slate-200 bg-white flex items-center justify-between text-[10px] opacity-75">
+                                <div className="flex items-center gap-1.5">
+                                  <input type="radio" readOnly />
+                                  <span>{isRtl ? "ثلاثة قطع (3)" : "3 Pieces"}</span>
+                                </div>
+                                <span className="font-bold">8900 DZD</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+
+                      case "bundle_offers":
+                        return (
+                          <div className="p-3 border-b border-slate-150 select-none bg-white text-slate-800 text-start">
+                            <span className="text-[9px] font-black block text-center text-primary uppercase">{config.title || "عروض الباقات المميزة"}</span>
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                              <div className="p-2 rounded-lg border-2 border-primary bg-primary/5 flex flex-col justify-between text-center relative pt-4">
+                                <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-primary text-white text-[7px] font-black px-1.5 py-0.5 rounded-full">{config.highlight_text || "موصى به"}</span>
+                                <span className="text-[9px] font-bold block">{isRtl ? "باقة التوفير" : "Saver Pack"}</span>
+                                <span className="text-[11px] font-black text-primary block mt-1">4900 DA</span>
+                              </div>
+                              <div className="p-2 rounded-lg border border-slate-200 bg-slate-50 flex flex-col justify-between text-center opacity-80">
+                                <span className="text-[9px] font-bold block">{isRtl ? "الباقة الذهبية" : "Gold Pack"}</span>
+                                <span className="text-[11px] font-black text-slate-700 block mt-1">7900 DA</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+
+                      case "product_gallery":
+                        return (
+                          <div className="border-b border-slate-100 bg-slate-50 select-none relative aspect-square flex flex-col items-center justify-center p-3">
+                            <div className="h-full w-full rounded-xl bg-slate-200 flex items-center justify-center border border-slate-300 relative overflow-hidden">
+                              <ImageIcon className="h-10 w-10 text-slate-400" />
+                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-bold text-slate-500 mt-2">{config.title || "صور المعاينة للمنتج"}</span>
+                          </div>
+                        );
+
+                      case "sticky_cta":
+                        return (
+                          <div className="p-2 select-none border-t border-b border-slate-200 bg-white flex items-center justify-between shadow-lg">
+                            <div className="text-start">
+                              <span className="text-[7px] text-muted-foreground block">{isRtl ? "السعر الكلي" : "Total Price"}</span>
+                              <span className="text-[10px] font-black text-slate-900">4,900 DZD</span>
+                            </div>
+                            <span
+                              className="px-4 py-1.5 rounded-lg text-[9px] font-black text-white cursor-pointer inline-block"
+                              style={{ backgroundColor: config.bg_color || '#6366f1' }}
+                            >
+                              {config.text || "أطلب الآن!"}
+                            </span>
+                          </div>
+                        );
+
+                      case "floating_order_button":
+                        return (
+                          <div className="p-2 border-b select-none flex justify-center bg-transparent">
+                            <span className="w-full py-2 bg-green-500 text-white font-black text-[10px] rounded-lg shadow-md cursor-pointer animate-bounce block text-center">
+                              {config.text || "🛒 أطلب الآن!"}
+                            </span>
+                          </div>
+                        );
+
+                      case "faq":
+                        return (
+                          <div className="p-3 border-b border-slate-100 bg-white text-slate-800 text-start">
+                            <div className="text-center mb-2">
+                              <span className="text-[9px] font-black border-b border-primary pb-0.5">{config.title || "الأسئلة الشائعة"}</span>
+                            </div>
+                            <div className="space-y-1">
+                              {(config.items || []).slice(0, 3).map((item: any, idx: number) => (
+                                <div key={idx} className="border border-slate-100 rounded-md p-1.5 bg-slate-50 flex items-center justify-between text-[8px] font-bold">
+                                  <span>{item.q || (isRtl ? "سؤال توضيحي شائك؟" : "Example Question?")}</span>
+                                  <Plus className="h-2 w-2 text-slate-400" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+
+                      case "benefits":
+                        return (
+                          <div className="p-3 border-b border-slate-100 bg-slate-50 text-slate-800 text-start">
+                            <div className="text-center mb-2.5">
+                              <span className="text-[9px] font-black border-b border-primary pb-0.5">{config.title || "لماذا تختار متجرنا؟"}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {(config.items || []).slice(0, 4).map((item: any, idx: number) => (
+                                <div key={idx} className="p-2 border border-slate-100 rounded-lg bg-white space-y-0.5 flex flex-col items-center text-center">
+                                  <span className="text-[14px]">{item.icon || "✅"}</span>
+                                  <span className="text-[8px] font-black text-slate-900 block truncate w-full">{item.title || "ميزة رائعة"}</span>
+                                  <span className="text-[7px] text-muted-foreground block line-clamp-2 leading-tight">{item.desc || "تفاصيل الميزة"}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+
+                      case "delivery_info":
+                        return (
+                          <div className="p-3 border-b border-slate-150 select-none bg-white text-slate-800 text-start">
+                            <span className="text-[9px] font-black block text-center text-slate-800 mb-2">{config.title || "معلومات التوصيل والضمان"}</span>
+                            <div className="space-y-1.5">
+                              {(config.items || []).slice(0, 3).map((item: any, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2 text-[8px]">
+                                  <span className="text-xs">{item.icon || "🚚"}</span>
+                                  <span className="font-semibold text-slate-700 leading-tight">{item.text || "التوصيل لـ 58 ولاية والدفع عند الاستلام"}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+
+                      case "comparison":
+                        return (
+                          <div className="p-3 border-b border-slate-100 bg-white text-slate-800 text-start">
+                            <span className="text-[9px] font-black block text-center mb-2">{config.title || "جدول المقارنة"}</span>
+                            <table className="w-full border border-slate-200 rounded text-[7px] leading-tight text-center">
+                              <thead>
+                                <tr className="bg-slate-100 border-b border-slate-200">
+                                  {(config.columns || ["المميزات", "منتجنا", "المنافس"]).map((col: string, idx: number) => (
+                                    <th key={idx} className="p-1 font-bold">{col}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(config.rows || [["الجودة", "ممتازة ✅", "عادية ❌"]]).slice(0, 3).map((row: string[], idx: number) => (
+                                  <tr key={idx} className="border-b border-slate-100 last:border-b-0">
+                                    {row.map((cell: string, cIdx: number) => (
+                                      <td key={cIdx} className="p-1">{cell}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+
+                      case "before_after":
+                        return (
+                          <div className="p-3 border-b border-slate-100 bg-slate-50 text-slate-800 text-start">
+                            <span className="text-[9px] font-black block text-center mb-2">{config.title || "قبل وبعد"}</span>
+                            <div className="grid grid-cols-2 gap-2 relative h-28">
+                              <div className="relative rounded overflow-hidden border bg-slate-200 h-full flex items-center justify-center">
+                                {config.before_image ? (
+                                  <img src={getFullImageUrl(config.before_image)} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <ImageIcon className="h-6 w-6 text-slate-400" />
+                                )}
+                                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[6px] px-1 py-0.2 rounded font-bold">{config.before_label || "قبل"}</span>
+                              </div>
+                              <div className="relative rounded overflow-hidden border bg-slate-200 h-full flex items-center justify-center">
+                                {config.after_image ? (
+                                  <img src={getFullImageUrl(config.after_image)} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <ImageIcon className="h-6 w-6 text-slate-400" />
+                                )}
+                                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[6px] px-1 py-0.2 rounded font-bold">{config.after_label || "بعد"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+
+                      case "reviews":
+                        return (
+                          <div className="p-3 border-b border-slate-100 bg-white text-slate-800 text-start">
+                            <span className="text-[9px] font-black block text-center mb-2">{config.title || "آراء زبائننا الكرام"}</span>
+                            <div className="space-y-2">
+                              {(config.reviews || []).slice(0, 3).map((r: any, idx: number) => (
+                                <div key={idx} className="p-2 border border-slate-100 rounded bg-slate-50 space-y-1">
+                                  <div className="flex items-center justify-between text-[7px]">
+                                    <span className="font-bold text-slate-900">{r.name || "زبون مجهول"}</span>
+                                    <span className="text-yellow-500 font-bold">{"⭐".repeat(r.rating || 5)}</span>
+                                  </div>
+                                  <p className="text-[7px] leading-tight text-slate-700">{r.text || "محتوى التقييم والخدمة ممتازة جداً."}</p>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         );
