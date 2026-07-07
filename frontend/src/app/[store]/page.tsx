@@ -94,7 +94,8 @@ export default function StorefrontHome() {
   let homepageSections: any[] = [];
   try {
     if (settings?.homepage_sections) {
-      homepageSections = JSON.parse(settings.homepage_sections);
+      const parsed = JSON.parse(settings.homepage_sections);
+      homepageSections = (Array.isArray(parsed) ? parsed : []).filter((s: any) => s && s.section_type);
     }
   } catch (e) {
     console.error("Failed to parse homepage_sections", e);

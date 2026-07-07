@@ -1117,7 +1117,7 @@ export default function StorefrontProductDetail() {
   const selectedWilayaObj = wilayas.find(w => w.code.toString() === selectedWilaya);
 
   // Sort sections and prepare list
-  let sectionsToRender = [...(product.sections || [])].sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+  let sectionsToRender = [...(product.sections || [])].filter((s: any) => s && s.section_type).sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
   
   const hasInfo = sectionsToRender.some(s => s.section_type === 'product_info');
   const hasOffers = sectionsToRender.some(s => s.section_type === 'quantity_offers');
