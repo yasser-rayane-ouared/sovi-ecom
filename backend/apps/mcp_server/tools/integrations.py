@@ -1,6 +1,7 @@
 from apps.pixels.models import PixelConfig
 from apps.integrations.models import GoogleSheetsConfig, TelegramConfig
 from apps.products.models import Product
+from apps.delivery.models import StoreDeliveryConfig, DeliveryCompany
 from .registry import register_tool, ToolError
 import json
 
@@ -297,3 +298,100 @@ def update_google_sheets_integration(store, arguments):
         "sheet_name": sheets.sheet_name,
         "is_active": sheets.is_active
     }
+
+
+@register_tool(
+    name="list_delivery_configs",
+    description="List all shipping/delivery integrations (Yalidine, ZR Express, etc.) and their configuration status.",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def list_delivery_configs(store, arguments):
+    companies = DeliveryCompany.objects.filter(is_active=True)
+    configs_list = []
+    
+    for company in companies:
+        config, _ = StoreDeliveryConfig.objects.get_or_create(store=store, company=company)
+        configs_list.append({
+            "company_name": company.name,
+            "display_name": company.display_name,
+            "api_id": config.api_id,
+            "api_key_configured": bool(config.api_key),
+            "api_secret_configured": bool(config.api_secret),
+            "is_active": config.is_active,
+            "is_default": config.is_default,
+            "webhook_url": config.webhook_url
+        })
+        
+    return {"delivery_configs": configs_list}
+
+
+@register_tool(
+    name="update_delivery_config",
+    description="Configure and toggle a specific shipping/delivery integration (e.g. Yalidine or ZR Express).",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "company_name": {
+                "type": "string",
+                "enum": ["yalidine", "zr_express", "noest", "ems", "ecolog", "guepex", "gupex", "maystro_delivery", "dhd", "yaliteck", "flash_delivery", "manual", "ecom_delivery"],
+                "description": "The exact identifier name of the delivery company."
+            },
+            "api_id": {
+                "type": "string",
+                "description": "Optional API ID (e.g., Yalidine API ID)."
+            },
+            "api_key": {
+                "type": "string",
+                "description": "Optional API Key provided by the company."
+            },
+            "api_secret": {
+                "type": "string",
+                "description": "Optional API Secret or API token."
+            },
+            "is_active": {
+                "type": "boolean",
+                "description": "Toggle active state for this carrier integration."
+            },
+            "is_default": {
+                "type": "boolean",
+                "description": "Mark this carrier as the default choice for shipments."
+            }
+        },
+        "required": ["company_name"]
+    }
+)
+def update_delivery_config(store, arguments):
+    company_name = arguments.pop("company_name")
+    
+    try:
+        company = DeliveryCompany.objects.get(name=company_name)
+    except DeliveryCompany.DoesNotExist:
+        raise ToolError(f"Delivery company '{company_name}' not found.")
+        
+    config, _ = StoreDeliveryConfig.objects.get_or_create(store=store, company=company)
+    
+    if "api_id" in arguments:
+        config.api_id = arguments["api_id"]
+    if "api_key" in arguments:
+        config.api_key = arguments["api_key"]
+    if "api_secret" in arguments:
+        config.api_secret = arguments["api_secret"]
+    if "is_active" in arguments:
+        config.is_active = arguments["is_active"]
+    if "is_default" in arguments:
+        config.is_default = arguments["is_default"]
+        if arguments["is_default"]:
+            StoreDeliveryConfig.objects.filter(store=store).exclude(id=config.id).update(is_default=False)
+            
+    config.save()
+    
+    return {
+        "message": f"Delivery configuration for {company.display_name} updated successfully.",
+        "company_name": company.name,
+        "is_active": config.is_active,
+        "is_default": config.is_default
+    }
+
