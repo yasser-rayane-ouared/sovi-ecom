@@ -1,5 +1,6 @@
 import json
 import threading
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import close_old_connections
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -135,7 +136,7 @@ class McpJsonRpcView(APIView):
                         "content": [
                             {
                                 "type": "text",
-                                "text": json.dumps(result_data, ensure_ascii=False)
+                                "text": json.dumps(result_data, cls=DjangoJSONEncoder, ensure_ascii=False)
                             }
                         ],
                         "isError": False
