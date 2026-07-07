@@ -173,7 +173,7 @@ export default function HomepageCustomizer() {
           return api.get(`/products/${currentStoreId}/categories/`);
         })
         .then((catRes) => {
-          setCategories(catRes.data || []);
+          setCategories(Array.isArray(catRes.data) ? catRes.data : (catRes.data?.results || []));
           return api.get(`/products/${currentStoreId}/`);
         })
         .then((prodRes) => {
