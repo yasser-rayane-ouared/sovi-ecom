@@ -8,7 +8,7 @@ import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { formatCurrency, getStorefrontLink, getFullImageUrl } from "../../../../lib/utils";
 import {
-  Search, ChevronDown, Check, MapPin, Truck, ShoppingCart, User, Phone, CheckCircle2, AlertCircle, ShoppingBag, Shield, Tag
+  Search, ChevronDown, Check, MapPin, Truck, ShoppingCart, User, Phone, CheckCircle2, AlertCircle, ShoppingBag, Shield, Tag, Clock, Play, Layers, Star
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { initializePixels, trackPixelEvent, deduplicatePixels, generateEventId } from "../../../../components/pixels";
@@ -2246,36 +2246,242 @@ export default function StorefrontProductDetail() {
                 </div>
               );
             }
-            case "before_after":
+            case "before_after": {
+              const beforeImg = config.before_image || config.before_url || config.before;
+              const afterImg = config.after_image || config.after_url || config.after;
+              const showSlider = config.before_image && config.after_image;
+
               return (
                 <div
                   key={section.id}
                   className={hasTheme ? 'p-4 md:p-5 text-right' : 'bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 text-right'}
                   style={getSectionStyle(section)}
                 >
-                  <div className="grid grid-cols-2 gap-3">
-                    {(config.before_url || config.before) && (
-                      <div>
-                        <p
-                          className={hasTheme ? 'text-xs font-bold mb-1 text-center opacity-60' : 'text-xs font-bold text-slate-500 mb-1 text-center'}
-                          style={hasTheme ? { color: themed.text } : {}}
-                        >
-                          {t("قبل", "Avant", "Before")}
-                        </p>
-                        <img src={getFullImageUrl(config.before_url || config.before)} alt="Before" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                  <h2 className="text-sm font-extrabold mb-3 text-start" style={hasTheme ? { color: themed.text } : {}}>{config.title || t("قبل وبعد", "Avant / Après", "Before / After")}</h2>
+                  {showSlider ? (
+                    <BeforeAfterSlider
+                      beforeImage={config.before_image}
+                      afterImage={config.after_image}
+                      beforeLabel={config.before_label || t("قبل", "Avant", "Before")}
+                      afterLabel={config.after_label || t("بعد", "Après", "After")}
+                      language={store?.language || "ar"}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {beforeImg && (
+                        <div>
+                          <p
+                            className={hasTheme ? 'text-xs font-bold mb-1 text-center opacity-60' : 'text-xs font-bold text-slate-500 mb-1 text-center'}
+                            style={hasTheme ? { color: themed.text } : {}}
+                          >
+                            {config.before_label || t("قبل", "Avant", "Before")}
+                          </p>
+                          <img src={getFullImageUrl(beforeImg)} alt="Before" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                        </div>
+                      )}
+                      {afterImg && (
+                        <div>
+                          <p
+                            className={hasTheme ? 'text-xs font-bold mb-1 text-center opacity-60' : 'text-xs font-bold text-slate-500 mb-1 text-center'}
+                            style={hasTheme ? { color: themed.text } : {}}
+                          >
+                            {config.after_label || t("بعد", "Après", "After")}
+                          </p>
+                          <img src={getFullImageUrl(afterImg)} alt="After" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            case "video": {
+              let embedUrl = config.video_url || "";
+              if (embedUrl.includes("youtube.com/watch")) {
+                const vid = new URL(embedUrl).searchParams.get("v");
+                if (vid) embedUrl = `https://www.youtube.com/embed/${vid}`;
+              } else if (embedUrl.includes("youtu.be/")) {
+                const vid = embedUrl.split("youtu.be/")[1]?.split("?")[0];
+                if (vid) embedUrl = `https://www.youtube.com/embed/${vid}`;
+              }
+              if (!embedUrl) return null;
+              return (
+                <div key={section.id} className="p-4 bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md">
+                  {config.title && <h3 className="text-sm font-extrabold mb-3 text-start" style={hasTheme ? { color: themed.text } : {}}>{config.title}</h3>}
+                  <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200/50 shadow-sm" style={{ aspectRatio: config.aspect_ratio === "9/16" ? "9/16" : "16/9" }}>
+                    <iframe
+                      src={`${embedUrl}${config.autoplay ? "?autoplay=1&mute=1" : ""}`}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="autoplay; encrypted-media"
+                    />
+                  </div>
+                </div>
+              );
+            }
+
+            case "countdown": {
+              return (
+                <div key={section.id} className="py-0">
+                  <CountdownTimer
+                    hours={config.hours || 0}
+                    minutes={config.minutes || 0}
+                    seconds={config.seconds || 0}
+                    title={config.title}
+                    urgencyText={config.urgency_text}
+                    bgColor={config.bg_color || "#dc2626"}
+                    textColor={config.text_color || "#ffffff"}
+                    language={store?.language || "ar"}
+                  />
+                </div>
+              );
+            }
+
+            case "bundle_offers": {
+              const bundles = product?.bundle_offers || [];
+              if (bundles.length === 0) return null;
+              return (
+                <div key={section.id} className="bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3 text-start">
+                  <h3 className="text-sm font-extrabold" style={hasTheme ? { color: themed.text } : {}}>{config.title || t("عروض الباقات", "Offres de packs", "Bundle Offers")}</h3>
+                  {config.subtitle && <p className="text-xs text-slate-500">{config.subtitle}</p>}
+                  <div className="space-y-3">
+                    {bundles.map((bundle: any, idx: number) => (
+                      <div 
+                        key={bundle.id || idx} 
+                        className="p-4 rounded-2xl border border-slate-100 bg-slate-55/30 hover:border-slate-200 transition-all space-y-3 cursor-pointer"
+                        onClick={() => {
+                          setSelectedBundleId(bundle.id);
+                          setQuantity(1); // Reset normal quantity
+                          document.getElementById("checkout")?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm flex items-center gap-2">
+                            🎁 {bundle.name}
+                            {idx === 0 && config.highlight_text && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-primary">
+                                {config.highlight_text}
+                              </span>
+                            )}
+                          </h4>
+                          <span className="font-black text-base text-primary">{formatCurrency(parseFloat(bundle.price))}</span>
+                        </div>
+                        {bundle.items && (
+                          <div className="flex flex-wrap gap-2">
+                            {bundle.items.map((item: any, iIdx: number) => (
+                              <span key={iIdx} className="text-[10px] bg-white border border-slate-100 px-2.5 py-1 rounded-lg text-slate-500">
+                                {item.quantity}x {item.product_title || t("منتج", "produit", "product")}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {(config.after_url || config.after) && (
-                      <div>
-                        <p
-                          className={hasTheme ? 'text-xs font-bold mb-1 text-center opacity-60' : 'text-xs font-bold text-slate-500 mb-1 text-center'}
-                          style={hasTheme ? { color: themed.text } : {}}
-                        >
-                          {t("بعد", "Après", "After")}
-                        </p>
-                        <img src={getFullImageUrl(config.after_url || config.after)} alt="After" className="w-full" style={{ borderRadius: hasTheme && !isMobile ? themed.imgRadius : '12px', border: hasTheme && !isMobile ? themed.imgBorder : undefined }} />
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            case "delivery_info": {
+              return (
+                <div key={section.id} className="bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3 text-start">
+                  <h3 className="text-sm font-extrabold" style={hasTheme ? { color: themed.text } : {}}>{config.title || t("معلومات التوصيل والضمان", "Info livraison", "Delivery Info")}</h3>
+                  <div className="space-y-3 pt-1">
+                    {(config.items || []).map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <span className="text-lg flex-shrink-0">{item.icon}</span>
+                        <span className="text-xs text-slate-600 leading-snug">{item.text}</span>
                       </div>
-                    )}
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            case "comparison": {
+              const columns = config.columns || [];
+              const rows = config.rows || [];
+              return (
+                <div key={section.id} className="bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3">
+                  <h3 className="text-sm font-extrabold text-start" style={hasTheme ? { color: themed.text } : {}}>{config.title || t("جدول المقارنة", "Tableau de comparaison", "Comparison Table")}</h3>
+                  <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-100 text-slate-700">
+                          {columns.map((col: string, idx: number) => (
+                            <th key={idx} className={`px-3 py-2.5 ${isArabic ? 'text-right' : 'text-left'} font-bold`}>{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row: string[], rIdx: number) => (
+                          <tr key={rIdx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                            {row.map((cell: string, cIdx: number) => (
+                              <td key={cIdx} className="px-3 py-2.5 text-slate-600 text-start">{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            }
+
+            case "product_gallery": {
+              const images = product?.images || [];
+              if (images.length === 0) return null;
+              return (
+                <div key={section.id} className="bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3">
+                  {config.title && <h3 className="text-sm font-extrabold text-start" style={hasTheme ? { color: themed.text } : {}}>{config.title}</h3>}
+                  <ProductGallery images={images} />
+                </div>
+              );
+            }
+
+            case "faq": {
+              return (
+                <div key={section.id} className="bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3 text-start">
+                  <h3 className="text-sm font-extrabold mb-1" style={hasTheme ? { color: themed.text } : {}}>
+                    {config.title || t("أسئلة شائعة", "Questions Fréquentes (FAQ)", "Frequently Asked Questions (FAQ)")}
+                  </h3>
+                  <div className="space-y-2 pt-1">
+                    {(config.items || []).map((item: any, idx: number) => (
+                      <FAQItem 
+                        key={idx} 
+                        question={item.q} 
+                        answer={item.a} 
+                        bgColor="#ffffff"
+                        borderColor="#e2e8f0"
+                        activeBorderColor={primaryColor}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            case "benefits":
+              return (
+                <div
+                  key={section.id}
+                  className={hasTheme ? `p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}` : `bg-white border-b border-slate-100 md:border md:rounded-3xl md:shadow-md p-4 md:p-5 space-y-3 ${isArabic ? 'text-right' : 'text-left'}`}
+                  style={getSectionStyle(section)}
+                >
+                  <h3 className="font-extrabold text-slate-800" style={hasTheme ? { color: themed.text } : {}}>
+                    {config.title || t("المميزات", "Caractéristiques", "Benefits")}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                    {(config.items || []).map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-start gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100 text-start shadow-sm">
+                        <span className="text-xl flex-shrink-0">{item.icon}</span>
+                        <div>
+                          <h4 className="font-bold text-xs text-slate-800">{item.title}</h4>
+                          <p className="text-[11px] text-slate-500 leading-normal mt-0.5">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
@@ -2556,6 +2762,206 @@ export default function StorefrontProductDetail() {
           </div>
         );
       })()}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+ *  Sub-Components
+ * ═══════════════════════════════════════════════ */
+
+/** FAQ Accordion Item */
+function FAQItem({ 
+  question, 
+  answer,
+  questionColor,
+  answerColor,
+  bgColor,
+  borderColor,
+  activeBorderColor,
+  iconColor
+}: { 
+  question: string; 
+  answer: string;
+  questionColor?: string;
+  answerColor?: string;
+  bgColor?: string;
+  borderColor?: string;
+  activeBorderColor?: string;
+  iconColor?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  
+  const bgVal = bgColor || "#ffffff";
+  const borderVal = open ? (activeBorderColor || "#e2e8f0") : (borderColor || "#e2e8f0");
+
+  return (
+    <div 
+      className="rounded-xl overflow-hidden transition-all border shadow-sm bg-white"
+      style={{
+        backgroundColor: bgVal,
+        borderColor: borderVal,
+        borderWidth: '1px',
+        borderStyle: 'solid'
+      }}
+    >
+      <button 
+        type="button"
+        onClick={() => setOpen(!open)} 
+        className="w-full flex items-center justify-between p-4 text-start"
+      >
+        <span className="font-bold text-sm flex-1 text-slate-800" style={{ color: questionColor }}>{question}</span>
+        <ChevronDown 
+          className={`h-4 w-4 transition-transform duration-300 flex-shrink-0 ml-3 ${open ? "rotate-180" : ""}`} 
+          style={{ color: iconColor }}
+        />
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
+        <div 
+          className="px-4 pb-4 text-xs leading-relaxed border-t pt-3 text-slate-500"
+          style={{ 
+            color: answerColor,
+            borderColor: borderColor || "#f1f5f9"
+          }}
+        >
+          {answer}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Countdown Timer */
+function CountdownTimer({ hours, minutes, seconds, title, urgencyText, bgColor, textColor, language }: {
+  hours: number; minutes: number; seconds: number;
+  title: string; urgencyText: string; bgColor: string; textColor: string;
+  language?: string;
+}) {
+  const [timeLeft, setTimeLeft] = useState({ h: hours, m: minutes, s: seconds });
+
+  useEffect(() => {
+    const totalSecs = hours * 3600 + minutes * 60 + seconds;
+    const endTime = Date.now() + totalSecs * 1000;
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, endTime - Date.now());
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      setTimeLeft({ h, m, s });
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [hours, minutes, seconds]);
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const tUnit = (ar: string, fr: string, en: string) => {
+    if (language === "en") return en;
+    if (language === "fr") return fr;
+    return ar;
+  };
+
+  return (
+    <div className="py-5 md:py-6 px-4 text-center space-y-3" style={{ backgroundColor: bgColor, color: textColor }}>
+      {title && <p className="text-sm font-bold">{title}</p>}
+      <div className="flex items-center justify-center gap-2 md:gap-3 font-outfit">
+        {[
+          { val: timeLeft.h, label: tUnit("ساعة", "heures", "hours") },
+          { val: timeLeft.m, label: tUnit("دقيقة", "minutes", "minutes") },
+          { val: timeLeft.s, label: tUnit("ثانية", "secondes", "seconds") }
+        ].map((unit, idx) => (
+          <React.Fragment key={idx}>
+            {idx > 0 && <span className="text-2xl md:text-3xl font-bold opacity-50">:</span>}
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-black tabular-nums">{pad(unit.val)}</div>
+              <div className="text-[10px] font-semibold opacity-70 font-cairo">{unit.label}</div>
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+      {urgencyText && <p className="text-xs font-semibold opacity-80 animate-pulse">{urgencyText}</p>}
+    </div>
+  );
+}
+
+/** Before/After Slider */
+function BeforeAfterSlider({ beforeImage, afterImage, beforeLabel, afterLabel, language }: {
+  beforeImage: string; afterImage: string; beforeLabel: string; afterLabel: string; language?: string;
+}) {
+  const [sliderPos, setSliderPos] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  if (!beforeImage || !afterImage) {
+    const tEmpty = (ar: string, fr: string, en: string) => {
+      if (language === "en") return en;
+      if (language === "fr") return fr;
+      return ar;
+    };
+    return (
+      <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <p className="text-slate-400 text-xs">{tEmpty("أضف صور المقارنة من المنشئ", "Ajouter des images de comparaison", "Add comparison images")}</p>
+      </div>
+    );
+  }
+
+  const handleMove = (clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = rect.right - clientX;
+    const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setSliderPos(percent);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full aspect-square sm:aspect-video rounded-2xl overflow-hidden border border-slate-100 shadow-sm cursor-col-resize select-none bg-white"
+      onMouseMove={(e) => e.buttons === 1 && handleMove(e.clientX)}
+      onTouchMove={(e) => handleMove(e.touches[0].clientX)}
+    >
+      <img src={getFullImageUrl(afterImage)} alt={afterLabel} className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPos}%` }}>
+        <img src={getFullImageUrl(beforeImage)} alt={beforeLabel} className="w-full h-full object-cover" style={{ width: `${containerRef.current?.offsetWidth || 500}px` }} />
+      </div>
+      <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg" style={{ right: `${sliderPos}%` }}>
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 right-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center">
+          <span className="text-white text-xs font-bold">⇔</span>
+        </div>
+      </div>
+      <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-lg">{beforeLabel}</span>
+      <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-lg">{afterLabel}</span>
+    </div>
+  );
+}
+
+/** Product Gallery Swiper */
+function ProductGallery({ images }: { images: any[] }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="space-y-3">
+      <div className="aspect-square w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+        <img
+          src={getFullImageUrl(images[activeIdx]?.image_url)}
+          alt={images[activeIdx]?.alt_text || ""}
+          className="w-full h-full object-cover transition-all duration-500"
+        />
+      </div>
+      <div ref={scrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {images.map((img: any, idx: number) => (
+          <button
+            key={img.id || idx}
+            onClick={() => setActiveIdx(idx)}
+            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+              idx === activeIdx ? "border-primary ring-2 ring-primary/30" : "border-slate-200 hover:border-slate-350"
+            }`}
+          >
+            <img src={getFullImageUrl(img.image_url)} alt="" className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

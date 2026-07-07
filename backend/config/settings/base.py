@@ -198,12 +198,17 @@ REST_FRAMEWORK = {
 # =============================================================================
 # JWT
 # =============================================================================
+_jwt_key = os.environ.get('JWT_SECRET_KEY', SECRET_KEY)
+if len(_jwt_key) < 32:
+    _jwt_key = (_jwt_key * 3)[:32]
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_LIFETIME', 15))),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_LIFETIME', 7))),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'SIGNING_KEY': _jwt_key,
 }
 
 # =============================================================================

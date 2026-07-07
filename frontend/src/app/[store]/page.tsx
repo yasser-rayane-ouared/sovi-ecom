@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import api from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
-import { ShoppingCart, Phone, Truck, ShieldCheck, Star, AlertCircle, Layers } from "lucide-react";
+import { ShoppingCart, Phone, Truck, ShieldCheck, Star, AlertCircle, Layers, ChevronDown, Clock } from "lucide-react";
 import { formatCurrency, getStorefrontLink, getFullImageUrl } from "../../lib/utils";
 
 export default function StorefrontHome() {
@@ -114,6 +114,10 @@ export default function StorefrontHome() {
 
   // Sort sections by order
   homepageSections.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  const product = products && products.length > 0 ? products[0] : null;
+  const primaryColor = settings?.primary_color || "#6366f1";
+  const language = store?.language || "ar";
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-cairo flex flex-col justify-between" dir={isArabic ? "rtl" : "ltr"}>
@@ -705,6 +709,338 @@ export default function StorefrontHome() {
                 </section>
               );
 
+            case "video": {
+              let embedUrl = config.video_url || "";
+              if (embedUrl.includes("youtube.com/watch")) {
+                const vid = new URL(embedUrl).searchParams.get("v");
+                if (vid) embedUrl = `https://www.youtube.com/embed/${vid}`;
+              } else if (embedUrl.includes("youtu.be/")) {
+                const vid = embedUrl.split("youtu.be/")[1]?.split("?")[0];
+                if (vid) embedUrl = `https://www.youtube.com/embed/${vid}`;
+              }
+              if (!embedUrl) return null;
+              return (
+                <section key={section.id} className="py-6 md:py-10 container mx-auto px-4 max-w-4xl">
+                  {config.title && <h2 className="text-xl font-bold text-center mb-4">{config.title}</h2>}
+                  <div className="relative w-full max-w-2xl mx-auto rounded-2xl md:rounded-3xl overflow-hidden border border-slate-200/50 shadow-xl" style={{ aspectRatio: config.aspect_ratio === "9/16" ? "9/16" : "16/9" }}>
+                    <iframe
+                      src={`${embedUrl}${config.autoplay ? "?autoplay=1&mute=1" : ""}`}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="autoplay; encrypted-media"
+                    />
+                  </div>
+                </section>
+              );
+            }
+
+            case "reviews": {
+              const reviews = config.reviews || [];
+              const titleColor = config.title_color || "#0f172a";
+              const reviewerNameColor = config.reviewer_name_color || "#1e293b";
+              const reviewTextColor = config.review_text_color || "#475569";
+              const ratingStarsColor = config.rating_stars_color || "#fbbf24";
+              const cardBgColor = config.card_bg_color || "#ffffff";
+              const cardBorderColor = config.card_border_color || "#e2e8f0";
+
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-4xl space-y-6">
+                  <h2 className="text-xl md:text-2xl font-bold text-center" style={{ color: titleColor }}>
+                    {config.title || t("آراء زبائننا", "Avis de nos clients", "Customer Reviews")}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {reviews.map((r: any, idx: number) => (
+                      <div 
+                        key={idx} 
+                        className="rounded-2xl p-4 md:p-5 space-y-3 border transition-all flex flex-col justify-between shadow-sm bg-white"
+                        style={{
+                          backgroundColor: cardBgColor,
+                          borderColor: cardBorderColor,
+                        }}
+                      >
+                        <div className="space-y-3 text-start">
+                          <div className="flex justify-between items-center">
+                            <span className="font-black text-sm md:text-base" style={{ color: reviewerNameColor }}>{r.name}</span>
+                            <div className="flex gap-0.5" style={{ color: ratingStarsColor }}>
+                              {[...Array(r.rating || 5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
+                            </div>
+                          </div>
+                          <p className="text-sm md:text-base leading-relaxed" style={{ color: reviewTextColor }}>{r.text}</p>
+                        </div>
+                        {r.date && <span className="text-[10px] text-slate-400 self-end mt-2">{r.date}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            }
+
+            case "faq": {
+              const titleColor = config.title_color || "#0f172a";
+              const questionColor = config.question_color || "#1e293b";
+              const answerColor = config.answer_color || "#475569";
+              const faqBgColor = config.faq_bg_color || "#ffffff";
+              const faqBorderColor = config.faq_border_color || "#e2e8f0";
+              const faqActiveBorderColor = config.faq_active_border_color || primaryColor;
+              const iconColor = config.icon_color || "#94a3b8";
+
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4">
+                  <h2 className="text-xl md:text-2xl font-bold text-center mb-6" style={{ color: titleColor }}>
+                    {config.title || t("أسئلة شائعة", "Questions Fréquentes (FAQ)", "Frequently Asked Questions (FAQ)")}
+                  </h2>
+                  <div className="space-y-3">
+                    {(config.items || []).map((item: any, idx: number) => (
+                      <FAQItem 
+                        key={idx} 
+                        question={item.q} 
+                        answer={item.a} 
+                        questionColor={questionColor}
+                        answerColor={answerColor}
+                        bgColor={faqBgColor}
+                        borderColor={faqBorderColor}
+                        activeBorderColor={faqActiveBorderColor}
+                        iconColor={iconColor}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            }
+
+            case "benefits": {
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-4xl space-y-6">
+                  <h2 className="text-xl md:text-2xl font-bold text-center">{config.title || t("المميزات", "Caractéristiques", "Benefits")}</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                    {(config.items || []).map((item: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-4 p-4 md:p-5 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 transition-all text-start shadow-sm"
+                      >
+                        <span className="text-2xl md:text-3xl flex-shrink-0">{item.icon}</span>
+                        <div>
+                          <h3 className="font-bold text-sm text-slate-800">{item.title}</h3>
+                          <p className="text-xs text-slate-500 leading-relaxed mt-1">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            }
+
+            case "before_after": {
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4">
+                  <h2 className="text-xl md:text-2xl font-bold text-center">{config.title || t("قبل وبعد", "Avant / Après", "Before / After")}</h2>
+                  <BeforeAfterSlider
+                    beforeImage={config.before_image}
+                    afterImage={config.after_image}
+                    beforeLabel={config.before_label || t("قبل", "Avant", "Before")}
+                    afterLabel={config.after_label || t("بعد", "Après", "After")}
+                    language={language}
+                  />
+                </section>
+              );
+            }
+
+            case "countdown": {
+              return (
+                <section key={section.id} className="py-0">
+                  <CountdownTimer
+                    hours={config.hours || 0}
+                    minutes={config.minutes || 0}
+                    seconds={config.seconds || 0}
+                    title={config.title}
+                    urgencyText={config.urgency_text}
+                    bgColor={config.bg_color || "#dc2626"}
+                    textColor={config.text_color || "#ffffff"}
+                    language={language}
+                  />
+                </section>
+              );
+            }
+
+            case "quantity_offers": {
+              const offers = product?.quantity_offers || [];
+              if (offers.length === 0) return null;
+
+              const titleColor = config.title_color || "#0f172a";
+              const textColor = config.text_color || "#475569";
+              const priceColor = config.price_color || "#0f172a";
+              const accentColor = config.accent_color || primaryColor;
+              const offerBgColor = config.offer_bg_color || "#ffffff";
+              const offerBorderColor = config.offer_border_color || "#e2e8f0";
+              const saveBadgeTextColor = config.save_badge_text_color || "#16a34a";
+
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4 text-start">
+                  <h2 className="text-xl md:text-2xl font-bold text-center" style={{ color: titleColor }}>
+                    {config.title || t("عروض الكمية", "Offres de quantité", "Quantity Offers")}
+                  </h2>
+                  {config.subtitle && <p className="text-sm text-center opacity-75" style={{ color: textColor }}>{config.subtitle}</p>}
+                  <div className="space-y-3">
+                    {offers.map((offer: any, idx: number) => {
+                      const isHighlight = idx === (config.highlight_index ?? -1);
+                      const unitPrice = parseFloat(offer.price) / offer.quantity;
+                      const originalUnit = parseFloat(product.price);
+                      const savings = Math.round(((originalUnit - unitPrice) / originalUnit) * 100);
+                      
+                      const borderCol = isHighlight ? accentColor : offerBorderColor;
+                      const bgCol = isHighlight ? (config.active_bg_color || `${accentColor}10`) : offerBgColor;
+
+                      return (
+                        <div
+                          key={offer.id || idx}
+                          className="relative flex items-center justify-between p-4 md:p-5 rounded-2xl border transition-all shadow-sm cursor-pointer"
+                          style={{
+                            borderColor: borderCol,
+                            backgroundColor: bgCol,
+                            borderWidth: isHighlight ? '2px' : '1px'
+                          }}
+                          onClick={() => {
+                            if (product) {
+                              window.location.href = getStorefrontLink(subdomain, `/products/${product.slug}?qty=${offer.quantity}#checkout`);
+                            }
+                          }}
+                        >
+                          {isHighlight && config.highlight_badge && (
+                            <span className="absolute -top-3 right-4 text-[10px] font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: accentColor }}>
+                              {config.highlight_badge}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl font-black font-outfit" style={{ color: isHighlight ? accentColor : textColor }}>{offer.quantity}x</span>
+                            <div>
+                              <span className="font-bold text-sm" style={{ color: textColor }}>{offer.label || t(`${offer.quantity} قطع`, `${offer.quantity} pièces`, `${offer.quantity} pieces`)}</span>
+                              {savings > 0 && (
+                                <span 
+                                  className="text-xs block mt-0.5 font-bold"
+                                  style={{ color: saveBadgeTextColor }}
+                                >
+                                  {t("وفر", "Économisez", "Save")} {savings}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="font-black text-lg font-outfit" style={{ color: isHighlight ? accentColor : priceColor }}>
+                            {formatCurrency(parseFloat(offer.price))}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            }
+
+            case "bundle_offers": {
+              const bundles = product?.bundle_offers || [];
+              if (bundles.length === 0) return null;
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4 text-start">
+                  <h2 className="text-xl md:text-2xl font-bold text-center">{config.title || t("عروض الباقات", "Offres de packs", "Bundle Offers")}</h2>
+                  {config.subtitle && <p className="text-sm text-slate-500 text-center">{config.subtitle}</p>}
+                  <div className="space-y-3">
+                    {bundles.map((bundle: any, idx: number) => (
+                      <div 
+                        key={bundle.id || idx} 
+                        className="p-4 md:p-5 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 transition-all space-y-3 shadow-sm cursor-pointer"
+                        onClick={() => {
+                          if (product) {
+                            window.location.href = getStorefrontLink(subdomain, `/products/${product.slug}?bundle=${bundle.id}#checkout`);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-sm flex items-center gap-2">
+                            🎁 {bundle.name}
+                            {idx === 0 && config.highlight_text && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: primaryColor }}>
+                                {config.highlight_text}
+                              </span>
+                            )}
+                          </h3>
+                          <span className="font-black text-lg font-outfit" style={{ color: primaryColor }}>{formatCurrency(parseFloat(bundle.price))}</span>
+                        </div>
+                        {bundle.items && (
+                          <div className="flex flex-wrap gap-2">
+                            {bundle.items.map((item: any, iIdx: number) => (
+                              <span key={iIdx} className="text-xs bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg text-slate-500">
+                                {item.quantity}x {item.product_title || t("منتج", "produit", "product")}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            }
+
+            case "delivery_info": {
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4 text-start">
+                  <h2 className="text-xl md:text-2xl font-bold text-center">{config.title || t("معلومات التوصيل", "Informations de livraison", "Delivery Info")}</h2>
+                  <div className="bg-white border border-slate-100 rounded-2xl p-5 md:p-6 space-y-4 shadow-sm">
+                    {(config.items || []).map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <span className="text-xl flex-shrink-0">{item.icon}</span>
+                        <span className="text-sm text-slate-600">{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            }
+
+            case "comparison": {
+              const columns = config.columns || [];
+              const rows = config.rows || [];
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-3xl space-y-4">
+                  <h2 className="text-xl md:text-2xl font-bold text-center">{config.title || t("جدول المقارنة", "Tableau de comparaison", "Comparison Table")}</h2>
+                  <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm bg-white">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-100">
+                          {columns.map((col: string, idx: number) => (
+                            <th key={idx} className={`px-4 py-3 ${isArabic ? 'text-right' : 'text-left'} font-bold text-xs text-slate-700`}>{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row: string[], rIdx: number) => (
+                          <tr key={rIdx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                            {row.map((cell: string, cIdx: number) => (
+                              <td key={cIdx} className="px-4 py-3 text-xs text-slate-600">{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              );
+            }
+
+            case "product_gallery": {
+              const images = product?.images || [];
+              if (images.length === 0) return null;
+              return (
+                <section key={section.id} className="py-8 md:py-12 container mx-auto px-4 max-w-4xl space-y-4">
+                  {config.title && <h2 className="text-xl font-bold text-center">{config.title}</h2>}
+                  <ProductGallery images={images} />
+                </section>
+              );
+            }
+
+            case "sticky_cta":
+            case "floating_order_button":
+              return null; // Rendered at root layout level
+
             default:
               return null;
           }
@@ -725,6 +1061,259 @@ export default function StorefrontHome() {
           </svg>
         </a>
       )}
+
+      {/* ─── Sticky CTA Bar ─── */}
+      {(() => {
+        const hasStickyCta = homepageSections.some((s: any) => s.section_type === "sticky_cta" && s.is_enabled !== false);
+        if (!hasStickyCta) return null;
+        const ctaSection = homepageSections.find((s: any) => s.section_type === "sticky_cta");
+        const config = ctaSection?.config || {};
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-40 p-3 shadow-2xl backdrop-blur-md border-t border-slate-200/50 bg-white" style={{ backgroundColor: config.bg_color || primaryColor }}>
+            <div className="container mx-auto max-w-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 text-white flex-1 min-w-0">
+                {config.show_price && product && (
+                  <span className="font-black text-lg font-outfit whitespace-nowrap">{formatCurrency(parseFloat(product.price))}</span>
+                )}
+                <span className="text-sm font-bold truncate">{config.text || t("أطلب الآن!", "Commandez maintenant !", "Order Now!")}</span>
+              </div>
+              <a href={product ? getStorefrontLink(subdomain, `/products/${product.slug}#checkout`) : "#"} className="flex-shrink-0">
+                <button className="bg-white text-black font-extrabold text-sm px-6 py-2.5 rounded-xl hover:bg-white/90 active:scale-95 transition-all shadow-lg">
+                  {t("أطلب الآن", "Commander maintenant", "Order Now")}
+                </button>
+              </a>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ─── Floating Order Button ─── */}
+      {(() => {
+        const hasStickyCta = homepageSections.some((s: any) => s.section_type === "sticky_cta" && s.is_enabled !== false);
+        const hasFloatingBtn = homepageSections.some((s: any) => s.section_type === "floating_order_button" && s.is_enabled !== false);
+        if (!hasFloatingBtn || hasStickyCta) return null;
+        const btnSection = homepageSections.find((s: any) => s.section_type === "floating_order_button");
+        const config = btnSection?.config || {};
+        return (
+          <a href={product ? getStorefrontLink(subdomain, `/products/${product.slug}#checkout`) : "#"} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+            <button
+              className="flex items-center gap-2 px-8 py-3.5 rounded-full font-extrabold text-white text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all animate-bounce"
+              style={{ backgroundColor: primaryColor, boxShadow: `0 0 30px ${primaryColor}60` }}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {config.text || t("أطلب الآن!", "Commandez maintenant !", "Order Now!")}
+            </button>
+          </a>
+        );
+      })()}
+
+      {/* Bottom padding for sticky elements */}
+      {(() => {
+        const hasStickyCta = homepageSections.some((s: any) => s.section_type === "sticky_cta" && s.is_enabled !== false);
+        const hasFloatingBtn = homepageSections.some((s: any) => s.section_type === "floating_order_button" && s.is_enabled !== false);
+        if (hasStickyCta || hasFloatingBtn) return <div className="h-20" />;
+        return null;
+      })()}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+ *  Sub-Components
+ * ═══════════════════════════════════════════════ */
+
+/** FAQ Accordion Item */
+function FAQItem({ 
+  question, 
+  answer,
+  questionColor,
+  answerColor,
+  bgColor,
+  borderColor,
+  activeBorderColor,
+  iconColor
+}: { 
+  question: string; 
+  answer: string;
+  questionColor?: string;
+  answerColor?: string;
+  bgColor?: string;
+  borderColor?: string;
+  activeBorderColor?: string;
+  iconColor?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  
+  const bgVal = bgColor || "#ffffff";
+  const borderVal = open ? (activeBorderColor || "#e2e8f0") : (borderColor || "#e2e8f0");
+
+  return (
+    <div 
+      className="rounded-xl overflow-hidden transition-all border shadow-sm bg-white"
+      style={{
+        backgroundColor: bgVal,
+        borderColor: borderVal,
+        borderWidth: '1px',
+        borderStyle: 'solid'
+      }}
+    >
+      <button 
+        type="button"
+        onClick={() => setOpen(!open)} 
+        className="w-full flex items-center justify-between p-4 text-start"
+      >
+        <span className="font-bold text-sm flex-1 text-slate-800" style={{ color: questionColor }}>{question}</span>
+        <ChevronDown 
+          className={`h-4 w-4 transition-transform duration-300 flex-shrink-0 ml-3 ${open ? "rotate-180" : ""}`} 
+          style={{ color: iconColor }}
+        />
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
+        <div 
+          className="px-4 pb-4 text-xs leading-relaxed border-t pt-3 text-slate-500"
+          style={{ 
+            color: answerColor,
+            borderColor: borderColor || "#f1f5f9"
+          }}
+        >
+          {answer}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Countdown Timer */
+function CountdownTimer({ hours, minutes, seconds, title, urgencyText, bgColor, textColor, language }: {
+  hours: number; minutes: number; seconds: number;
+  title: string; urgencyText: string; bgColor: string; textColor: string;
+  language?: string;
+}) {
+  const [timeLeft, setTimeLeft] = useState({ h: hours, m: minutes, s: seconds });
+
+  useEffect(() => {
+    const totalSecs = hours * 3600 + minutes * 60 + seconds;
+    const endTime = Date.now() + totalSecs * 1000;
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, endTime - Date.now());
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      setTimeLeft({ h, m, s });
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [hours, minutes, seconds]);
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const tUnit = (ar: string, fr: string, en: string) => {
+    if (language === "en") return en;
+    if (language === "fr") return fr;
+    return ar;
+  };
+
+  return (
+    <div className="py-5 md:py-6 px-4 text-center space-y-3" style={{ backgroundColor: bgColor, color: textColor }}>
+      {title && <p className="text-sm font-bold">{title}</p>}
+      <div className="flex items-center justify-center gap-2 md:gap-3 font-outfit">
+        {[
+          { val: timeLeft.h, label: tUnit("ساعة", "heures", "hours") },
+          { val: timeLeft.m, label: tUnit("دقيقة", "minutes", "minutes") },
+          { val: timeLeft.s, label: tUnit("ثانية", "secondes", "seconds") }
+        ].map((unit, idx) => (
+          <React.Fragment key={idx}>
+            {idx > 0 && <span className="text-2xl md:text-3xl font-bold opacity-50">:</span>}
+            <div className="text-center">
+              <div className="text-3xl md:text-4xl font-black tabular-nums">{pad(unit.val)}</div>
+              <div className="text-[10px] font-semibold opacity-70 font-cairo">{unit.label}</div>
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+      {urgencyText && <p className="text-xs font-semibold opacity-80 animate-pulse">{urgencyText}</p>}
+    </div>
+  );
+}
+
+/** Before/After Slider */
+function BeforeAfterSlider({ beforeImage, afterImage, beforeLabel, afterLabel, language }: {
+  beforeImage: string; afterImage: string; beforeLabel: string; afterLabel: string; language?: string;
+}) {
+  const [sliderPos, setSliderPos] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  if (!beforeImage || !afterImage) {
+    const tEmpty = (ar: string, fr: string, en: string) => {
+      if (language === "en") return en;
+      if (language === "fr") return fr;
+      return ar;
+    };
+    return (
+      <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <p className="text-slate-400 text-xs">{tEmpty("أضف صور المقارنة من المنشئ", "Ajouter des images de comparaison", "Add comparison images")}</p>
+      </div>
+    );
+  }
+
+  const handleMove = (clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = rect.right - clientX;
+    const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setSliderPos(percent);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full aspect-square sm:aspect-video rounded-2xl overflow-hidden border border-slate-100 shadow-sm cursor-col-resize select-none bg-white"
+      onMouseMove={(e) => e.buttons === 1 && handleMove(e.clientX)}
+      onTouchMove={(e) => handleMove(e.touches[0].clientX)}
+    >
+      <img src={getFullImageUrl(afterImage)} alt={afterLabel} className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderPos}%` }}>
+        <img src={getFullImageUrl(beforeImage)} alt={beforeLabel} className="w-full h-full object-cover" style={{ width: `${containerRef.current?.offsetWidth || 500}px` }} />
+      </div>
+      <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg" style={{ right: `${sliderPos}%` }}>
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 right-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center">
+          <span className="text-white text-xs font-bold">⇔</span>
+        </div>
+      </div>
+      <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-lg">{beforeLabel}</span>
+      <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-lg">{afterLabel}</span>
+    </div>
+  );
+}
+
+/** Product Gallery Swiper */
+function ProductGallery({ images }: { images: any[] }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="space-y-3">
+      <div className="aspect-square w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+        <img
+          src={getFullImageUrl(images[activeIdx]?.image_url)}
+          alt={images[activeIdx]?.alt_text || ""}
+          className="w-full h-full object-cover transition-all duration-500"
+        />
+      </div>
+      <div ref={scrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {images.map((img: any, idx: number) => (
+          <button
+            key={img.id || idx}
+            onClick={() => setActiveIdx(idx)}
+            className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+              idx === activeIdx ? "border-primary ring-2 ring-primary/30" : "border-slate-200 hover:border-slate-350"
+            }`}
+          >
+            <img src={getFullImageUrl(img.image_url)} alt="" className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
