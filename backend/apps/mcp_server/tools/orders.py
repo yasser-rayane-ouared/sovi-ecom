@@ -2,7 +2,7 @@ import csv
 import io
 import base64
 from django.utils.dateparse import parse_date
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderStatusHistory
 from .registry import register_tool, ToolError
 
 @register_tool(
@@ -284,3 +284,286 @@ def get_order_details(store, arguments):
         "created_at": order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         "items": items_list
     }
+
+
+@register_tool(
+    name="ship_order",
+    description="Export a confirmed order to the shipping company (e.g. Yalidine) and generate tracking details.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "order_id": {
+                "type": "string",
+                "description": "The exact UUID of the order to ship."
+            },
+            "config_id": {
+                "type": "string",
+                "description": "Optional UUID of a specific active delivery config to use. If omitted, uses default active config."
+            }
+        },
+        "required": ["order_id"]
+    }
+)
+def ship_order(store, arguments):
+    import requests
+    from apps.delivery.models import StoreDeliveryConfig, Shipment
+    from apps.orders.models import OrderStatusHistory
+
+    order_id = arguments.get("order_id")
+    config_id = arguments.get("config_id")
+
+    try:
+        order = Order.objects.select_related('wilaya', 'commune').get(id=order_id, store=store)
+    except Order.DoesNotExist:
+        raise ToolError(f"Order with ID '{order_id}' not found.")
+
+    try:
+        if config_id:
+            config = StoreDeliveryConfig.objects.select_related('company').get(
+                id=config_id, store=store, is_active=True
+            )
+        else:
+            config = StoreDeliveryConfig.objects.select_related('company').filter(
+                store=store, is_active=True, is_default=True
+            ).first()
+            if not config:
+                config = StoreDeliveryConfig.objects.select_related('company').filter(
+                    store=store, is_active=True
+                ).first()
+    except StoreDeliveryConfig.DoesNotExist:
+        config = None
+
+    if not config:
+        raise ToolError("لا توجد شركة توصيل مُفعّلة لهذا المتجر. يرجى إضافة إعدادات شركة التوصيل أولاً.")
+
+    company = config.company
+    tracking_number = ''
+    external_id = ''
+    label_url = ''
+    status_message = ''
+
+    if company.name == 'yalidine' and config.api_id and config.api_key:
+        try:
+            payload = {
+                'from_wilaya_name': 'Alger',
+                'to_wilaya_name': order.wilaya.name_fr if order.wilaya else '',
+                'from_commune_name': 'Alger Centre',
+                'to_commune_name': order.commune.name_fr if order.commune else '',
+                'to_name': order.full_name,
+                'to_phone': order.phone,
+                'to_address': order.address,
+                'product_list': ', '.join(
+                    [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                ) or order.order_number,
+                'price': float(order.total),
+                'do_insurance': False,
+                'declared_value': 0,
+                'height': 5,
+                'width': 20,
+                'length': 30,
+                'weight': 1,
+                'freeshipping': False,
+                'is_stopdesk': False,
+                'has_exchange': False,
+                'reference': order.order_number,
+            }
+            headers = {
+                'X-API-ID': config.api_id,
+                'X-API-Token': config.api_key,
+                'Content-Type': 'application/json',
+            }
+            resp = requests.post(
+                'https://api.yalidine.app/v1/parcels/',
+                json=payload,
+                headers=headers,
+                timeout=15,
+            )
+            if resp.status_code in (200, 201):
+                data = resp.json()
+                if isinstance(data, dict):
+                    external_id = str(data.get('parcel_id', data.get('id', '')))
+                    tracking_number = str(data.get('tracking', external_id))
+                    label_url = data.get('label', '')
+                status_message = 'تم الإرسال بنجاح إلى Yalidine'
+            else:
+                err_text = resp.text[:500]
+                raise ToolError(f"خطأ من Yalidine: {err_text}")
+        except requests.RequestException as e:
+            raise ToolError(f"فشل الاتصال بـ Yalidine: {str(e)}")
+
+    elif company.name == 'zr_express':
+        status_message = 'تم تسجيل الشحنة يدوياً (ZR Express)'
+    else:
+        status_message = f'تم تسجيل الشحنة مع {company.display_name}'
+
+    shipment, created = Shipment.objects.get_or_create(
+        order=order,
+        company=company,
+        store=store,
+        defaults={
+            'tracking_number': tracking_number,
+            'external_id': external_id,
+            'label_url': label_url,
+            'status': 'created',
+            'status_message': status_message,
+        },
+    )
+    if not created:
+        shipment.tracking_number = tracking_number or shipment.tracking_number
+        shipment.external_id = external_id or shipment.external_id
+        shipment.label_url = label_url or shipment.label_url
+        shipment.status_message = status_message
+        shipment.save()
+
+    if tracking_number and order.status in ('new', 'confirmed', 'prepared'):
+        OrderStatusHistory.objects.create(
+            order=order,
+            from_status=order.status,
+            to_status='shipped',
+            note=f'تم الإرسال تلقائياً عبر {company.display_name}',
+        )
+        order.status = 'shipped'
+        order.save()
+
+    return {
+        "message": status_message,
+        "tracking_number": tracking_number,
+        "external_id": external_id,
+        "label_url": label_url,
+        "company": company.display_name,
+        "order_status": order.status
+    }
+
+
+@register_tool(
+    name="sync_order_tracking",
+    description="Sync tracking status from delivery company API for active shipments in the store.",
+    input_schema={
+        "type": "object",
+        "properties": {}
+    }
+)
+def sync_order_tracking(store, arguments):
+    import requests
+    from apps.delivery.models import StoreDeliveryConfig, Shipment
+    from apps.orders.models import OrderStatusHistory
+
+    active_shipments = Shipment.objects.filter(
+        store=store,
+        status__in=['created', 'picked_up', 'in_transit', 'out_for_delivery']
+    ).select_related('order', 'company')
+    
+    if not active_shipments.exists():
+        return {
+            "message": "لا توجد شحنات نشطة حالياً لمزامنتها.",
+            "synced_count": 0,
+            "updated_count": 0
+        }
+
+    configs = StoreDeliveryConfig.objects.filter(store=store, is_active=True).select_related('company')
+    config_map = {cfg.company.name: cfg for cfg in configs}
+    
+    synced_count = 0
+    updated_count = 0
+    updates_summary = []
+
+    yalidine_config = config_map.get('yalidine')
+    yalidine_shipments = [s for s in active_shipments if s.company.name == 'yalidine']
+
+    if yalidine_shipments and yalidine_config and yalidine_config.api_id and yalidine_config.api_key:
+        tracking_numbers = [s.tracking_number for s in yalidine_shipments if s.tracking_number]
+        if tracking_numbers:
+            try:
+                headers = {
+                    'X-API-ID': yalidine_config.api_id,
+                    'X-API-Token': yalidine_config.api_key,
+                    'Content-Type': 'application/json',
+                }
+                tracking_str = ','.join(tracking_numbers)
+                resp = requests.get(
+                    f'https://api.yalidine.app/v1/tracking/{tracking_str}',
+                    headers=headers,
+                    timeout=15
+                )
+                
+                if resp.status_code == 200:
+                    tracking_data = resp.json()
+                    data = tracking_data.get('data', {})
+                    
+                    info_map = {}
+                    if isinstance(data, dict):
+                        info_map = data
+                    elif isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict) and item.get('tracking'):
+                                info_map[str(item['tracking'])] = item
+
+                    for shipment in yalidine_shipments:
+                        t_num = shipment.tracking_number
+                        shipment_info = info_map.get(t_num)
+                        if not shipment_info:
+                            continue
+                        
+                        synced_count += 1
+                        ext_status = shipment_info.get('status', '').strip()
+                        
+                        new_shipment_status = shipment.status
+                        new_order_status = shipment.order.status
+                        
+                        ext_status_lower = ext_status.lower()
+                        if 'livr' in ext_status_lower:
+                            new_shipment_status = 'delivered'
+                            new_order_status = 'delivered'
+                        elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus']):
+                            new_shipment_status = 'returned'
+                            new_order_status = 'returned'
+                        elif 'livraison' in ext_status_lower:
+                            new_shipment_status = 'out_for_delivery'
+                            new_order_status = 'shipped'
+                        elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'en voyage']):
+                            new_shipment_status = 'in_transit'
+                            new_order_status = 'shipped'
+                        elif 'annul' in ext_status_lower:
+                            new_shipment_status = 'failed'
+                            new_order_status = 'cancelled'
+
+                        changed = False
+                        if shipment.status != new_shipment_status:
+                            shipment.status = new_shipment_status
+                            changed = True
+                        
+                        if ext_status and shipment.status_message != ext_status:
+                            shipment.status_message = ext_status
+                            changed = True
+                            
+                        if changed:
+                            shipment.save()
+                            
+                        if shipment.order.status != new_order_status:
+                            old_ord_status = shipment.order.status
+                            shipment.order.status = new_order_status
+                            shipment.order.save()
+                            OrderStatusHistory.objects.create(
+                                order=shipment.order,
+                                from_status=old_ord_status,
+                                to_status=new_order_status,
+                                note=f'تحديث تلقائي من Yalidine: {ext_status}'
+                            )
+                            updated_count += 1
+                            updates_summary.append(f'{shipment.order.order_number}: {old_ord_status} -> {new_order_status} ({ext_status})')
+            except Exception as e:
+                raise ToolError(f"خطأ أثناء الاتصال بـ Yalidine: {str(e)}")
+
+    message = f"تمت مزامنة {synced_count} شحنة بنجاح."
+    if updated_count > 0:
+        message += f" تم تحديث حالة {updated_count} طلبية."
+    else:
+        message += " كل الحالات محدثة بالفعل."
+
+    return {
+        "message": message,
+        "synced_count": synced_count,
+        "updated_count": updated_count,
+        "updates": updates_summary
+    }
+
