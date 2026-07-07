@@ -84,7 +84,8 @@ export default function HomepageCustomizer() {
           let loadedSections: any[] = [];
           try {
             if (res.data?.homepage_sections) {
-              loadedSections = JSON.parse(res.data.homepage_sections);
+              const parsed = JSON.parse(res.data.homepage_sections);
+              loadedSections = (Array.isArray(parsed) ? parsed : []).filter(s => s && s.section_type);
             }
           } catch (e) {
             console.error("Failed to parse homepage sections JSON", e);
@@ -191,8 +192,9 @@ export default function HomepageCustomizer() {
     setError("");
     setSuccess("");
     try {
+      const sanitized = sections.filter(s => s && s.section_type);
       await api.patch(`/stores/${currentStoreId}/settings/`, {
-        homepage_sections: JSON.stringify(sections)
+        homepage_sections: JSON.stringify(sanitized)
       });
       setSuccess(t('saveSuccess'));
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -205,7 +207,7 @@ export default function HomepageCustomizer() {
 
   const toggleLayoutSection = (sectionType: string, sectionId?: string) => {
     setSections(prev => {
-      const activeList = [...prev];
+      const activeList = prev.filter(s => s && s.section_type);
       const existing = activeList.find(s => s.section_type === sectionType || (sectionId && s.id === sectionId));
       if (existing) {
         return activeList.filter(s => s.id !== existing.id);
@@ -377,13 +379,14 @@ export default function HomepageCustomizer() {
   };
 
   const handleUpdateSection = (id: string, updatedFields: Partial<any>) => {
-    setSections(prev => prev.map(s => s.id === id ? { ...s, ...updatedFields } : s));
+    setSections(prev => prev.filter(s => s && s.section_type).map(s => s.id === id ? { ...s, ...updatedFields } : s));
     setEditingSection((prev: any) => prev && prev.id === id ? { ...prev, ...updatedFields } : prev);
   };
 
   const handleDropSection = (draggedIdx: number, targetIdx: number) => {
-    const list = [...sections];
+    const list = sections.filter(s => s && s.section_type);
     const item = list[draggedIdx];
+    if (!item) return;
     list.splice(draggedIdx, 1);
     list.splice(targetIdx, 0, item);
 
@@ -506,7 +509,7 @@ export default function HomepageCustomizer() {
                     <p className="text-xs text-muted-foreground py-2 text-center border border-dashed border-border rounded-xl">{t('noActiveSections')}</p>
                   ) : (
                     <div className="space-y-2">
-                      {sections.map((section, idx) => {
+                      {sections.filter(s => s && s.section_type).map((section, idx) => {
                         const meta = sectionTypeMeta[section.section_type] || sectionTypeMeta.text;
                         const isStandard = ["announcement", "header", "hero", "featured_products", "trust_badges", "footer"].includes(section.section_type);
                         
@@ -680,7 +683,7 @@ export default function HomepageCustomizer() {
 
             {/* Right Column Section Editing Cards */}
             <div className={hideSidebar ? "md:col-span-12 space-y-6" : "md:col-span-8 space-y-6"}>
-              {sections.map((section) => {
+              {sections.filter(s => s && s.section_type).map((section) => {
                 const meta = sectionTypeMeta[section.section_type] || sectionTypeMeta.text;
                 const config = section.config || {};
                 const isEditing = editingSection?.id === section.id;
@@ -2114,7 +2117,7 @@ export default function HomepageCustomizer() {
 
               {/* Scrollable Viewport */}
               <div className="flex-1 overflow-y-auto pt-9 pb-10 space-y-0.5 bg-[#f8fafc] text-slate-900 scrollbar-thin scrollbar-thumb-slate-300 relative z-10" dir={isRtl ? 'rtl' : 'ltr'}>
-                {sections.map((section) => {
+                {sections.filter(s => s && s.section_type).map((section) => {
                   const config = section.config || {};
                   
                   const isSelectedPreview = editingSection?.id === section.id;
