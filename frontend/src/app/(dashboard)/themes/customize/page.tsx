@@ -2166,13 +2166,13 @@ export default function HomepageCustomizer() {
                           >
                             {selectedStore?.logo ? (
                               <img 
-                                src={selectedStore.logo.startsWith('http') ? selectedStore.logo : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${selectedStore.logo}`} 
-                                alt={selectedStore.name} 
+                                src={selectedStore?.logo?.startsWith('http') ? selectedStore.logo : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}${selectedStore.logo}`} 
+                                alt={selectedStore?.name || ""} 
                                 className="h-6 w-auto object-contain" 
                               />
                             ) : (
                               <div className="h-6 w-6 rounded-full bg-indigo-50 flex items-center justify-center text-[10px] font-black text-indigo-600">
-                                <span>{selectedStore?.name?.charAt(0).toUpperCase() || "M"}</span>
+                                <span>{selectedStore?.name?.charAt(0)?.toUpperCase() || "M"}</span>
                               </div>
                             )}
                             <span
@@ -2258,7 +2258,7 @@ export default function HomepageCustomizer() {
                             
                             <div className={isSlider ? "flex gap-3 overflow-x-auto pb-1" : "grid grid-cols-3 gap-2"}>
                               {displayCats.map((cat: any, idx: number) => {
-                                const letter = cat.letter || cat.name?.charAt(0).toUpperCase() || "C";
+                                const letter = cat.letter || cat.name?.charAt(0)?.toUpperCase() || "C";
                                 const fallbackBg = idx % 3 === 0 
                                   ? "from-pink-400 to-rose-500" 
                                   : idx % 3 === 1 

@@ -133,7 +133,7 @@ export default function ConsumerLandingPage() {
   }
 
   const product = pageData.product_data;
-  const sections = pageData.sections || [];
+  const sections = (pageData.sections || []).filter((s: any) => s && s.section_type);
   const primaryColor = store?.settings?.primary_color || "#6366f1";
 
   // Form language: from checkout section config, fallback to store language
