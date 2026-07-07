@@ -26,3 +26,6 @@ frontend/tsconfig.tsbuildinfo
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Scratch / Temp agent files
+scratch/
