@@ -686,7 +686,7 @@ export default function HomepageCustomizer() {
               {sections.filter(s => s && s.section_type).map((section) => {
                 const meta = sectionTypeMeta[section.section_type] || sectionTypeMeta.text;
                 const config = section.config || {};
-                const isEditing = editingSection?.id === section.id;
+                const isEditing = !!editingSection && !!section.id && editingSection.id === section.id;
                 const isStandard = ["announcement", "header", "hero", "featured_products", "trust_badges", "footer", "categories"].includes(section.section_type);
 
                 return (
@@ -2120,7 +2120,7 @@ export default function HomepageCustomizer() {
                 {sections.filter(s => s && s.section_type).map((section) => {
                   const config = section.config || {};
                   
-                  const isSelectedPreview = editingSection?.id === section.id;
+                  const isSelectedPreview = !!editingSection && !!section.id && editingSection.id === section.id;
                   const clickableRingClass = `relative group/preview transition-all duration-155 cursor-pointer ${
                     isSelectedPreview 
                       ? 'ring-2 ring-primary ring-offset-1 z-10' 
