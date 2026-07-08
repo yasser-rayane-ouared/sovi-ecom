@@ -352,7 +352,14 @@ class OrderExportToDeliveryView(APIView):
                 logger.info("[EXPORT] Noest response status=%s body=%s", resp.status_code, resp.text[:1000])
 
                 if resp.status_code in (200, 201):
-                    data = resp.json()
+                    try:
+                        data = resp.json()
+                    except ValueError:
+                        logger.error("[EXPORT] Noest returned non-JSON body: %s", resp.text[:1000])
+                        return Response(
+                            {'detail': f'Noest returned HTML/invalid JSON: {resp.text[:300]}'},
+                            status=status.HTTP_502_BAD_GATEWAY,
+                        )
                     if isinstance(data, dict):
                         # Ecotrack may return tracking in various formats
                         tracking_number = str(data.get('tracking', data.get('tracking_number', data.get('code', ''))))

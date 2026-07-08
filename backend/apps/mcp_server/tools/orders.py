@@ -456,7 +456,10 @@ def ship_order(store, arguments):
             resp = requests.post(ecotrack_url, json=payload, headers=headers, timeout=15)
 
             if resp.status_code in (200, 201):
-                data = resp.json()
+                try:
+                    data = resp.json()
+                except ValueError:
+                    raise ToolError(f"Noest returned HTML/invalid JSON: {resp.text[:300]}")
                 if isinstance(data, dict):
                     if data.get('success') is False or data.get('error'):
                         err_msg = data.get('message', data.get('error', 'Validation error'))
