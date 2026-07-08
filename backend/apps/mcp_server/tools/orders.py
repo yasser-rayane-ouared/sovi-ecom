@@ -421,7 +421,7 @@ def ship_order(store, arguments):
         try:
             ecotrack_base = (config.company.api_base_url or '').rstrip('/')
             if not ecotrack_base or 'noest.com' in ecotrack_base or 'ecotrack' not in ecotrack_base:
-                ecotrack_base = 'https://noest.ecotrack.dz/api'
+                ecotrack_base = 'https://noest.ecotrack.dz/api/v1'
 
             ecotrack_url = f'{ecotrack_base}/orders'
 
@@ -448,7 +448,10 @@ def ship_order(store, arguments):
             headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'api_token': config.api_key,
             }
+            if config.api_id:
+                headers['user_guid'] = config.api_id
 
             resp = requests.post(ecotrack_url, json=payload, headers=headers, timeout=15)
 
