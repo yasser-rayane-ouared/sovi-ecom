@@ -420,10 +420,10 @@ def ship_order(store, arguments):
     elif company.name == 'noest' and config.api_key:
         try:
             ecotrack_base = (config.company.api_base_url or '').rstrip('/')
-            if not ecotrack_base or 'ecotrack' not in ecotrack_base:
-                ecotrack_base = 'https://dash.noest-dz.com/api/v1'
+            if not ecotrack_base or 'noest.com' in ecotrack_base or 'ecotrack' not in ecotrack_base:
+                ecotrack_base = 'https://noest.ecotrack.dz/api'
 
-            ecotrack_url = f'{ecotrack_base}/order'
+            ecotrack_url = f'{ecotrack_base}/orders'
 
             payload = {
                 'api_token': config.api_key,

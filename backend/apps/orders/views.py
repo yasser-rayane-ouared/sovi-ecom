@@ -306,10 +306,10 @@ class OrderExportToDeliveryView(APIView):
             try:
                 # Ecotrack uses api_token (config.api_key) and user_guid (config.api_id)
                 ecotrack_base = (config.company.api_base_url or '').rstrip('/')
-                if not ecotrack_base or 'ecotrack' not in ecotrack_base:
-                    ecotrack_base = 'https://dash.noest-dz.com/api/v1'
+                if not ecotrack_base or 'noest.com' in ecotrack_base or 'ecotrack' not in ecotrack_base:
+                    ecotrack_base = 'https://noest.ecotrack.dz/api'
 
-                ecotrack_url = f'{ecotrack_base}/order'
+                ecotrack_url = f'{ecotrack_base}/orders'
 
                 payload = {
                     'api_token': config.api_key,
