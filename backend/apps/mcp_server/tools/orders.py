@@ -344,14 +344,20 @@ def ship_order(store, arguments):
 
     if company.name == 'yalidine' and config.api_id and config.api_key:
         try:
-            payload = {
+            name_parts = (order.full_name or "").strip().split(' ', 1)
+            firstname = name_parts[0] or "Client"
+            familyname = name_parts[1] if len(name_parts) > 1 else "Client"
+
+            payload = [{
+                'order_id': order.order_number,
                 'from_wilaya_name': 'Alger',
                 'to_wilaya_name': order.wilaya.name_fr if order.wilaya else '',
                 'from_commune_name': 'Alger Centre',
                 'to_commune_name': order.commune.name_fr if order.commune else '',
-                'to_name': order.full_name,
-                'to_phone': order.phone,
-                'to_address': order.address,
+                'firstname': firstname,
+                'familyname': familyname,
+                'contact_phone': order.phone,
+                'address': order.address or 'Address not specified',
                 'product_list': ', '.join(
                     [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
                 ) or order.order_number,
@@ -365,8 +371,8 @@ def ship_order(store, arguments):
                 'freeshipping': False,
                 'is_stopdesk': False,
                 'has_exchange': False,
-                'reference': order.order_number,
-            }
+            }]
+
             headers = {
                 'X-API-ID': config.api_id,
                 'X-API-Token': config.api_key,
@@ -380,10 +386,29 @@ def ship_order(store, arguments):
             )
             if resp.status_code in (200, 201):
                 data = resp.json()
+                # Yalidine returns dictionary keyed by order_id, e.g. {"ORDER-123": {"success": true, "tracking": "YLD-...", ...}}
+                parcel_info = None
                 if isinstance(data, dict):
-                    external_id = str(data.get('parcel_id', data.get('id', '')))
-                    tracking_number = str(data.get('tracking', external_id))
-                    label_url = data.get('label', '')
+                    parcel_info = data.get(order.order_number)
+                    if not parcel_info:
+                        # Fallback: check if any other key is a dict with parcel info
+                        for k, v in data.items():
+                            if isinstance(v, dict) and ('tracking' in v or 'parcel_id' in v or 'success' in v):
+                                    parcel_info = v
+                                    break
+                
+                if parcel_info:
+                    if parcel_info.get('success') is False:
+                        err_msg = parcel_info.get('message') or 'Validation error'
+                        raise ToolError(f"خطأ من Yalidine: {err_msg}")
+                    external_id = str(parcel_info.get('parcel_id', parcel_info.get('id', '')))
+                    tracking_number = str(parcel_info.get('tracking', external_id))
+                    label_url = parcel_info.get('label', '')
+                else:
+                    external_id = ''
+                    tracking_number = ''
+                    label_url = ''
+                
                 status_message = 'تم الإرسال بنجاح إلى Yalidine'
             else:
                 err_text = resp.text[:500]
