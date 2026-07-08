@@ -420,7 +420,7 @@ def ship_order(store, arguments):
     elif company.name == 'noest' and config.api_key:
         try:
             ecotrack_base = (config.company.api_base_url or '').rstrip('/')
-            if not ecotrack_base or 'ecotrack' in ecotrack_base or 'noest.com' in ecotrack_base:
+            if not ecotrack_base or 'api/v1' not in ecotrack_base:
                 ecotrack_base = 'https://noest-dz.com/api/v1'
 
             ecotrack_url = f'{ecotrack_base}/orders'
