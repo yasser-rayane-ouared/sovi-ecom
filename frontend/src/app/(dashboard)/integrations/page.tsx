@@ -10,7 +10,7 @@ import { Input } from "../../../components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
 import {
   FileSpreadsheet, Play, CheckCircle2, AlertCircle, Save, Sparkles, ArrowRight, Copy, Check, Info,
-  Truck, Key, Loader2, ShieldCheck, DollarSign, Download
+  Truck, Key, Loader2, ShieldCheck, DollarSign, Download, Plus, Trash2, X, ArrowLeft, EyeOff, Eye, Wifi
 } from "lucide-react";
 
 const STORE_MANAGEMENT_SKILL = `---
@@ -218,6 +218,14 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
   const [savingCompanyId, setSavingCompanyId] = useState<string | null>(null);
   const [credSuccess, setCredSuccess] = useState("");
   const [credError, setCredError] = useState("");
+
+  // Modal and config form states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<any | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Construct MCP Server URL using NEXT_PUBLIC_API_URL if available, else fallback to window.location
   const mcpServerUrl = (() => {
@@ -1089,7 +1097,7 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
 
             {credSuccess && (
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5" /> {credSuccess}
+                <Check className="h-5 w-5" /> {credSuccess}
               </div>
             )}
             {credError && (
@@ -1105,147 +1113,340 @@ export default function IntegrationsDashboard({ storeId }: IntegrationsProps) {
               </div>
             ) : (
               (() => {
-                const activeList = companies.filter((c) => configs[c.id]?.is_active === true);
-                const inactiveList = companies.filter((c) => configs[c.id]?.is_active !== true);
+                // Find active configurations
+                const activeConfigs = Object.values(configs).filter((cfg: any) => cfg.is_active);
 
-                const renderCompanyCard = (c: any) => {
-                  const config = configs[c.id] || {};
-                  const isSaving = savingCompanyId === c.id;
-                  
-                  return (
-                    <Card key={c.id} className="border-border dark:border-white/5 bg-card/60 dark:bg-white/[0.03] backdrop-blur-sm overflow-hidden flex flex-col justify-between">
-                      <div>
-                        {/* Card Header */}
-                        <div className={`border-b border-border dark:border-white/5 p-6 flex items-center justify-between ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                          <div className={`flex items-center gap-3 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                            <div className="h-10 w-10 rounded-xl bg-white overflow-hidden flex items-center justify-center border border-border dark:border-white/10 flex-shrink-0">
-                              {c.logo ? (
-                                <img src={c.logo} alt={c.display_name} className="h-full w-full object-cover" />
-                              ) : (
-                                <Truck className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-bold text-foreground dark:text-white">{c.display_name}</div>
-                              <div className="text-xs text-muted-foreground">{t("deliveryAutoSync")} {c.display_name}</div>
-                            </div>
-                          </div>
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            config.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-muted/10 text-muted-foreground border border-border'
-                          }`}>
-                            {config.is_active ? t("deliveryActive") : t("deliveryInactive")}
-                          </span>
-                        </div>
+                const handleToggleActive = async (cfg: any) => {
+                  if (!currentStoreId) return;
+                  try {
+                    await api.patch(`/delivery/${currentStoreId}/configs/${cfg.id}/`, {
+                      is_active: !cfg.is_active,
+                    });
+                    // Reload
+                    const configsRes = await api.get(`/delivery/${currentStoreId}/configs/`);
+                    const configMap: Record<string, any> = {};
+                    const configData = Array.isArray(configsRes.data) ? configsRes.data : (configsRes.data?.results ?? []);
+                    for (const config of configData) {
+                      configMap[config.company] = config;
+                    }
+                    setConfigs(configMap);
+                  } catch { /* silent */ }
+                };
 
-                        {/* Card Body */}
-                        <div className="p-6 space-y-4">
-                          {/* API ID field */}
-                          <div className="space-y-1.5">
-                            <label className={`text-sm font-semibold text-muted-foreground flex items-center gap-1.5 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                              <Key className="h-4 w-4 text-muted-foreground" />
-                              {c.name === 'yalidine' ? 'API ID' : `${t("deliveryApiId")} (Optional)`}
-                            </label>
-                            <Input
-                              placeholder={c.name === 'yalidine' ? 'API ID' : 'API ID'}
-                              value={config.api_id || ""}
-                              onChange={(e) => handleConfigChange(c.id, "api_id", e.target.value)}
-                              className="border-border dark:border-white/10 bg-card dark:bg-white/5 text-foreground dark:text-white font-outfit placeholder:text-muted-foreground/60"
-                            />
-                          </div>
+                const handleRemoveConfig = async (cfgId: string) => {
+                  if (!currentStoreId) return;
+                  try {
+                    await api.delete(`/delivery/${currentStoreId}/configs/${cfgId}/`);
+                    // Reload
+                    const configsRes = await api.get(`/delivery/${currentStoreId}/configs/`);
+                    const configMap: Record<string, any> = {};
+                    const configData = Array.isArray(configsRes.data) ? configsRes.data : (configsRes.data?.results ?? []);
+                    for (const config of configData) {
+                      configMap[config.company] = config;
+                    }
+                    setConfigs(configMap);
+                  } catch { /* silent */ }
+                };
 
-                          {/* API Key / Token field */}
-                          <div className="space-y-1.5">
-                            <label className={`text-sm font-semibold text-muted-foreground flex items-center gap-1.5 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                              <Key className="h-4 w-4 text-muted-foreground" />
-                              {c.name === 'yalidine' ? 'API Token' : t("deliveryApiKey")}
-                            </label>
-                            <Input
-                              type="password"
-                              placeholder="API Key / Token"
-                              value={config.api_key || ""}
-                              onChange={(e) => handleConfigChange(c.id, "api_key", e.target.value)}
-                              className="border-border dark:border-white/10 bg-card dark:bg-white/5 text-foreground dark:text-white font-outfit placeholder:text-muted-foreground/60"
-                            />
-                          </div>
+                const getFields = (name: string): any[] => {
+                  if (name === "yalidine") {
+                    return [
+                      { key: "api_id", label: "API ID", labelAr: "معرف API", placeholder: "Yalidine API ID", type: "text", required: true },
+                      { key: "api_key", label: "API Token", labelAr: "رمز API", placeholder: "Yalidine API Token", type: "password", required: true },
+                    ];
+                  }
+                  if (name === "noest") {
+                    return [
+                      { key: "api_key", label: "API Token", labelAr: "رمز API", placeholder: "Noest API Token", type: "password", required: true },
+                      { key: "api_id", label: "User GUID (API ID)", labelAr: "معرف المستخدم", placeholder: "Noest User GUID", type: "text", required: true },
+                    ];
+                  }
+                  if (name === "zr_express") {
+                    return [
+                      { key: "api_key", label: "API Token", labelAr: "رمز API", placeholder: "ZR Express API Token", type: "password", required: true },
+                    ];
+                  }
+                  return [
+                    { key: "api_key", label: "API Key", labelAr: "مفتاح API", placeholder: "API Key", type: "password", required: true },
+                  ];
+                };
 
-                          {/* API Secret field */}
-                          <div className="space-y-1.5">
-                            <label className={`text-sm font-semibold text-muted-foreground flex items-center gap-1.5 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                              <Key className="h-4 w-4 text-muted-foreground" />
-                              {c.name === 'zr_express' ? 'Secret Key' : t("deliveryApiSecret")}
-                            </label>
-                            <Input
-                              type="password"
-                              placeholder="Secret Key"
-                              value={config.api_secret || ""}
-                              onChange={(e) => handleConfigChange(c.id, "api_secret", e.target.value)}
-                              className="border-border dark:border-white/10 bg-card dark:bg-white/5 text-foreground dark:text-white font-outfit placeholder:text-muted-foreground/60"
-                            />
-                          </div>
+                const handleModalTest = async () => {
+                  if (!currentStoreId || !selectedCompany) return;
+                  setTestingConnection(true);
+                  setTestResult(null);
+                  try {
+                    const res = await api.post(`/delivery/${currentStoreId}/test-connection/`, {
+                      company_id: selectedCompany.id,
+                      ...formValues,
+                    });
+                    setTestResult({ success: res.data.success, message: res.data.message || res.data.error });
+                  } catch (err: any) {
+                    const errorMsg = err.response?.data?.error || err.response?.data?.detail || "Connection test failed.";
+                    setTestResult({ success: false, message: errorMsg });
+                  } finally {
+                    setTestingConnection(false);
+                  }
+                };
 
-                          {/* Toggles */}
-                          <div className={`flex gap-6 pt-4 border-t border-border dark:border-white/5 items-center ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                            <span className="text-sm font-medium text-muted-foreground">{t("deliveryToggleCompany")}</span>
-                            <ToggleIcon 
-                              active={config.is_active || false}
-                              onChange={(checked) => handleConfigChange(c.id, "is_active", checked)}
-                            />
-                          </div>
-                        </div>
-                      </div>
+                const handleModalSave = async () => {
+                  if (!currentStoreId || !selectedCompany) return;
+                  setSavingCompanyId(selectedCompany.id);
+                  try {
+                    // Check if config already exists for this company
+                    const existingConfig = configs[selectedCompany.id];
+                    if (existingConfig) {
+                      const res = await api.put(`/delivery/${currentStoreId}/configs/${existingConfig.id}/`, {
+                        company: selectedCompany.id,
+                        api_key: formValues.api_key || "",
+                        api_secret: formValues.api_secret || "",
+                        api_id: formValues.api_id || "",
+                        is_active: true,
+                      });
+                      setConfigs((prev) => ({ ...prev, [selectedCompany.id]: res.data }));
+                    } else {
+                      const res = await api.post(`/delivery/${currentStoreId}/configs/`, {
+                        company: selectedCompany.id,
+                        api_key: formValues.api_key || "",
+                        api_secret: formValues.api_secret || "",
+                        api_id: formValues.api_id || "",
+                        is_active: true,
+                      });
+                      setConfigs((prev) => ({ ...prev, [selectedCompany.id]: res.data }));
+                    }
+                    
+                    // Close modal
+                    setShowAddModal(false);
+                    setSelectedCompany(null);
+                    setFormValues({});
+                    setTestResult(null);
+                  } catch (err: any) {
+                    const errorMsg = err.response?.data?.detail || "Failed to save configuration.";
+                    setTestResult({ success: false, message: errorMsg });
+                  } finally {
+                    setSavingCompanyId(null);
+                  }
+                };
 
-                      {/* Card Footer actions */}
-                      <div className={`border-t border-border dark:border-white/5 p-6 bg-muted/20 dark:bg-white/[0.01] flex flex-col sm:flex-row gap-3 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                        <Button
-                          type="button"
-                          onClick={() => handleSaveCompanyConfig(c.id)}
-                          disabled={isSaving}
-                          className="w-full text-xs px-5 py-2.5 rounded-lg font-bold"
-                        >
-                          {isSaving ? (
-                            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("deliverySaving")}</>
-                          ) : (
-                            <><Save className="h-3.5 w-3.5" /> {t("deliverySaveSettings")}</>
-                          )}
-                        </Button>
-                      </div>
-                    </Card>
-                  );
+                const activeCompanyIds = new Set(activeConfigs.map((cfg: any) => cfg.company));
+                const availableCompanies = companies.filter((c: any) => !activeCompanyIds.has(c.id));
+
+                const getCompanyColor = (name: string) => {
+                  const colors: Record<string, string> = {
+                    yalidine: "from-yellow-500 to-amber-600",
+                    noest: "from-blue-500 to-cyan-600",
+                    zr_express: "from-emerald-500 to-green-600",
+                  };
+                  return colors[name] || "from-slate-500 to-gray-600";
                 };
 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-start">
-                    {/* Active Column */}
-                    <div className="space-y-5 md:border-e border-border dark:border-white/5 md:pe-8">
-                      <h3 className={`text-xs font-bold text-emerald-500 tracking-wider flex items-center gap-2 uppercase ${isRtl ? "flex-row-reverse" : ""}`}>
-                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>{isRtl ? "الشركات النشطة" : "Active Companies"} ({activeList.length})</span>
-                      </h3>
-                      <div className="space-y-6">
-                        {activeList.map(renderCompanyCard)}
-                        {activeList.length === 0 && (
-                          <div className="text-center py-16 border border-dashed border-border dark:border-white/5 rounded-2xl text-muted-foreground text-xs bg-muted/5 dark:bg-white/[0.01]">
-                            {isRtl ? "لا توجد شركات شحن نشطة حالياً." : "No active shipping companies."}
+                  <div className="space-y-6">
+                    {/* Active Linked Integrations List */}
+                    {activeConfigs.length === 0 ? (
+                      <Card className="border-border dark:border-white/5 bg-card/40 dark:bg-white/[0.02] backdrop-blur-sm">
+                        <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-5">
+                          <div className="h-16 w-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                            <Truck className="h-8 w-8 text-amber-500" />
                           </div>
-                        )}
+                          <div className="space-y-1 max-w-sm">
+                            <h3 className="text-base font-bold">{isRtl ? "لم يتم ربط أي شركة توصيل" : "No delivery companies linked"}</h3>
+                            <p className="text-xs text-muted-foreground">
+                              {isRtl ? "اربط حساب شركة الشحن الخاص بك (مثل Yalidine أو Noest) لبدء إرسال وتتبع الطلبيات تلقائياً." : "Connect your courier accounts to start shipping and tracking your orders automatically."}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => setShowAddModal(true)}
+                            className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl shadow-lg shadow-primary/25 text-xs transition-all duration-300 hover:scale-[1.02]"
+                          >
+                            <Plus className="h-4.5 w-4.5" /> {isRtl ? "إضافة شركة توصيل" : "Add Delivery Company"}
+                          </Button>
+                        </div>
+                      </Card>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid gap-3">
+                          {activeConfigs.map((config: any) => {
+                            const company = companies.find((c) => c.id === config.company);
+                            if (!company) return null;
+                            const gradient = getCompanyColor(company.name);
+                            return (
+                              <Card key={config.id} className="border-border dark:border-white/5 bg-card/60 dark:bg-white/[0.03] backdrop-blur-sm transition-all duration-300 hover:shadow-md">
+                                <div className="flex items-center justify-between p-4 gap-4">
+                                  <div className="flex items-center gap-4 min-w-0">
+                                    {company.logo ? (
+                                      <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center border border-border">
+                                        <img src={company.logo} alt={company.display_name} className="h-full w-full object-contain p-1" />
+                                      </div>
+                                    ) : (
+                                      <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-black text-xs shadow-md`}>
+                                        {company.display_name.slice(0, 2).toUpperCase()}
+                                      </div>
+                                    )}
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="font-bold text-sm truncate">{company.display_name}</h3>
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                          {isRtl ? "نشط" : "Active"}
+                                        </span>
+                                      </div>
+                                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                                        {config.api_key ? `API Key: ${"•".repeat(8)}${config.api_key.slice(-4)}` : "Credentials linked"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => applyCompanyDefaultPricing(company.display_name)}
+                                      className="text-[10px] font-bold px-3 py-1.5 h-auto border-border hover:bg-muted/10"
+                                    >
+                                      <DollarSign className="h-3 w-3" /> {isRtl ? "تطبيق أسعار الشحن" : "Apply Pricing"}
+                                    </Button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveConfig(config.id)}
+                                      className="p-2 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+                                      title="Remove"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={() => setShowAddModal(true)}
+                          className="w-full border-dashed border-2 border-border dark:border-white/10 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 text-muted-foreground hover:text-primary gap-2 py-3 h-auto transition-all duration-300"
+                        >
+                          <Plus className="h-4 w-4" /> {isRtl ? "إضافة شركة توصيل أخرى" : "Add Another Delivery Company"}
+                        </Button>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Inactive Column */}
-                    <div className="space-y-5 md:ps-8">
-                      <h3 className={`text-xs font-bold text-muted-foreground tracking-wider flex items-center gap-2 uppercase ${isRtl ? "flex-row-reverse" : ""}`}>
-                        <span className="h-2 w-2 rounded-full bg-slate-400 dark:bg-white/20" />
-                        <span>{isRtl ? "الشركات غير النشطة" : "Inactive Companies"} ({inactiveList.length})</span>
-                      </h3>
-                      <div className="space-y-6">
-                        {inactiveList.map(renderCompanyCard)}
-                        {inactiveList.length === 0 && (
-                          <div className="text-center py-16 border border-dashed border-border dark:border-white/5 rounded-2xl text-muted-foreground text-xs bg-muted/5 dark:bg-white/[0.01]">
-                            {isRtl ? "كل شركات الشحن نشطة!" : "All shipping companies are active!"}
-                          </div>
-                        )}
+                    {/* Add Modal */}
+                    {showAddModal && (
+                      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setShowAddModal(false); setSelectedCompany(null); setFormValues({}); setTestResult(null); }}>
+                        <div className="bg-background border border-border dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+                          {!selectedCompany ? (
+                            <div className="p-6 space-y-5">
+                              <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                  <Plus className="h-5 w-5 text-primary" /> {isRtl ? "اختر شركة شحن لربطها" : "Link a Delivery Company"}
+                                </h2>
+                                <button onClick={() => setShowAddModal(false)} className="p-2 rounded-lg hover:bg-muted/50 dark:hover:bg-white/5 transition-colors">
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                {availableCompanies.map((c: any) => {
+                                  const gradient = getCompanyColor(c.name);
+                                  return (
+                                    <button
+                                      key={c.id}
+                                      onClick={() => { setSelectedCompany(c); setFormValues({}); setTestResult(null); }}
+                                      className="group flex flex-col items-center gap-3 p-4 rounded-xl border border-border dark:border-white/5 bg-card/40 dark:bg-white/[0.02] hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                                    >
+                                      {c.logo ? (
+                                        <div className="h-12 w-12 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center">
+                                          <img src={c.logo} alt={c.display_name} className="h-full w-full object-contain p-1" />
+                                        </div>
+                                      ) : (
+                                        <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-black text-sm shadow-md`}>
+                                          {c.display_name.slice(0, 2).toUpperCase()}
+                                        </div>
+                                      )}
+                                      <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors">{c.display_name}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-6 space-y-5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => setSelectedCompany(null)} className="p-1 rounded-lg hover:bg-muted transition-colors">
+                                    <ArrowLeft className={`h-4.5 w-4.5 ${isRtl ? "rotate-180" : ""}`} />
+                                  </button>
+                                  <h2 className="text-base font-bold">{selectedCompany.display_name}</h2>
+                                </div>
+                                <button onClick={() => { setShowAddModal(false); setSelectedCompany(null); setFormValues({}); setTestResult(null); }} className="p-2 rounded-lg hover:bg-muted/50 dark:hover:bg-white/5 transition-colors">
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+
+                              <div className="space-y-4">
+                                {getFields(selectedCompany.name).map((field: any) => (
+                                  <div key={field.key} className="space-y-1.5">
+                                    <label className="text-xs font-semibold flex items-center gap-1">
+                                      {isRtl ? field.labelAr : field.label}
+                                      {field.required && <span className="text-red-400">*</span>}
+                                    </label>
+                                    <div className="relative">
+                                      <Input
+                                        type={field.type === "password" && !showPasswords[field.key] ? "password" : "text"}
+                                        placeholder={field.placeholder}
+                                        value={formValues[field.key] || ""}
+                                        onChange={(e) => setFormValues((p) => ({ ...p, [field.key]: e.target.value }))}
+                                        className={`border-border dark:border-white/10 bg-card dark:bg-white/5 text-foreground placeholder:text-muted-foreground/60 ${field.type === "password" ? (isRtl ? "pl-10" : "pr-10") : ""}`}
+                                      />
+                                      {field.type === "password" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowPasswords((p) => ({ ...p, [field.key]: !p[field.key] }))}
+                                          className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? "left-3" : "right-3"} text-muted-foreground hover:text-foreground`}
+                                        >
+                                          {showPasswords[field.key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {testResult && (
+                                <div className={`p-3.5 rounded-xl text-xs flex items-start gap-2.5 ${
+                                  testResult.success
+                                    ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                                    : "bg-red-500/10 border border-red-500/20 text-red-400"
+                                }`}>
+                                  {testResult.success ? <Check className="h-4 w-4 mt-0.5" /> : <AlertCircle className="h-4 w-4 mt-0.5" />}
+                                  <span>{testResult.message}</span>
+                                </div>
+                              )}
+
+                              <div className="flex gap-3 pt-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={handleModalTest}
+                                  disabled={testingConnection}
+                                  className="flex-1 border-border text-xs h-10 font-bold gap-1.5"
+                                >
+                                  {testingConnection ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wifi className="h-3.5 w-3.5" />}
+                                  <span>{isRtl ? "اختبار الاتصال" : "Test Connection"}</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  onClick={handleModalSave}
+                                  disabled={savingCompanyId === selectedCompany.id}
+                                  className="flex-1 text-xs h-10 font-bold gap-1.5 shadow-md shadow-primary/20"
+                                >
+                                  {savingCompanyId === selectedCompany.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                  <span>{isRtl ? "حفظ وربط" : "Save & Link"}</span>
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })()
