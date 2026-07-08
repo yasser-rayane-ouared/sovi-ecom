@@ -15,8 +15,42 @@ from .serializers import (
 
 class DeliveryCompanyListView(generics.ListAPIView):
     serializer_class = DeliveryCompanySerializer
-    queryset = DeliveryCompany.objects.filter(is_active=True)
     pagination_class = None
+
+    def get_queryset(self):
+        seed_delivery_companies_if_empty()
+        return DeliveryCompany.objects.all()
+
+
+def seed_delivery_companies_if_empty():
+    """Auto-seed delivery companies if the table is empty."""
+    if DeliveryCompany.objects.exists():
+        return
+    companies = [
+        {"name": "yalidine", "display_name": "Yalidine", "api_base_url": "https://api.yalidine.app/v1/", "logo": "https://yalidine.com/img/logo.png"},
+        {"name": "zr_express", "display_name": "ZR Express", "api_base_url": "https://api.zrexpress.com/", "logo": ""},
+        {"name": "noest", "display_name": "Noest", "api_base_url": "", "logo": ""},
+        {"name": "ems", "display_name": "EMS", "api_base_url": "", "logo": ""},
+        {"name": "ecolog", "display_name": "Ecolog", "api_base_url": "", "logo": ""},
+        {"name": "guepex", "display_name": "Guepex", "api_base_url": "", "logo": ""},
+        {"name": "maystro_delivery", "display_name": "Maystro Delivery", "api_base_url": "", "logo": ""},
+        {"name": "dhd", "display_name": "DHD", "api_base_url": "", "logo": ""},
+        {"name": "yaliteck", "display_name": "Yaliteck", "api_base_url": "", "logo": ""},
+        {"name": "flash_delivery", "display_name": "Flash Delivery", "api_base_url": "", "logo": ""},
+        {"name": "ecom_delivery", "display_name": "Ecom Delivery", "api_base_url": "", "logo": ""},
+        {"name": "manual", "display_name": "Manual Settings", "api_base_url": "", "logo": ""},
+    ]
+    DeliveryCompany.objects.bulk_create([
+        DeliveryCompany(
+            name=c["name"],
+            display_name=c["display_name"],
+            api_base_url=c["api_base_url"],
+            logo=c["logo"],
+            is_active=True,
+            supports_tracking=c["name"] not in ("manual", "ems"),
+        )
+        for c in companies
+    ], ignore_conflicts=True)
 
 
 class StoreDeliveryConfigListCreateView(generics.ListCreateAPIView):
