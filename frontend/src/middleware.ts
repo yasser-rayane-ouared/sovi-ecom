@@ -46,7 +46,8 @@ export default function middleware(req: NextRequest) {
         'overview', 'products', 'orders', 'settings', 'workers',
         'analytics', 'themes', 'pages', 'pixels', 'integrations',
         'billing', 'ab-testing', 'tools', 'profile', '_next', 'api',
-        'admin'
+        'admin', 'advices', 'delivery', 'reviews', 'support',
+        'assistant', 'choose-plan', 'demo-location'
       ];
       
       if (!platformPaths.includes(firstPart)) {
