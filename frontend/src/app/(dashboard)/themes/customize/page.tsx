@@ -85,7 +85,12 @@ export default function HomepageCustomizer() {
           try {
             if (res.data?.homepage_sections) {
               const parsed = JSON.parse(res.data.homepage_sections);
-              loadedSections = (Array.isArray(parsed) ? parsed : []).filter(s => s && s.section_type);
+              loadedSections = (Array.isArray(parsed) ? parsed : [])
+                .filter(s => s && s.section_type)
+                .map((s, idx) => ({
+                  ...s,
+                  id: s.id || `section-${s.section_type}-${idx}-${Date.now()}`,
+                }));
             }
           } catch (e) {
             console.error("Failed to parse homepage sections JSON", e);
