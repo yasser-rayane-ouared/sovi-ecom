@@ -301,6 +301,89 @@ class OrderExportToDeliveryView(APIView):
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 
+        # --- Noest / Ecotrack integration ---
+        elif company.name == 'noest' and config.api_key:
+            try:
+                # Ecotrack uses api_token (config.api_key) and user_guid (config.api_id)
+                ecotrack_base = (config.company.api_base_url or '').rstrip('/')
+                if not ecotrack_base or 'ecotrack' not in ecotrack_base:
+                    ecotrack_base = 'https://dash.noest-dz.com/api/v1'
+
+                ecotrack_url = f'{ecotrack_base}/order'
+
+                payload = {
+                    'api_token': config.api_key,
+                    'client': order.full_name or 'Client',
+                    'phone': order.phone or '',
+                    'adresse': order.address or 'Address not specified',
+                    'wilaya_id': order.wilaya.code if order.wilaya else 16,
+                    'commune': order.commune.name_fr if order.commune else '',
+                    'montant': float(order.total),
+                    'produit': ', '.join(
+                        [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                    ) or order.order_number,
+                    'type_id': 1,
+                    'poids': 1,
+                    'stop_desk': 0,
+                    'reference': order.order_number,
+                }
+
+                # Add user_guid if available (stored in api_id)
+                if config.api_id:
+                    payload['user_guid'] = config.api_id
+
+                logger.info("[EXPORT] Noest/Ecotrack URL: %s", ecotrack_url)
+                logger.info("[EXPORT] Noest/Ecotrack payload: %s", {k: v for k, v in payload.items() if k != 'api_token'})
+
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                }
+
+                resp = requests.post(
+                    ecotrack_url,
+                    json=payload,
+                    headers=headers,
+                    timeout=15,
+                )
+                logger.info("[EXPORT] Noest response status=%s body=%s", resp.status_code, resp.text[:1000])
+
+                if resp.status_code in (200, 201):
+                    data = resp.json()
+                    if isinstance(data, dict):
+                        # Ecotrack may return tracking in various formats
+                        tracking_number = str(data.get('tracking', data.get('tracking_number', data.get('code', ''))))
+                        external_id = str(data.get('id', data.get('order_id', '')))
+                        label_url = data.get('label', data.get('label_url', data.get('bordereau', '')))
+                        if not label_url:
+                            label_url = ''
+
+                        # Check for error inside 200 response
+                        if data.get('success') is False or data.get('error'):
+                            err_msg = data.get('message', data.get('error', 'Validation error'))
+                            logger.error("[EXPORT] Noest returned error: %s", err_msg)
+                            return Response(
+                                {'detail': f'Noest error: {err_msg}'},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+
+                        logger.info("[EXPORT] Noest success: tracking=%s external_id=%s", tracking_number, external_id)
+
+                    status_message = 'Order sent to Noest successfully'
+                else:
+                    err_text = resp.text[:500]
+                    logger.error("[EXPORT] Noest HTTP %s: %s", resp.status_code, err_text)
+                    return Response(
+                        {'detail': f'Noest error (HTTP {resp.status_code}): {err_text}'},
+                        status=status.HTTP_502_BAD_GATEWAY,
+                    )
+            except requests.RequestException as e:
+                logger.exception("[EXPORT] Noest connection error")
+                return Response(
+                    {'detail': f'Failed to connect to Noest: {str(e)}'},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
         # --- ZR Express integration (placeholder) ---
         elif company.name == 'zr_express':
             status_message = 'تم تسجيل الشحنة يدوياً (ZR Express)'
