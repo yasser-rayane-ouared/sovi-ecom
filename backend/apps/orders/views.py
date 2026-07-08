@@ -303,16 +303,20 @@ class OrderExportToDeliveryView(APIView):
 
         # --- Noest / Ecotrack integration ---
         elif company.name == 'noest' and config.api_key:
+            # Validate required credentials
+            if not config.api_id:
+                return Response(
+                    {'detail': 'Noest configuration is missing the User GUID (API ID). Please set it in Delivery Settings.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             try:
-                # Ecotrack uses api_token (config.api_key) and user_guid (config.api_id)
-                ecotrack_base = (config.company.api_base_url or '').rstrip('/')
-                if not ecotrack_base or 'api/v1' not in ecotrack_base:
-                    ecotrack_base = 'https://noest-dz.com/api/v1'
-
-                ecotrack_url = f'{ecotrack_base}/orders'
+                # Ecotrack NOEST API: POST /api/order/add
+                # Requires Bearer token auth + api_token & user_guid in body
+                ecotrack_url = 'https://noest.ecotrack.dz/api/order/add'
 
                 payload = {
                     'api_token': config.api_key,
+                    'user_guid': config.api_id,
                     'client': order.full_name or 'Client',
                     'phone': order.phone or '',
                     'adresse': order.address or 'Address not specified',
@@ -328,20 +332,14 @@ class OrderExportToDeliveryView(APIView):
                     'reference': order.order_number,
                 }
 
-                # Add user_guid if available (stored in api_id)
-                if config.api_id:
-                    payload['user_guid'] = config.api_id
-
                 logger.info("[EXPORT] Noest/Ecotrack URL: %s", ecotrack_url)
                 logger.info("[EXPORT] Noest/Ecotrack payload: %s", {k: v for k, v in payload.items() if k != 'api_token'})
 
                 headers = {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'api_token': config.api_key,
+                    'Authorization': f'Bearer {config.api_key}',
                 }
-                if config.api_id:
-                    headers['user_guid'] = config.api_id
 
                 resp = requests.post(
                     ecotrack_url,
@@ -381,10 +379,15 @@ class OrderExportToDeliveryView(APIView):
 
                     status_message = 'Order sent to Noest successfully'
                 else:
-                    err_text = resp.text[:500]
-                    logger.error("[EXPORT] Noest HTTP %s: %s", resp.status_code, err_text)
+                    # Try to parse JSON error body (Ecotrack returns 422 with JSON validation errors)
+                    try:
+                        err_data = resp.json()
+                        err_msg = err_data.get('error', err_data.get('message', resp.text[:500]))
+                    except (ValueError, AttributeError):
+                        err_msg = resp.text[:500]
+                    logger.error("[EXPORT] Noest HTTP %s: %s", resp.status_code, err_msg)
                     return Response(
-                        {'detail': f'Noest error (HTTP {resp.status_code}): {err_text}'},
+                        {'detail': f'Noest error (HTTP {resp.status_code}): {err_msg}'},
                         status=status.HTTP_502_BAD_GATEWAY,
                     )
             except requests.RequestException as e:

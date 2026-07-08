@@ -418,15 +418,17 @@ def ship_order(store, arguments):
 
     # --- Noest / Ecotrack integration ---
     elif company.name == 'noest' and config.api_key:
+        # Validate required credentials
+        if not config.api_id:
+            raise ToolError("Noest configuration is missing the User GUID (API ID). Please set it in Delivery Settings.")
         try:
-            ecotrack_base = (config.company.api_base_url or '').rstrip('/')
-            if not ecotrack_base or 'api/v1' not in ecotrack_base:
-                ecotrack_base = 'https://noest-dz.com/api/v1'
-
-            ecotrack_url = f'{ecotrack_base}/orders'
+            # Ecotrack NOEST API: POST /api/order/add
+            # Requires Bearer token auth + api_token & user_guid in body
+            ecotrack_url = 'https://noest.ecotrack.dz/api/order/add'
 
             payload = {
                 'api_token': config.api_key,
+                'user_guid': config.api_id,
                 'client': order.full_name or 'Client',
                 'phone': order.phone or '',
                 'adresse': order.address or 'Address not specified',
@@ -442,16 +444,11 @@ def ship_order(store, arguments):
                 'reference': order.order_number,
             }
 
-            if config.api_id:
-                payload['user_guid'] = config.api_id
-
             headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'api_token': config.api_key,
+                'Authorization': f'Bearer {config.api_key}',
             }
-            if config.api_id:
-                headers['user_guid'] = config.api_id
 
             resp = requests.post(ecotrack_url, json=payload, headers=headers, timeout=15)
 
@@ -471,8 +468,12 @@ def ship_order(store, arguments):
 
                 status_message = 'Order sent to Noest successfully'
             else:
-                err_text = resp.text[:500]
-                raise ToolError(f"Noest error (HTTP {resp.status_code}): {err_text}")
+                try:
+                    err_data = resp.json()
+                    err_msg = err_data.get('error', err_data.get('message', resp.text[:500]))
+                except (ValueError, AttributeError):
+                    err_msg = resp.text[:500]
+                raise ToolError(f"Noest error (HTTP {resp.status_code}): {err_msg}")
         except requests.RequestException as e:
             raise ToolError(f"Failed to connect to Noest: {str(e)}")
 

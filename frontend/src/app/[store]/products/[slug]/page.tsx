@@ -302,6 +302,7 @@ export default function StorefrontProductDetail() {
   // Variant selection states
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Reviews state
@@ -2454,7 +2455,7 @@ export default function StorefrontProductDetail() {
                         answer={item.a} 
                         bgColor="#ffffff"
                         borderColor="#e2e8f0"
-                        activeBorderColor={primaryColor}
+                        activeBorderColor={themed.accent || 'var(--primary)'}
                       />
                     ))}
                   </div>

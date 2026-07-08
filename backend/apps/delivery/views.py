@@ -342,3 +342,115 @@ class FetchCompanyFeesView(APIView):
                 })
                 
             return Response({"pricing": parsed_fees})
+
+
+class TestConnectionView(APIView):
+    """Test if delivery company credentials are valid."""
+
+    def post(self, request, store_id):
+        store = get_store_for_user(store_id, request.user, 'delivery')
+        company_id = request.data.get('company_id')
+        api_key = request.data.get('api_key', '')
+        api_secret = request.data.get('api_secret', '')
+        api_id = request.data.get('api_id', '')
+
+        if not company_id:
+            return Response({"success": False, "error": "Company ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        company = get_object_or_404(DeliveryCompany, id=company_id)
+
+        if company.name == 'yalidine':
+            if not api_id or not api_key:
+                return Response({"success": False, "error": "API ID and API Token are required for Yalidine."}, status=400)
+            headers = {
+                'X-API-ID': api_id,
+                'X-API-Token': api_key,
+                'Content-Type': 'application/json',
+            }
+            try:
+                resp = requests.get('https://api.yalidine.app/v1/shippingfees/', headers=headers, timeout=10)
+                if resp.status_code in (200, 201):
+                    return Response({"success": True, "message": "Connected to Yalidine successfully!"})
+                elif resp.status_code == 401:
+                    return Response({"success": False, "error": "Invalid API credentials. Check your API ID and Token."})
+                else:
+                    return Response({"success": False, "error": f"Yalidine returned HTTP {resp.status_code}: {resp.text[:200]}"})
+            except requests.RequestException as e:
+                return Response({"success": False, "error": f"Connection failed: {str(e)}"})
+
+        elif company.name == 'noest':
+            if not api_key:
+                return Response({"success": False, "error": "API Token is required for Noest."}, status=400)
+            if not api_id:
+                return Response({"success": False, "error": "User GUID is required for Noest."}, status=400)
+            headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}',
+            }
+            payload = {
+                'api_token': api_key,
+                'user_guid': api_id,
+                'client': 'Connection Test',
+                'phone': '0555000000',
+                'adresse': 'Test',
+                'wilaya_id': 16,
+                'commune': 'Alger Centre',
+                'montant': 0,
+                'produit': 'Test',
+                'type_id': 1,
+                'poids': 1,
+                'stop_desk': 0,
+                'reference': 'TEST-CONNECTION',
+            }
+            try:
+                resp = requests.post(
+                    'https://noest.ecotrack.dz/api/order/add',
+                    json=payload, headers=headers, timeout=10,
+                )
+                if resp.status_code in (200, 201):
+                    try:
+                        data = resp.json()
+                        if data.get('success') is False:
+                            error = data.get('error', data.get('message', 'Unknown error'))
+                            # Auth errors mean bad credentials
+                            if 'token' in str(error).lower() or 'guid' in str(error).lower() or 'auth' in str(error).lower():
+                                return Response({"success": False, "error": f"Authentication failed: {error}"})
+                            # Validation errors (like missing fields) mean auth succeeded!
+                            return Response({"success": True, "message": "Connected to Noest successfully! Credentials are valid."})
+                        return Response({"success": True, "message": "Connected to Noest successfully!"})
+                    except ValueError:
+                        return Response({"success": False, "error": "Noest returned invalid response."})
+                elif resp.status_code == 422:
+                    # 422 = validation error = auth succeeded but payload was bad (expected for test)
+                    try:
+                        data = resp.json()
+                        error = data.get('error', data.get('message', ''))
+                        if 'api_token' in str(error).lower() or 'user_guid' in str(error).lower():
+                            return Response({"success": False, "error": f"Credential validation failed: {error}"})
+                        return Response({"success": True, "message": "Connected to Noest successfully! Credentials are valid."})
+                    except ValueError:
+                        return Response({"success": True, "message": "Connected to Noest (HTTP 422 - auth OK, test data rejected as expected)."})
+                elif resp.status_code == 401:
+                    return Response({"success": False, "error": "Invalid API Token. Check your Noest credentials."})
+                elif resp.status_code == 403:
+                    return Response({"success": False, "error": "Access denied (HTTP 403). Your IP may be blocked or credentials are incorrect."})
+                elif resp.status_code == 404:
+                    try:
+                        data = resp.json()
+                        return Response({"success": False, "error": f"API route not found: {data.get('message', resp.text[:200])}"})
+                    except ValueError:
+                        return Response({"success": False, "error": "Noest API endpoint not reachable."})
+                else:
+                    return Response({"success": False, "error": f"Noest returned HTTP {resp.status_code}: {resp.text[:200]}"})
+            except requests.RequestException as e:
+                return Response({"success": False, "error": f"Connection failed: {str(e)}"})
+
+        # Generic test for other companies - just check credentials look valid
+        else:
+            if not api_key and not api_secret:
+                return Response({"success": False, "error": "At least one credential (API Key or API Secret) is required."}, status=400)
+            if len(api_key or '') < 5 and len(api_secret or '') < 5:
+                return Response({"success": False, "error": "Credentials appear too short. Please check your API Key/Secret."})
+            return Response({"success": True, "message": f"Credentials saved for {company.display_name}. Connection test is not available for this company yet."})
+
