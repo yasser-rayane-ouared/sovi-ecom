@@ -1,5 +1,6 @@
 """Order views."""
 import io
+import logging
 import requests
 import pandas as pd
 from django.http import HttpResponse
@@ -11,6 +12,8 @@ from apps.stores.utils import get_store_for_user
 from apps.delivery.models import Shipment, StoreDeliveryConfig
 from .models import Order, OrderStatusHistory
 from .serializers import OrderSerializer, OrderStatusUpdateSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class OrderListView(generics.ListAPIView):
@@ -193,8 +196,9 @@ class OrderExportToDeliveryView(APIView):
             config = None
 
         if not config:
+            logger.warning("[EXPORT] No active delivery config for store %s", store_id)
             return Response(
-                {'detail': 'لا توجد شركة توصيل مُفعّلة لهذا المتجر. يرجى إضافة إعدادات شركة التوصيل أولاً.'},
+                {'detail': 'No active delivery company for this store. Please configure one in Integrations first.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -203,6 +207,8 @@ class OrderExportToDeliveryView(APIView):
         external_id = ''
         label_url = ''
         status_message = ''
+
+        logger.info("[EXPORT] Exporting order %s to company=%s (config=%s)", order.order_number, company.name, config.id)
 
         # --- Yalidine integration ---
         if company.name == 'yalidine' and config.api_id and config.api_key:
@@ -236,6 +242,8 @@ class OrderExportToDeliveryView(APIView):
                     'has_exchange': False,
                 }]
 
+                logger.info("[EXPORT] Yalidine payload: %s", payload)
+
                 headers = {
                     'X-API-ID': config.api_id,
                     'X-API-Token': config.api_key,
@@ -247,14 +255,14 @@ class OrderExportToDeliveryView(APIView):
                     headers=headers,
                     timeout=15,
                 )
+                logger.info("[EXPORT] Yalidine response status=%s body=%s", resp.status_code, resp.text[:1000])
+
                 if resp.status_code in (200, 201):
                     data = resp.json()
-                    # Yalidine returns dictionary keyed by order_id, e.g. {"ORDER-123": {"success": true, "tracking": "YLD-...", ...}}
                     parcel_info = None
                     if isinstance(data, dict):
                         parcel_info = data.get(order.order_number)
                         if not parcel_info:
-                            # Fallback: check if any other key is a dict with parcel info
                             for k, v in data.items():
                                 if isinstance(v, dict) and ('tracking' in v or 'parcel_id' in v or 'success' in v):
                                     parcel_info = v
@@ -263,29 +271,33 @@ class OrderExportToDeliveryView(APIView):
                     if parcel_info:
                         if parcel_info.get('success') is False:
                             err_msg = parcel_info.get('message') or 'Validation error'
+                            logger.error("[EXPORT] Yalidine returned success=false: %s", err_msg)
                             return Response(
-                                {'detail': f'خطأ من Yalidine: {err_msg}'},
+                                {'detail': f'Yalidine error: {err_msg}'},
                                 status=status.HTTP_400_BAD_REQUEST
                             )
                         external_id = str(parcel_info.get('parcel_id', parcel_info.get('id', '')))
                         tracking_number = str(parcel_info.get('tracking', external_id))
                         label_url = parcel_info.get('label', '')
+                        logger.info("[EXPORT] Yalidine success: tracking=%s external_id=%s", tracking_number, external_id)
                     else:
-                        # Fallback if dictionary structure wasn't parsed as expected
+                        logger.warning("[EXPORT] Yalidine 200 but could not parse parcel_info from: %s", data)
                         external_id = ''
                         tracking_number = ''
                         label_url = ''
                     
-                    status_message = 'تم الإرسال بنجاح إلى Yalidine'
+                    status_message = 'Order sent to Yalidine successfully'
                 else:
                     err_text = resp.text[:500]
+                    logger.error("[EXPORT] Yalidine HTTP %s: %s", resp.status_code, err_text)
                     return Response(
-                        {'detail': f'خطأ من Yalidine: {err_text}'},
+                        {'detail': f'Yalidine error (HTTP {resp.status_code}): {err_text}'},
                         status=status.HTTP_502_BAD_GATEWAY,
                     )
             except requests.RequestException as e:
+                logger.exception("[EXPORT] Yalidine connection error")
                 return Response(
-                    {'detail': f'فشل الاتصال بـ Yalidine: {str(e)}'},
+                    {'detail': f'Failed to connect to Yalidine: {str(e)}'},
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 

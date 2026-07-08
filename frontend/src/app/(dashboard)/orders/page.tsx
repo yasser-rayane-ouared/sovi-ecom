@@ -196,6 +196,7 @@ export default function OrdersDashboard() {
         `/orders/${currentStoreId}/${exportModal.orderId}/export-to-delivery/`,
         configId ? { config_id: configId } : {}
       );
+      console.log("[EXPORT] Success response:", res.data);
       setExportResult({
         success: true,
         message: res.data.message || t("ordersModalDeliverySuccess"),
@@ -204,9 +205,13 @@ export default function OrdersDashboard() {
       });
       fetchOrders();
     } catch (err: any) {
+      const errData = err.response?.data;
+      const errStatus = err.response?.status;
+      const errDetail = errData?.detail || errData?.message || JSON.stringify(errData) || err.message || "Unknown error";
+      console.error("[EXPORT] Error:", errStatus, errData);
       setExportResult({
         success: false,
-        message: err.response?.data?.detail || "Failed to export order. Check shipping settings.",
+        message: `Error ${errStatus || ''}: ${errDetail}`,
       });
     } finally {
       setExportingId(null);
