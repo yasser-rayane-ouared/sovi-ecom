@@ -429,7 +429,7 @@ def ship_order(store, arguments):
                 'telephone': order.phone or '',
                 'adresse': order.address or 'Address not specified',
                 'commune': order.commune.name_fr if order.commune else '',
-                'code_wilaya': int(order.wilaya.code) if (order.wilaya and order.wilaya.code.isdigit()) else 16,
+                'code_wilaya': order.wilaya.code if order.wilaya else 16,
                 'montant': float(order.total),
                 'produit': ', '.join(
                     [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
