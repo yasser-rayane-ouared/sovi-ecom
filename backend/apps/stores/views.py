@@ -155,3 +155,43 @@ class StoreWorkerDetailView(generics.RetrieveUpdateDestroyAPIView):
         ctx = super().get_serializer_context()
         ctx['store'] = Store.objects.get(id=self.kwargs['store_id'])
         return ctx
+
+
+from django.http import HttpResponse
+
+class CaddyAskDomainView(APIView):
+    """
+    Endpoint for Caddy's On-Demand TLS feature.
+    Checks if a domain is registered as a custom domain for a store.
+    Returns HTTP 200 if valid, otherwise HTTP 400.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        domain = request.GET.get('domain')
+        if not domain:
+            return HttpResponse("Domain parameter missing", status=400)
+        
+        domain = domain.strip().lower()
+        
+        # Always allow the main platform domains and any subdomains of sovi-dz.com
+        if domain in ('sovi-dz.com', 'www.sovi-dz.com') or domain.endswith('.sovi-dz.com'):
+            return HttpResponse("Domain allowed", status=200)
+
+        if domain.startswith('www.'):
+            domain = domain[4:]
+        
+        # Check if store has custom domain configured and active subscription
+        store = Store.objects.filter(
+            Q(custom_domain=domain) | Q(custom_domain=f"www.{domain}"),
+            is_active=True,
+            is_suspended=False
+        ).first()
+
+        if store:
+            from apps.subscriptions.models import get_active_limits
+            limits = get_active_limits(store)
+            if limits.get('has_active_subscription') and limits.get('has_custom_domain'):
+                return HttpResponse("Domain allowed", status=200)
+
+        return HttpResponse("Domain not allowed", status=400)

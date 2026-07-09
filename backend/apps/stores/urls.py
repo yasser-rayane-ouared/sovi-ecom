@@ -3,6 +3,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('check-domain/', views.CaddyAskDomainView.as_view(), name='store-check-domain'),
     path('', views.StoreListCreateView.as_view(), name='store-list-create'),
     path('<uuid:pk>/', views.StoreDetailView.as_view(), name='store-detail'),
     path('<uuid:store_id>/settings/', views.StoreSettingsView.as_view(), name='store-settings'),
