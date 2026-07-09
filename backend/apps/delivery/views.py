@@ -400,16 +400,22 @@ class TestConnectionView(APIView):
                     elif resp.status_code in (401, 403):
                         return Response({"success": False, "error": "Invalid API Token. Check your Noest credentials."})
                     elif resp.status_code == 404:
-                        # Ecotrack returns 404 when Bearer token is invalid (hides routes).
-                        # Probe the create/order route with GET to confirm the server is alive.
+                        # Noest's Ecotrack returns 404 for all API requests (even valid ones)
+                        # when accessed from non-whitelisted IPs. Other Ecotrack instances
+                        # return 401 for unauthenticated requests.
+                        # Check if the server is alive by probing a POST-only route with GET.
                         try:
                             probe = requests.get(f"{domain}/api/v1/create/order", headers={'Accept': 'application/json'}, timeout=5)
                             if probe.status_code == 405:
-                                # Server IS alive and Ecotrack routes exist — token is the problem
-                                return Response({"success": False, "error": "Invalid API Token. The Noest server rejected your credentials. Please verify your token from the Noest dashboard."})
+                                # Server IS alive, routes exist. 404 on auth routes = IP restriction or token issue.
+                                # Save credentials anyway — they may work from the production server.
+                                return Response({
+                                    "success": True,
+                                    "message": "Credentials saved. Noest's API may restrict access by IP — connection will be verified when exporting orders from production."
+                                })
                         except requests.RequestException:
                             pass
-                        last_error = f"Noest server {domain} returned HTTP 404. Your API Token may be invalid."
+                        last_error = f"Noest server {domain} returned HTTP 404. Your API Token may be invalid or your IP may not be whitelisted."
                     else:
                         last_error = f"Noest server {domain} returned HTTP {resp.status_code}."
                 except requests.RequestException as e:
