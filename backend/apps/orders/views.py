@@ -355,9 +355,9 @@ class OrderExportToDeliveryView(APIView):
                         last_err = e
                         logger.warning("[EXPORT] Failed to connect to %s: %s", domain, str(e))
 
-                if not resp:
+                if resp is None:
                     return Response(
-                        {'detail': f'Failed to connect to Noest: {str(last_err or "All domains failed")}'},
+                        {'detail': f'Failed to connect to Noest: {str(last_err or "All domains failed to connect")}'},
                         status=status.HTTP_502_BAD_GATEWAY,
                     )
 

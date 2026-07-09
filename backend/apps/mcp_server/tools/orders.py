@@ -462,8 +462,8 @@ def ship_order(store, arguments):
                 except requests.RequestException as e:
                     last_err = e
 
-            if not resp:
-                raise ToolError(f"Failed to connect to Noest: {str(last_err or 'All domains failed')}")
+            if resp is None:
+                raise ToolError(f"Failed to connect to Noest: {str(last_err or 'All domains failed to connect')}")
 
             if resp.status_code in (200, 201):
                 try:
