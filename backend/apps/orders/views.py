@@ -310,29 +310,22 @@ class OrderExportToDeliveryView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
-                # Ecotrack NOEST API: POST /api/order/add
-                # Requires Bearer token auth + api_token & user_guid in body
-                ecotrack_url = 'https://noest.ecotrack.dz/api/order/add'
-
+                # Ecotrack NOEST API Payload validation structure
                 payload = {
-                    'api_token': config.api_key,
-                    'user_guid': config.api_id,
-                    'client': order.full_name or 'Client',
-                    'phone': order.phone or '',
+                    'reference': order.order_number,
+                    'nom_client': order.full_name or 'Client',
+                    'telephone': order.phone or '',
                     'adresse': order.address or 'Address not specified',
-                    'wilaya_id': order.wilaya.code if order.wilaya else 16,
                     'commune': order.commune.name_fr if order.commune else '',
+                    'code_wilaya': int(order.wilaya.code) if (order.wilaya and order.wilaya.code.isdigit()) else 16,
                     'montant': float(order.total),
                     'produit': ', '.join(
                         [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
                     ) or order.order_number,
-                    'type_id': 1,
-                    'poids': 1,
+                    'type': 1, # 1 = Livraison
                     'stop_desk': 0,
-                    'reference': order.order_number,
                 }
 
-                logger.info("[EXPORT] Noest/Ecotrack URL: %s", ecotrack_url)
                 logger.info("[EXPORT] Noest/Ecotrack payload: %s", {k: v for k, v in payload.items() if k != 'api_token'})
 
                 headers = {
@@ -341,13 +334,32 @@ class OrderExportToDeliveryView(APIView):
                     'Authorization': f'Bearer {config.api_key}',
                 }
 
-                resp = requests.post(
-                    ecotrack_url,
-                    json=payload,
-                    headers=headers,
-                    timeout=15,
-                )
-                logger.info("[EXPORT] Noest response status=%s body=%s", resp.status_code, resp.text[:1000])
+                domains = ['https://noest.ecotrack.dz', 'https://app.noest-dz.com']
+                resp = None
+                last_err = None
+
+                for domain in domains:
+                    ecotrack_url = f"{domain}/api/v1/create/order"
+                    logger.info("[EXPORT] Trying Noest/Ecotrack URL: %s", ecotrack_url)
+                    try:
+                        resp = requests.post(
+                            ecotrack_url,
+                            json=payload,
+                            headers=headers,
+                            timeout=15,
+                        )
+                        logger.info("[EXPORT] Noest response status=%s body=%s", resp.status_code, resp.text[:1000])
+                        if resp.status_code != 404:
+                            break
+                    except requests.RequestException as e:
+                        last_err = e
+                        logger.warning("[EXPORT] Failed to connect to %s: %s", domain, str(e))
+
+                if not resp:
+                    return Response(
+                        {'detail': f'Failed to connect to Noest: {str(last_err or "All domains failed")}'},
+                        status=status.HTTP_502_BAD_GATEWAY,
+                    )
 
                 if resp.status_code in (200, 201):
                     try:
@@ -379,21 +391,16 @@ class OrderExportToDeliveryView(APIView):
 
                     status_message = 'Order sent to Noest successfully'
                 else:
-                    # Try to parse JSON error body (Ecotrack returns 422 with JSON validation errors)
-                    try:
-                        err_data = resp.json()
-                        err_msg = err_data.get('error', err_data.get('message', resp.text[:500]))
-                    except (ValueError, AttributeError):
-                        err_msg = resp.text[:500]
-                    logger.error("[EXPORT] Noest HTTP %s: %s", resp.status_code, err_msg)
+                    err_text = resp.text[:500]
+                    logger.error("[EXPORT] Noest HTTP %s: %s", resp.status_code, err_text)
                     return Response(
-                        {'detail': f'Noest error (HTTP {resp.status_code}): {err_msg}'},
+                        {'detail': f'Noest error (HTTP {resp.status_code}): {err_text}'},
                         status=status.HTTP_502_BAD_GATEWAY,
                     )
-            except requests.RequestException as e:
-                logger.exception("[EXPORT] Noest connection error")
+            except Exception as e:
+                logger.exception("[EXPORT] Noest processing error")
                 return Response(
-                    {'detail': f'Failed to connect to Noest: {str(e)}'},
+                    {'detail': f'Failed to process Noest: {str(e)}'},
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 

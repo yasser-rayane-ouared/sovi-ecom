@@ -13,7 +13,7 @@ class Command(BaseCommand):
         companies = [
             ('yalidine', 'Yalidine Express', 'https://api.yalidine.app/v1'),
             ('zr_express', 'ZR Express', 'https://zrexpress.com/api'),
-            ('noest', 'Noest', 'https://noest.com/api'),
+            ('noest', 'Noest', 'https://noest.ecotrack.dz'),
             ('ems', 'EMS Algeria', 'https://ems.dz/api'),
             ('ecolog', 'Ecolog', 'https://ecolog.dz/api'),
             ('guepex', 'Guepex', 'https://guepex.app/api'),

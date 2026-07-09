@@ -422,26 +422,20 @@ def ship_order(store, arguments):
         if not config.api_id:
             raise ToolError("Noest configuration is missing the User GUID (API ID). Please set it in Delivery Settings.")
         try:
-            # Ecotrack NOEST API: POST /api/order/add
-            # Requires Bearer token auth + api_token & user_guid in body
-            ecotrack_url = 'https://noest.ecotrack.dz/api/order/add'
-
+            # Ecotrack NOEST API Payload validation structure
             payload = {
-                'api_token': config.api_key,
-                'user_guid': config.api_id,
-                'client': order.full_name or 'Client',
-                'phone': order.phone or '',
+                'reference': order.order_number,
+                'nom_client': order.full_name or 'Client',
+                'telephone': order.phone or '',
                 'adresse': order.address or 'Address not specified',
-                'wilaya_id': order.wilaya.code if order.wilaya else 16,
                 'commune': order.commune.name_fr if order.commune else '',
+                'code_wilaya': int(order.wilaya.code) if (order.wilaya and order.wilaya.code.isdigit()) else 16,
                 'montant': float(order.total),
                 'produit': ', '.join(
                     [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
                 ) or order.order_number,
-                'type_id': 1,
-                'poids': 1,
+                'type': 1, # 1 = Livraison
                 'stop_desk': 0,
-                'reference': order.order_number,
             }
 
             headers = {
@@ -450,7 +444,26 @@ def ship_order(store, arguments):
                 'Authorization': f'Bearer {config.api_key}',
             }
 
-            resp = requests.post(ecotrack_url, json=payload, headers=headers, timeout=15)
+            domains = ['https://noest.ecotrack.dz', 'https://app.noest-dz.com']
+            resp = None
+            last_err = None
+
+            for domain in domains:
+                ecotrack_url = f"{domain}/api/v1/create/order"
+                try:
+                    resp = requests.post(
+                        ecotrack_url,
+                        json=payload,
+                        headers=headers,
+                        timeout=15,
+                    )
+                    if resp.status_code != 404:
+                        break
+                except requests.RequestException as e:
+                    last_err = e
+
+            if not resp:
+                raise ToolError(f"Failed to connect to Noest: {str(last_err or 'All domains failed')}")
 
             if resp.status_code in (200, 201):
                 try:
@@ -474,8 +487,10 @@ def ship_order(store, arguments):
                 except (ValueError, AttributeError):
                     err_msg = resp.text[:500]
                 raise ToolError(f"Noest error (HTTP {resp.status_code}): {err_msg}")
-        except requests.RequestException as e:
-            raise ToolError(f"Failed to connect to Noest: {str(e)}")
+        except Exception as e:
+            if isinstance(e, ToolError):
+                raise
+            raise ToolError(f"Failed to process Noest: {str(e)}")
 
     elif company.name == 'zr_express':
         status_message = 'تم تسجيل الشحنة يدوياً (ZR Express)'

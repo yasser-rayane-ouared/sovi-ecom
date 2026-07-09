@@ -385,66 +385,37 @@ class TestConnectionView(APIView):
                 return Response({"success": False, "error": "User GUID is required for Noest."}, status=400)
             headers = {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
                 'Authorization': f'Bearer {api_key}',
             }
-            payload = {
-                'api_token': api_key,
-                'user_guid': api_id,
-                'client': 'Connection Test',
-                'phone': '0555000000',
-                'adresse': 'Test',
-                'wilaya_id': 16,
-                'commune': 'Alger Centre',
-                'montant': 0,
-                'produit': 'Test',
-                'type_id': 1,
-                'poids': 1,
-                'stop_desk': 0,
-                'reference': 'TEST-CONNECTION',
-            }
-            try:
-                resp = requests.post(
-                    'https://noest.ecotrack.dz/api/order/add',
-                    json=payload, headers=headers, timeout=10,
-                )
-                if resp.status_code in (200, 201):
-                    try:
-                        data = resp.json()
-                        if data.get('success') is False:
-                            error = data.get('error', data.get('message', 'Unknown error'))
-                            # Auth errors mean bad credentials
-                            if 'token' in str(error).lower() or 'guid' in str(error).lower() or 'auth' in str(error).lower():
-                                return Response({"success": False, "error": f"Authentication failed: {error}"})
-                            # Validation errors (like missing fields) mean auth succeeded!
-                            return Response({"success": True, "message": "Connected to Noest successfully! Credentials are valid."})
-                        return Response({"success": True, "message": "Connected to Noest successfully!"})
-                    except ValueError:
-                        return Response({"success": False, "error": "Noest returned invalid response."})
-                elif resp.status_code == 422:
-                    # 422 = validation error = auth succeeded but payload was bad (expected for test)
-                    try:
-                        data = resp.json()
-                        error = data.get('error', data.get('message', ''))
-                        if 'api_token' in str(error).lower() or 'user_guid' in str(error).lower():
-                            return Response({"success": False, "error": f"Credential validation failed: {error}"})
-                        return Response({"success": True, "message": "Connected to Noest successfully! Credentials are valid."})
-                    except ValueError:
-                        return Response({"success": True, "message": "Connected to Noest (HTTP 422 - auth OK, test data rejected as expected)."})
-                elif resp.status_code == 401:
-                    return Response({"success": False, "error": "Invalid API Token. Check your Noest credentials."})
-                elif resp.status_code == 403:
-                    return Response({"success": False, "error": "Access denied (HTTP 403). Your IP may be blocked or credentials are incorrect."})
-                elif resp.status_code == 404:
-                    try:
-                        data = resp.json()
-                        return Response({"success": False, "error": f"API route not found: {data.get('message', resp.text[:200])}"})
-                    except ValueError:
-                        return Response({"success": False, "error": "Noest API endpoint not reachable."})
-                else:
-                    return Response({"success": False, "error": f"Noest returned HTTP {resp.status_code}: {resp.text[:200]}"})
-            except requests.RequestException as e:
-                return Response({"success": False, "error": f"Connection failed: {str(e)}"})
+            # Ecotrack multi-domain fallback for Noest
+            domains = ['https://noest.ecotrack.dz', 'https://app.noest-dz.com']
+            last_error = "Could not reach Noest API servers."
+
+            for domain in domains:
+                url = f"{domain}/api/v1/get/wilayas"
+                try:
+                    resp = requests.get(url, headers=headers, timeout=10)
+                    if resp.status_code in (200, 201):
+                        return Response({"success": True, "message": f"Connected to Noest successfully (via {domain})!"})
+                    elif resp.status_code in (401, 403):
+                        return Response({"success": False, "error": "Invalid API Token. Check your Noest credentials."})
+                    elif resp.status_code == 404:
+                        # Ecotrack returns 404 when Bearer token is invalid (hides routes).
+                        # Probe the create/order route with GET to confirm the server is alive.
+                        try:
+                            probe = requests.get(f"{domain}/api/v1/create/order", headers={'Accept': 'application/json'}, timeout=5)
+                            if probe.status_code == 405:
+                                # Server IS alive and Ecotrack routes exist — token is the problem
+                                return Response({"success": False, "error": "Invalid API Token. The Noest server rejected your credentials. Please verify your token from the Noest dashboard."})
+                        except requests.RequestException:
+                            pass
+                        last_error = f"Noest server {domain} returned HTTP 404. Your API Token may be invalid."
+                    else:
+                        last_error = f"Noest server {domain} returned HTTP {resp.status_code}."
+                except requests.RequestException as e:
+                    last_error = f"Connection to {domain} failed: {str(e)}"
+
+            return Response({"success": False, "error": last_error})
 
         # Generic test for other companies - just check credentials look valid
         else:
