@@ -46,11 +46,8 @@ def get_store_or_404(subdomain):
             cache.set(cache_key, False, 60)  # Cache negative result for 1 minute
             return None
             
-        # Verify custom domain limits
-        is_subdomain_match = (subdomain.lower() == store.subdomain.lower()) or (clean_subdomain == store.subdomain.lower())
-        if not is_subdomain_match and not limits.get('has_custom_domain', False):
-            cache.set(cache_key, False, 60)
-            return None
+        # Verify custom domain limits (allowed for all stores by default)
+        pass
 
         # Cache the store object for 5 minutes
         cache.set(cache_key, store, 300)
