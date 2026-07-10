@@ -402,8 +402,27 @@ export default function DeliveryDashboard() {
     </button>
   );
 
+const ECOTRACK_COMPANIES = [
+  'noest', 'ecolog', 'guepex', 'gupex', 'dhd', 'yaliteck',
+  '48hr_livraison', 'allo_livraison', 'anderson_delivery', 'areex', 'assil_delivery', 'baconsult',
+  'colireli', 'colivraison_express', 'coyote_express', 'delivromail', 'dhd_express', 'distazero',
+  'expedia_chrono', 'fretdirect', 'fz_delivery', 'golivri', 'hhd_express', 'imir', 'medexpress',
+  'monohub', 'msm_go', 'navex_delivery', 'negmar_express', 'noest_express', 'om_express',
+  'ontime_ecotrack', 'packers', 'pdex', 'prest', 'rb_livraison', 'rex_livraison', 'rocket_delivery',
+  'salva_delivery', 'samex_delivery', 'speed_delivery', 'swift_express', 'tsl_express',
+  'ultra_express', 'univer_delivery', 'worldexpress', 'zvit_express'
+];
+
   /* ─── Get fields for a company ───────────────────────────────────────────── */
-  const getFields = (companyName: string) => COMPANY_FIELDS[companyName] || DEFAULT_FIELDS;
+  const getFields = (companyName: string) => {
+    if (ECOTRACK_COMPANIES.includes(companyName)) {
+      return [
+        { key: "api_key", label: "API Token", labelAr: "رمز API", placeholder: "Your Ecotrack API Token", type: "password", required: true },
+        { key: "api_id", label: "User GUID", labelAr: "معرف المستخدم", placeholder: "Your Ecotrack User GUID", type: "text", required: true },
+      ];
+    }
+    return COMPANY_FIELDS[companyName] || DEFAULT_FIELDS;
+  };
 
   /* ═══════════════════════════════════════════════════════════════════════════ */
   /* RENDER                                                                     */
