@@ -460,19 +460,23 @@ export default function OrdersDashboard() {
           className: "bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
         });
         
-        visibleButtons.push({
-          label: t("ordersActionSendDelivery"),
-          icon: <Truck className="h-3.5 w-3.5" />,
-          onClick: () => openExportModal(o.id, o.order_number),
-          className: "bg-primary/10 hover:bg-primary/20 text-primary font-bold border border-primary/20"
-        });
+        if (!o.delivery_company_name) {
+          visibleButtons.push({
+            label: t("ordersActionSendDelivery"),
+            icon: <Truck className="h-3.5 w-3.5" />,
+            onClick: () => openExportModal(o.id, o.order_number),
+            className: "bg-primary/10 hover:bg-primary/20 text-primary font-bold border border-primary/20"
+          });
+        }
       } else if (["confirmed", "pending", "prepared"].includes(o.status)) {
-        visibleButtons.push({
-          label: t("ordersActionSendDelivery"),
-          icon: <Truck className="h-3.5 w-3.5" />,
-          onClick: () => openExportModal(o.id, o.order_number),
-          className: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-sm shadow-primary/20"
-        });
+        if (!o.delivery_company_name) {
+          visibleButtons.push({
+            label: t("ordersActionSendDelivery"),
+            icon: <Truck className="h-3.5 w-3.5" />,
+            onClick: () => openExportModal(o.id, o.order_number),
+            className: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-sm shadow-primary/20"
+          });
+        }
       } else if (o.status === "shipped") {
         visibleButtons.push({
           label: t("ordersActionReceived"),
@@ -559,6 +563,12 @@ export default function OrdersDashboard() {
 
     return (
       <div className={`relative flex items-center gap-1.5 ${isRtl ? "justify-end" : "justify-start"} flex-wrap md:flex-nowrap`}>
+        {o.delivery_company_name && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1 shrink-0">
+            <Truck className="h-3 w-3" />
+            {language === "ar" ? `تم الإرسال عبر ${o.delivery_company_name}` : language === "fr" ? `Envoyé via ${o.delivery_company_name}` : `Sent with ${o.delivery_company_name}`}
+          </span>
+        )}
         {visibleButtons.map((btn, index) => (
           <Button
             key={index}

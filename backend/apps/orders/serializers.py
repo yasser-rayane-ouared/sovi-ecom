@@ -28,6 +28,7 @@ class OrderSerializer(serializers.ModelSerializer):
     is_duplicate = serializers.SerializerMethodField(read_only=True)
     duplicate_count = serializers.SerializerMethodField(read_only=True)
     risk_score = serializers.SerializerMethodField(read_only=True)
+    delivery_company_name = serializers.SerializerMethodField(read_only=True)
 
     def get_commune_name(self, obj):
         return obj.commune.name_ar if obj.commune else ''
@@ -48,6 +49,13 @@ class OrderSerializer(serializers.ModelSerializer):
             return int((returned_or_cancelled / total_others) * 100)
         return 0
 
+    def get_delivery_company_name(self, obj):
+        """Return the display name of the delivery company if the order has been exported."""
+        shipment = obj.shipments.select_related('company').order_by('-id').first()
+        if shipment:
+            return shipment.company.display_name
+        return None
+
     class Meta:
         model = Order
         fields = [
@@ -57,7 +65,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'status', 'source', 'utm_source', 'utm_medium', 'utm_campaign',
             'is_abandoned', 'items', 'status_history', 'created_at', 'updated_at',
             'is_duplicate', 'duplicate_count', 'risk_score',
-            'coupon_code', 'coupon_discount',
+            'coupon_code', 'coupon_discount', 'delivery_company_name',
         ]
         read_only_fields = ['id', 'order_number', 'created_at', 'updated_at']
 
