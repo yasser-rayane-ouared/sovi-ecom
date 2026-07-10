@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.stores.models import Store
 from apps.stores.utils import get_store_for_user
+from apps.orders.views import ECOTRACK_COMPANIES
 from .models import DeliveryCompany, StoreDeliveryConfig, DeliveryPricing, Shipment
 from .serializers import (
     DeliveryCompanySerializer, StoreDeliveryConfigSerializer,
@@ -322,7 +323,132 @@ class FetchCompanyFeesView(APIView):
                     status=status.HTTP_502_BAD_GATEWAY
                 )
 
-        # 2. Other companies (placeholder mock API call checking credential existence)
+        # 2. EcoTrack-based integrations
+        elif company.name in ECOTRACK_COMPANIES or 'ecotrack' in (company.api_base_url or '').lower():
+            if not config.api_key:
+                return Response(
+                    {"detail": f"API Token is required to fetch rates for {company.display_name}."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if not config.api_id:
+                return Response(
+                    {"detail": f"User GUID is required to fetch rates for {company.display_name}."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            headers = {
+                'Authorization': f'Bearer {config.api_key}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            }
+
+            # Resolve domains
+            base_url = (company.api_base_url or '').strip()
+            if base_url.endswith('/'):
+                base_url = base_url[:-1]
+            if base_url.endswith('/api/v1'):
+                base_url = base_url[:-7]
+            elif base_url.endswith('/api'):
+                base_url = base_url[:-4]
+
+            domains = []
+            if base_url:
+                domains.append(base_url)
+
+            # Generate dynamic Ecotrack domains
+            slug = company.name
+            dash_subdomain = slug.replace('_', '-')
+            flat_subdomain = slug.replace('_', '')
+            
+            domains.append(f"https://{dash_subdomain}.ecotrack.dz")
+            domains.append(f"https://{flat_subdomain}.ecotrack.dz")
+
+            # Add known fallbacks
+            if company.name in ('noest', 'noest_express'):
+                domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
+            elif company.name in ('dhd', 'dhd_express'):
+                domains.append('https://dhd.ecotrack.dz')
+            elif company.name == 'msm_go':
+                domains.append('https://msmgo.ecotrack.dz')
+            elif company.name == 'ontime_ecotrack':
+                domains.append('https://ontime.ecotrack.dz')
+
+            unique_domains = []
+            for d in domains:
+                if d not in unique_domains:
+                    unique_domains.append(d)
+
+            resp = None
+            last_err = None
+            endpoints = ['/api/v1/get/wilayas', '/api/public/get/wilayas']
+
+            for domain in unique_domains:
+                for endpoint in endpoints:
+                    url = f"{domain}{endpoint}"
+                    try:
+                        logger.info("[FETCH FEES] Fetching %s rates from: %s", company.display_name, url)
+                        resp = requests.get(url, headers=headers, timeout=15)
+                        logger.info("[FETCH FEES] %s response status=%s", company.display_name, resp.status_code)
+                        if resp.status_code == 200:
+                            break
+                    except requests.RequestException as e:
+                        last_err = e
+                        logger.warning("[FETCH FEES] Failed to connect to %s: %s", url, str(e))
+                if resp and resp.status_code == 200:
+                    break
+
+            if resp is None or resp.status_code != 200:
+                return Response(
+                    {"detail": f"Failed to connect to {company.display_name} API to fetch rates: {str(last_err or 'Server returned error')}"},
+                    status=status.HTTP_502_BAD_GATEWAY
+                )
+
+            try:
+                data = resp.json()
+                parsed_fees = []
+                if isinstance(data, list):
+                    for item in data:
+                        try:
+                            code_raw = item.get("code") or item.get("id") or item.get("wilaya_id")
+                            if code_raw is None:
+                                continue
+                            code = int(code_raw)
+                            
+                            home_price = item.get("tarif_home") or item.get("home_fee") or item.get("price") or item.get("delivery_price")
+                            if home_price is None:
+                                home_price = 600
+                            home_price = float(home_price)
+                            
+                            desk_price = item.get("tarif_stopdesk") or item.get("tarif_desk") or item.get("desk_fee") or item.get("stopdesk_price")
+                            if desk_price is None:
+                                desk_price = home_price - 150 if home_price > 150 else home_price
+                            desk_price = float(desk_price)
+
+                            if code > 0:
+                                parsed_fees.append({
+                                    "code": code,
+                                    "home_price": home_price,
+                                    "desk_price": desk_price
+                                })
+                        except (ValueError, TypeError):
+                            continue
+
+                if not parsed_fees:
+                    return Response(
+                        {"detail": f"Could not parse shipping fees from {company.display_name} API response."},
+                        status=status.HTTP_502_BAD_GATEWAY
+                    )
+
+                return Response({"pricing": parsed_fees})
+
+            except Exception as e:
+                logger.exception("[FETCH FEES] Error parsing Ecotrack response")
+                return Response(
+                    {"detail": f"Failed to process {company.display_name} rates response: {str(e)}"},
+                    status=status.HTTP_502_BAD_GATEWAY
+                )
+
+        # 3. Other companies (placeholder mock API call checking credential existence)
         else:
             if len(config.api_key or "") < 5 and len(config.api_secret or "") < 5:
                 return Response(
