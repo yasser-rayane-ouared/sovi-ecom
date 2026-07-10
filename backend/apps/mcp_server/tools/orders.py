@@ -419,24 +419,44 @@ def ship_order(store, arguments):
     # --- EcoTrack-based integrations (Noest, ZR Express, Ecolog, Guepex, DHD, Yaliteck, Flash, etc.) ---
     elif (company.name in ('noest', 'zr_express', 'ecolog', 'guepex', 'dhd', 'yaliteck', 'flash_delivery') or 'ecotrack' in (company.api_base_url or '').lower()) and config.api_key:
         try:
-            # Ecotrack API Payload validation structure
-            payload = {
-                'reference': order.order_number,
-                'nom_client': order.full_name or 'Client',
-                'telephone': order.phone or '',
-                'adresse': order.address or 'Address not specified',
-                'commune': order.commune.name_fr if order.commune else '',
-                'code_wilaya': order.wilaya.code if order.wilaya else 16,
-                'montant': float(order.total),
-                'produit': ', '.join(
-                    [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
-                ) or order.order_number,
-                'type': 1, # 1 = Livraison
-                'stop_desk': 0,
-                'user_guid': config.api_id or '',
-                'api_id': config.api_id or '',
-                'api_token': config.api_key,
-            }
+            if company.name == 'noest':
+                # Noest Public API (version 2.3) payload
+                payload = {
+                    'user_guid': config.api_id or '',
+                    'reference': order.order_number,
+                    'client': order.full_name or 'Client',
+                    'phone': order.phone or '',
+                    'phone_2': order.phone2 or '',
+                    'adresse': order.address or 'Address not specified',
+                    'wilaya_id': int(order.wilaya.code) if (order.wilaya and str(order.wilaya.code).isdigit()) else 16,
+                    'commune': order.commune.name_fr if (order.commune and order.commune.name_fr) else '',
+                    'montant': float(order.total),
+                    'produit': ', '.join(
+                        [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                    ) or order.order_number,
+                    'type_id': 1, # 1 = Delivery
+                    'stop_desk': 0,
+                    'can_open': 1,
+                }
+            else:
+                # Ecotrack API Payload validation structure
+                payload = {
+                    'reference': order.order_number,
+                    'nom_client': order.full_name or 'Client',
+                    'telephone': order.phone or '',
+                    'adresse': order.address or 'Address not specified',
+                    'commune': order.commune.name_fr if order.commune else '',
+                    'code_wilaya': order.wilaya.code if order.wilaya else 16,
+                    'montant': float(order.total),
+                    'produit': ', '.join(
+                        [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                    ) or order.order_number,
+                    'type': 1, # 1 = Livraison
+                    'stop_desk': 0,
+                    'user_guid': config.api_id or '',
+                    'api_id': config.api_id or '',
+                    'api_token': config.api_key,
+                }
 
             headers = {
                 'Content-Type': 'application/json',
@@ -476,7 +496,10 @@ def ship_order(store, arguments):
             last_err = None
 
             for domain in domains:
-                ecotrack_url = f"{domain}/api/v1/create/order"
+                if company.name == 'noest':
+                    ecotrack_url = f"{domain}/api/public/create/order"
+                else:
+                    ecotrack_url = f"{domain}/api/v1/create/order"
                 try:
                     resp = requests.post(
                         ecotrack_url,
