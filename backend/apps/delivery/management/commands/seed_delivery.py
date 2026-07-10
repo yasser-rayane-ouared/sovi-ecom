@@ -10,35 +10,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write("Seeding delivery companies...")
-        companies = [
-            ('yalidine', 'Yalidine Express', 'https://api.yalidine.app/v1'),
-            ('zr_express', 'ZR Express', 'https://zrexpress.com/api'),
-            ('noest', 'Noest', 'https://noest.ecotrack.dz'),
-            ('ems', 'EMS Algeria', 'https://ems.dz/api'),
-            ('ecolog', 'Ecolog', 'https://ecolog.dz/api'),
-            ('guepex', 'Guepex', 'https://guepex.app/api'),
-            ('manual', 'Manual Settings', ''),
-        ]
-
-        for code, name, url in companies:
-            DeliveryCompany.objects.get_or_create(
-                name=code,
-                defaults={
-                    'display_name': name,
-                    'api_base_url': url,
-                    'is_active': True,
-                }
-            )
-        # Add ecom delivery company
-        DeliveryCompany.objects.update_or_create(
-            name='ecom_delivery',
-            defaults={
-                'display_name': 'Ecom Delivery',
-                'api_base_url': '',
-                'logo': 'http://localhost:8000/media/delivery_logos/ecom_delivery.png',
-                'is_active': True,
-            }
-        )
+        from apps.delivery.views import seed_delivery_companies_if_empty
+        seed_delivery_companies_if_empty()
 
         self.stdout.write("Seeding 58 Wilayas...")
         created_count = seed_delivery_wilayas()

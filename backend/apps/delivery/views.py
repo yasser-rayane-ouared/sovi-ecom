@@ -23,34 +23,78 @@ class DeliveryCompanyListView(generics.ListAPIView):
 
 
 def seed_delivery_companies_if_empty():
-    """Auto-seed delivery companies if the table is empty."""
-    if DeliveryCompany.objects.exists():
-        return
+    """Auto-seed and sync delivery companies to ensure all partners exist."""
     companies = [
-        {"name": "yalidine", "display_name": "Yalidine", "api_base_url": "https://api.yalidine.app/v1/", "logo": "https://yalidine.com/img/logo.png"},
-        {"name": "zr_express", "display_name": "ZR Express", "api_base_url": "https://api.zrexpress.com/", "logo": ""},
-        {"name": "noest", "display_name": "Noest", "api_base_url": "", "logo": ""},
-        {"name": "ems", "display_name": "EMS", "api_base_url": "", "logo": ""},
-        {"name": "ecolog", "display_name": "Ecolog", "api_base_url": "", "logo": ""},
-        {"name": "guepex", "display_name": "Guepex", "api_base_url": "", "logo": ""},
-        {"name": "maystro_delivery", "display_name": "Maystro Delivery", "api_base_url": "", "logo": ""},
-        {"name": "dhd", "display_name": "DHD", "api_base_url": "", "logo": ""},
-        {"name": "yaliteck", "display_name": "Yaliteck", "api_base_url": "", "logo": ""},
-        {"name": "flash_delivery", "display_name": "Flash Delivery", "api_base_url": "", "logo": ""},
-        {"name": "ecom_delivery", "display_name": "Ecom Delivery", "api_base_url": "", "logo": ""},
+        {"name": "yalidine", "display_name": "Yalidine Express", "api_base_url": "https://api.yalidine.app/v1", "logo": "/media/delivery_logos/yalidine.jpg"},
+        {"name": "zr_express", "display_name": "ZR Express", "api_base_url": "https://zrexpress.com/api", "logo": "/media/delivery_logos/zr_express.png"},
+        {"name": "ems", "display_name": "EMS Algeria", "api_base_url": "https://ems.dz/api", "logo": "/media/delivery_logos/ems.jpg"},
+        {"name": "maystro_delivery", "display_name": "Maystro Delivery", "api_base_url": "", "logo": "/media/delivery_logos/maystro.jpg"},
+        {"name": "flash_delivery", "display_name": "Flash Delivery", "api_base_url": "", "logo": "/media/delivery_logos/flash.png"},
+        {"name": "ecom_delivery", "display_name": "Ecom Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecom_delivery.png"},
         {"name": "manual", "display_name": "Manual Settings", "api_base_url": "", "logo": ""},
+        
+        # Legacy/aliases Ecotrack names (for backward compatibility)
+        {"name": "noest", "display_name": "Noest", "api_base_url": "https://noest.ecotrack.dz", "logo": "/media/delivery_logos/noest.jpg"},
+        {"name": "ecolog", "display_name": "Ecolog", "api_base_url": "https://ecolog.dz/api", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "guepex", "display_name": "Guepex", "api_base_url": "https://guepex.app/api", "logo": "/media/delivery_logos/guepex.png"},
+        {"name": "gupex", "display_name": "Gupex", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "dhd", "display_name": "DHD", "api_base_url": "", "logo": "/media/delivery_logos/dhd.png"},
+        {"name": "yaliteck", "display_name": "Yaliteck", "api_base_url": "", "logo": "/media/delivery_logos/yaliteck.jpg"},
+        
+        # 41 EcoTrack Partner Companies
+        {"name": "48hr_livraison", "display_name": "48hr Livraison", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "allo_livraison", "display_name": "Allo Livraison", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "anderson_delivery", "display_name": "Anderson Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "areex", "display_name": "Areex", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "assil_delivery", "display_name": "Assil Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "baconsult", "display_name": "BaConsult", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "colireli", "display_name": "Colireli", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "colivraison_express", "display_name": "Colivraison Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "coyote_express", "display_name": "Coyote Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "delivromail", "display_name": "Delivromail", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "dhd_express", "display_name": "DHD Express", "api_base_url": "", "logo": "/media/delivery_logos/dhd.png"},
+        {"name": "distazero", "display_name": "Distazero", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "expedia_chrono", "display_name": "Expedia Chrono", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "fretdirect", "display_name": "Fretdirect", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "fz_delivery", "display_name": "FZ Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "golivri", "display_name": "Golivri", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "hhd_express", "display_name": "HHD Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "imir", "display_name": "Imir", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "medexpress", "display_name": "MedExpress", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "monohub", "display_name": "MonoHub", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "msm_go", "display_name": "MSM Go", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "navex_delivery", "display_name": "Navex Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "negmar_express", "display_name": "Negmar Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "noest_express", "display_name": "Noest Express", "api_base_url": "", "logo": "/media/delivery_logos/noest.jpg"},
+        {"name": "om_express", "display_name": "OM Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "ontime_ecotrack", "display_name": "Ontime EcoTrack", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "packers", "display_name": "Packers", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "pdex", "display_name": "Pdex", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "prest", "display_name": "Prest", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "rb_livraison", "display_name": "RB Livraison", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "rex_livraison", "display_name": "Rex Livraison", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "rocket_delivery", "display_name": "Rocket Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "salva_delivery", "display_name": "Salva Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "samex_delivery", "display_name": "SamEx Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "speed_delivery", "display_name": "Speed Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "swift_express", "display_name": "Swift Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "tsl_express", "display_name": "TSL Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "ultra_express", "display_name": "Ultra Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "univer_delivery", "display_name": "Univer Delivery", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "worldexpress", "display_name": "Worldexpress", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
+        {"name": "zvit_express", "display_name": "Z-Vit Express", "api_base_url": "", "logo": "/media/delivery_logos/ecotrack_partner.png"},
     ]
-    DeliveryCompany.objects.bulk_create([
-        DeliveryCompany(
+    for c in companies:
+        DeliveryCompany.objects.get_or_create(
             name=c["name"],
-            display_name=c["display_name"],
-            api_base_url=c["api_base_url"],
-            logo=c["logo"],
-            is_active=True,
-            supports_tracking=c["name"] not in ("manual", "ems"),
+            defaults={
+                "display_name": c["display_name"],
+                "api_base_url": c["api_base_url"],
+                "logo": c["logo"],
+                "is_active": True,
+                "supports_tracking": c["name"] not in ("manual", "ems"),
+            }
         )
-        for c in companies
-    ], ignore_conflicts=True)
 
 
 class StoreDeliveryConfigListCreateView(generics.ListCreateAPIView):
@@ -378,46 +422,87 @@ class TestConnectionView(APIView):
             except requests.RequestException as e:
                 return Response({"success": False, "error": f"Connection failed: {str(e)}"})
 
-        elif company.name == 'noest':
+        # EcoTrack Partner Companies and legacy aliases
+        elif company.name in (
+            'noest', 'ecolog', 'guepex', 'gupex', 'dhd', 'yaliteck',
+            '48hr_livraison', 'allo_livraison', 'anderson_delivery', 'areex', 'assil_delivery', 'baconsult',
+            'colireli', 'colivraison_express', 'coyote_express', 'delivromail', 'dhd_express', 'distazero',
+            'expedia_chrono', 'fretdirect', 'fz_delivery', 'golivri', 'hhd_express', 'imir', 'medexpress',
+            'monohub', 'msm_go', 'navex_delivery', 'negmar_express', 'noest_express', 'om_express',
+            'ontime_ecotrack', 'packers', 'pdex', 'prest', 'rb_livraison', 'rex_livraison', 'rocket_delivery',
+            'salva_delivery', 'samex_delivery', 'speed_delivery', 'swift_express', 'tsl_express',
+            'ultra_express', 'univer_delivery', 'worldexpress', 'zvit_express'
+        ) or 'ecotrack' in (company.api_base_url or '').lower():
             if not api_key:
-                return Response({"success": False, "error": "API Token is required for Noest."}, status=400)
+                return Response({"success": False, "error": f"API Token is required for {company.display_name}."}, status=400)
             if not api_id:
-                return Response({"success": False, "error": "User GUID is required for Noest."}, status=400)
+                return Response({"success": False, "error": f"User GUID is required for {company.display_name}."}, status=400)
             headers = {
                 'Accept': 'application/json',
                 'Authorization': f'Bearer {api_key}',
             }
-            # Ecotrack multi-domain fallback for Noest
-            domains = ['https://noest.ecotrack.dz', 'https://app.noest-dz.com']
-            last_error = "Could not reach Noest API servers."
+            
+            # Resolve domains
+            base_url = (company.api_base_url or '').strip()
+            if base_url.endswith('/'):
+                base_url = base_url[:-1]
+            if base_url.endswith('/api/v1'):
+                base_url = base_url[:-7]
+            elif base_url.endswith('/api'):
+                base_url = base_url[:-4]
 
-            for domain in domains:
+            domains = []
+            if base_url:
+                domains.append(base_url)
+
+            # Generate dynamic Ecotrack domains
+            slug = company.name
+            dash_subdomain = slug.replace('_', '-')
+            flat_subdomain = slug.replace('_', '')
+            
+            domains.append(f"https://{dash_subdomain}.ecotrack.dz")
+            domains.append(f"https://{flat_subdomain}.ecotrack.dz")
+
+            # Known fallbacks
+            if company.name in ('noest', 'noest_express'):
+                domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
+            elif company.name in ('dhd', 'dhd_express'):
+                domains.append('https://dhd.ecotrack.dz')
+            elif company.name == 'msm_go':
+                domains.append('https://msmgo.ecotrack.dz')
+            elif company.name == 'ontime_ecotrack':
+                domains.append('https://ontime.ecotrack.dz')
+
+            # De-duplicate domains while keeping order
+            unique_domains = []
+            for d in domains:
+                if d not in unique_domains:
+                    unique_domains.append(d)
+
+            last_error = f"Could not reach {company.display_name} API servers."
+
+            for domain in unique_domains:
                 url = f"{domain}/api/v1/get/wilayas"
                 try:
                     resp = requests.get(url, headers=headers, timeout=10)
                     if resp.status_code in (200, 201):
-                        return Response({"success": True, "message": f"Connected to Noest successfully (via {domain})!"})
+                        return Response({"success": True, "message": f"Connected to {company.display_name} successfully (via {domain})!"})
                     elif resp.status_code in (401, 403):
-                        return Response({"success": False, "error": "Invalid API Token. Check your Noest credentials."})
+                        return Response({"success": False, "error": f"Invalid API Token. Check your {company.display_name} credentials."})
                     elif resp.status_code == 404:
-                        # Noest's Ecotrack returns 404 for all API requests (even valid ones)
-                        # when accessed from non-whitelisted IPs. Other Ecotrack instances
-                        # return 401 for unauthenticated requests.
-                        # Check if the server is alive by probing a POST-only route with GET.
+                        # Probe if server is alive by checking GET on POST route
                         try:
                             probe = requests.get(f"{domain}/api/v1/create/order", headers={'Accept': 'application/json'}, timeout=5)
                             if probe.status_code == 405:
-                                # Server IS alive, routes exist. 404 on auth routes = IP restriction or token issue.
-                                # Save credentials anyway — they may work from the production server.
                                 return Response({
                                     "success": True,
-                                    "message": "Credentials saved. Noest's API may restrict access by IP — connection will be verified when exporting orders from production."
+                                    "message": f"Credentials saved. {company.display_name}'s API may restrict access by IP — connection will be verified when exporting orders from production."
                                 })
                         except requests.RequestException:
                             pass
-                        last_error = f"Noest server {domain} returned HTTP 404. Your API Token may be invalid or your IP may not be whitelisted."
+                        last_error = f"{company.display_name} server {domain} returned HTTP 404. Your API Token may be invalid or your IP may not be whitelisted."
                     else:
-                        last_error = f"Noest server {domain} returned HTTP {resp.status_code}."
+                        last_error = f"{company.display_name} server {domain} returned HTTP {resp.status_code}."
                 except requests.RequestException as e:
                     last_error = f"Connection to {domain} failed: {str(e)}"
 

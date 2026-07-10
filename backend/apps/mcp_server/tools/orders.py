@@ -417,46 +417,53 @@ def ship_order(store, arguments):
             raise ToolError(f"فشل الاتصال بـ Yalidine: {str(e)}")
 
     # --- EcoTrack-based integrations (Noest, ZR Express, Ecolog, Guepex, DHD, Yaliteck, Flash, etc.) ---
-    elif (company.name in ('noest', 'zr_express', 'ecolog', 'guepex', 'dhd', 'yaliteck', 'flash_delivery') or 'ecotrack' in (company.api_base_url or '').lower()) and config.api_key:
+    elif (company.name in (
+        'noest', 'ecolog', 'guepex', 'gupex', 'dhd', 'yaliteck',
+        '48hr_livraison', 'allo_livraison', 'anderson_delivery', 'areex', 'assil_delivery', 'baconsult',
+        'colireli', 'colivraison_express', 'coyote_express', 'delivromail', 'dhd_express', 'distazero',
+        'expedia_chrono', 'fretdirect', 'fz_delivery', 'golivri', 'hhd_express', 'imir', 'medexpress',
+        'monohub', 'msm_go', 'navex_delivery', 'negmar_express', 'noest_express', 'om_express',
+        'ontime_ecotrack', 'packers', 'pdex', 'prest', 'rb_livraison', 'rex_livraison', 'rocket_delivery',
+        'salva_delivery', 'samex_delivery', 'speed_delivery', 'swift_express', 'tsl_express',
+        'ultra_express', 'univer_delivery', 'worldexpress', 'zvit_express'
+    ) or 'ecotrack' in (company.api_base_url or '').lower()) and config.api_key:
         try:
-            if company.name == 'noest':
-                # Noest Public API (version 2.3) payload
-                payload = {
-                    'user_guid': config.api_id or '',
-                    'reference': order.order_number,
-                    'client': order.full_name or 'Client',
-                    'phone': order.phone or '',
-                    'phone_2': order.phone2 or '',
-                    'adresse': order.address or 'Address not specified',
-                    'wilaya_id': int(order.wilaya.code) if (order.wilaya and str(order.wilaya.code).isdigit()) else 16,
-                    'commune': order.commune.name_fr if (order.commune and order.commune.name_fr) else '',
-                    'montant': float(order.total),
-                    'produit': ', '.join(
-                        [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
-                    ) or order.order_number,
-                    'type_id': 1, # 1 = Delivery
-                    'stop_desk': 0,
-                    'can_open': 1,
-                }
-            else:
-                # Ecotrack API Payload validation structure
-                payload = {
-                    'reference': order.order_number,
-                    'nom_client': order.full_name or 'Client',
-                    'telephone': order.phone or '',
-                    'adresse': order.address or 'Address not specified',
-                    'commune': order.commune.name_fr if order.commune else '',
-                    'code_wilaya': order.wilaya.code if order.wilaya else 16,
-                    'montant': float(order.total),
-                    'produit': ', '.join(
-                        [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
-                    ) or order.order_number,
-                    'type': 1, # 1 = Livraison
-                    'stop_desk': 0,
-                    'user_guid': config.api_id or '',
-                    'api_id': config.api_id or '',
-                    'api_token': config.api_key,
-                }
+            # Unified EcoTrack API Payload
+            payload = {
+                'user_guid': config.api_id or '',
+                'api_id': config.api_id or '',
+                'api_token': config.api_key,
+                'reference': order.order_number,
+                
+                # Name variations for backward/forward compatibility
+                'client': order.full_name or 'Client',
+                'nom_client': order.full_name or 'Client',
+                
+                # Phone variations
+                'phone': order.phone or '',
+                'telephone': order.phone or '',
+                'phone_2': order.phone2 or '',
+                
+                # Address / location
+                'adresse': order.address or 'Address not specified',
+                'wilaya_id': int(order.wilaya.code) if (order.wilaya and str(order.wilaya.code).isdigit()) else 16,
+                'code_wilaya': order.wilaya.code if order.wilaya else 16,
+                'commune': order.commune.name_fr if (order.commune and order.commune.name_fr) else '',
+                
+                # Pricing & Products
+                'montant': float(order.total),
+                'produit': ', '.join(
+                    [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                ) or order.order_number,
+                
+                # Type variations
+                'type_id': 1, # 1 = Delivery
+                'type': 1,
+                
+                # Delivery options
+                'stop_desk': 0,
+                'can_open': 1,
+            }
 
             headers = {
                 'Content-Type': 'application/json',
@@ -477,40 +484,52 @@ def ship_order(store, arguments):
             if base_url:
                 domains.append(base_url)
 
-            # For Noest specifically, we add the default fallbacks
-            if company.name == 'noest':
-                if 'https://noest.ecotrack.dz' not in domains:
-                    domains.append('https://noest.ecotrack.dz')
-                if 'https://app.noest-dz.com' not in domains:
-                    domains.append('https://app.noest-dz.com')
-            # For ZR Express specifically, we add its fallbacks if not configured properly
-            elif company.name == 'zr_express':
-                if 'https://zr.ecotrack.dz' not in domains:
-                    domains.append('https://zr.ecotrack.dz')
-                if 'https://app.zrexpress.com' not in domains:
-                    domains.append('https://app.zrexpress.com')
-                if 'https://zrexpress.com' not in domains:
-                    domains.append('https://zrexpress.com')
+            # Generate dynamic Ecotrack domains
+            slug = company.name
+            dash_subdomain = slug.replace('_', '-')
+            flat_subdomain = slug.replace('_', '')
+            
+            domains.append(f"https://{dash_subdomain}.ecotrack.dz")
+            domains.append(f"https://{flat_subdomain}.ecotrack.dz")
+
+            # Add known fallbacks for specific companies
+            if company.name in ('noest', 'noest_express'):
+                domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
+            elif company.name in ('dhd', 'dhd_express'):
+                domains.append('https://dhd.ecotrack.dz')
+            elif company.name == 'msm_go':
+                domains.append('https://msmgo.ecotrack.dz')
+            elif company.name == 'ontime_ecotrack':
+                domains.append('https://ontime.ecotrack.dz')
+
+            # De-duplicate domains while keeping order
+            unique_domains = []
+            for d in domains:
+                if d not in unique_domains:
+                    unique_domains.append(d)
 
             resp = None
             last_err = None
 
-            for domain in domains:
-                if company.name == 'noest':
-                    ecotrack_url = f"{domain}/api/public/create/order"
-                else:
-                    ecotrack_url = f"{domain}/api/v1/create/order"
-                try:
-                    resp = requests.post(
-                        ecotrack_url,
-                        json=payload,
-                        headers=headers,
-                        timeout=15,
-                    )
-                    if resp.status_code != 404:
-                        break
-                except requests.RequestException as e:
-                    last_err = e
+            # Generate combinations of domains and endpoints to try
+            endpoints = ['/api/public/create/order', '/api/v1/create/order']
+            
+            for domain in unique_domains:
+                for endpoint in endpoints:
+                    ecotrack_url = f"{domain}{endpoint}"
+                    try:
+                        resp = requests.post(
+                            ecotrack_url,
+                            json=payload,
+                            headers=headers,
+                            timeout=15,
+                        )
+                        if resp.status_code != 404:
+                            break
+                    except requests.RequestException as e:
+                        last_err = e
+                if resp and resp.status_code != 404:
+                    break
 
             if resp is None:
                 raise ToolError(f"Failed to connect to {company.display_name}: {str(last_err or 'All domains failed to connect')}")

@@ -6,6 +6,7 @@ from django.utils import timezone
 from apps.delivery.models import Shipment, StoreDeliveryConfig
 from apps.orders.models import Order, OrderStatusHistory
 from apps.integrations.tasks import sync_order_to_google_sheet
+from apps.orders.views import ECOTRACK_COMPANIES
 
 logger = logging.getLogger(__name__)
 
@@ -143,8 +144,7 @@ def sync_all_stores_tracking():
                         logger.error(f"Error fetching Yalidine batch tracking details: {e}")
 
         # Process Ecotrack shipments
-        ecotrack_companies = ('noest', 'zr_express', 'ecolog', 'guepex', 'dhd', 'yaliteck', 'flash_delivery')
-        ecotrack_shipments = [s for s in shipments if s.company.name in ecotrack_companies or 'ecotrack' in (s.company.api_base_url or '').lower()]
+        ecotrack_shipments = [s for s in shipments if s.company.name in ECOTRACK_COMPANIES or 'ecotrack' in (s.company.api_base_url or '').lower()]
 
         # Group ecotrack shipments by company to handle their API configs
         ecotrack_shipments_by_company = {}
@@ -182,42 +182,52 @@ def sync_all_stores_tracking():
             if base_url:
                 domains.append(base_url)
 
-            # For Noest specifically, we add default fallbacks
-            if c_name == 'noest':
-                if 'https://noest.ecotrack.dz' not in domains:
-                    domains.append('https://noest.ecotrack.dz')
-                if 'https://app.noest-dz.com' not in domains:
-                    domains.append('https://app.noest-dz.com')
-            # For ZR Express specifically, we add fallbacks
-            elif c_name == 'zr_express':
-                if 'https://zr.ecotrack.dz' not in domains:
-                    domains.append('https://zr.ecotrack.dz')
-                if 'https://app.zrexpress.com' not in domains:
-                    domains.append('https://app.zrexpress.com')
-                if 'https://zrexpress.com' not in domains:
-                    domains.append('https://zrexpress.com')
+            # Generate dynamic Ecotrack domains
+            slug = c_name
+            dash_subdomain = slug.replace('_', '-')
+            flat_subdomain = slug.replace('_', '')
+            
+            domains.append(f"https://{dash_subdomain}.ecotrack.dz")
+            domains.append(f"https://{flat_subdomain}.ecotrack.dz")
+
+            # Add known fallbacks for specific companies
+            if c_name in ('noest', 'noest_express'):
+                domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
+            elif c_name in ('dhd', 'dhd_express'):
+                domains.append('https://dhd.ecotrack.dz')
+            elif c_name == 'msm_go':
+                domains.append('https://msmgo.ecotrack.dz')
+            elif c_name == 'ontime_ecotrack':
+                domains.append('https://ontime.ecotrack.dz')
+
+            # De-duplicate domains while keeping order
+            unique_domains = []
+            for d in domains:
+                if d not in unique_domains:
+                    unique_domains.append(d)
 
             resp = None
             last_err = None
+            endpoints = ['/api/public/get/trackings/info', '/api/v1/get/trackings/info']
 
-            for domain in domains:
-                if c_name == 'noest':
-                    url = f"{domain}/api/public/get/trackings/info"
-                else:
-                    url = f"{domain}/api/v1/get/trackings/info"
-                
-                try:
-                    logger.info("[BACKGROUND SYNC] Fetching %s tracking from: %s", cfg.company.display_name, url)
-                    resp = requests.post(
-                        url,
-                        json={'trackings': tracking_numbers},
-                        headers=headers,
-                        timeout=15
-                    )
-                    if resp.status_code != 404:
-                        break
-                except requests.RequestException as e:
-                    last_err = e
+            for domain in unique_domains:
+                for endpoint in endpoints:
+                    url = f"{domain}{endpoint}"
+                    try:
+                        logger.info("[BACKGROUND SYNC] Fetching %s tracking from: %s", cfg.company.display_name, url)
+                        resp = requests.post(
+                            url,
+                            json={'trackings': tracking_numbers},
+                            headers=headers,
+                            timeout=15
+                        )
+                        if resp.status_code != 404:
+                            break
+                    except requests.RequestException as e:
+                        last_err = e
+                        logger.warning("[BACKGROUND SYNC] Failed to connect to %s: %s", url, str(e))
+                if resp and resp.status_code != 404:
+                    break
 
             if resp and resp.status_code == 200:
                 try:
