@@ -416,13 +416,10 @@ def ship_order(store, arguments):
         except requests.RequestException as e:
             raise ToolError(f"فشل الاتصال بـ Yalidine: {str(e)}")
 
-    # --- Noest / Ecotrack integration ---
-    elif company.name == 'noest' and config.api_key:
-        # Validate required credentials
-        if not config.api_id:
-            raise ToolError("Noest configuration is missing the User GUID (API ID). Please set it in Delivery Settings.")
+    # --- EcoTrack-based integrations (Noest, ZR Express, Ecolog, Guepex, DHD, Yaliteck, Flash, etc.) ---
+    elif (company.name in ('noest', 'zr_express', 'ecolog', 'guepex', 'dhd', 'yaliteck', 'flash_delivery') or 'ecotrack' in (company.api_base_url or '').lower()) and config.api_key:
         try:
-            # Ecotrack NOEST API Payload validation structure
+            # Ecotrack API Payload validation structure
             payload = {
                 'reference': order.order_number,
                 'nom_client': order.full_name or 'Client',
@@ -444,7 +441,34 @@ def ship_order(store, arguments):
                 'Authorization': f'Bearer {config.api_key}',
             }
 
-            domains = ['https://noest.ecotrack.dz', 'https://app.noest-dz.com']
+            # Resolve base URL from company settings
+            base_url = (company.api_base_url or '').strip()
+            if base_url.endswith('/'):
+                base_url = base_url[:-1]
+            if base_url.endswith('/api/v1'):
+                base_url = base_url[:-7]
+            elif base_url.endswith('/api'):
+                base_url = base_url[:-4]
+
+            domains = []
+            if base_url:
+                domains.append(base_url)
+
+            # For Noest specifically, we add the default fallbacks
+            if company.name == 'noest':
+                if 'https://noest.ecotrack.dz' not in domains:
+                    domains.append('https://noest.ecotrack.dz')
+                if 'https://app.noest-dz.com' not in domains:
+                    domains.append('https://app.noest-dz.com')
+            # For ZR Express specifically, we add its fallbacks if not configured properly
+            elif company.name == 'zr_express':
+                if 'https://zr.ecotrack.dz' not in domains:
+                    domains.append('https://zr.ecotrack.dz')
+                if 'https://app.zrexpress.com' not in domains:
+                    domains.append('https://app.zrexpress.com')
+                if 'https://zrexpress.com' not in domains:
+                    domains.append('https://zrexpress.com')
+
             resp = None
             last_err = None
 
@@ -463,37 +487,35 @@ def ship_order(store, arguments):
                     last_err = e
 
             if resp is None:
-                raise ToolError(f"Failed to connect to Noest: {str(last_err or 'All domains failed to connect')}")
+                raise ToolError(f"Failed to connect to {company.display_name}: {str(last_err or 'All domains failed to connect')}")
 
             if resp.status_code in (200, 201):
                 try:
                     data = resp.json()
                 except ValueError:
-                    raise ToolError(f"Noest returned HTML/invalid JSON: {resp.text[:300]}")
+                    raise ToolError(f"{company.display_name} returned HTML/invalid JSON: {resp.text[:300]}")
                 if isinstance(data, dict):
+                    # Check for error inside 200 response
                     if data.get('success') is False or data.get('error'):
                         err_msg = data.get('message', data.get('error', 'Validation error'))
-                        raise ToolError(f"Noest error: {err_msg}")
+                        raise ToolError(f"{company.display_name} error: {err_msg}")
 
                     tracking_number = str(data.get('tracking', data.get('tracking_number', data.get('code', ''))))
                     external_id = str(data.get('id', data.get('order_id', '')))
                     label_url = data.get('label', data.get('label_url', data.get('bordereau', ''))) or ''
 
-                status_message = 'Order sent to Noest successfully'
+                status_message = f'Order sent to {company.display_name} successfully'
             else:
                 try:
                     err_data = resp.json()
                     err_msg = err_data.get('error', err_data.get('message', resp.text[:500]))
                 except (ValueError, AttributeError):
                     err_msg = resp.text[:500]
-                raise ToolError(f"Noest error (HTTP {resp.status_code}): {err_msg}")
+                raise ToolError(f"{company.display_name} error (HTTP {resp.status_code}): {err_msg}")
         except Exception as e:
             if isinstance(e, ToolError):
                 raise
-            raise ToolError(f"Failed to process Noest: {str(e)}")
-
-    elif company.name == 'zr_express':
-        status_message = 'تم تسجيل الشحنة يدوياً (ZR Express)'
+            raise ToolError(f"Failed to process {company.display_name}: {str(e)}")
     else:
         status_message = f'تم تسجيل الشحنة مع {company.display_name}'
 

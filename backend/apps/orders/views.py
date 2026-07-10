@@ -333,16 +333,10 @@ class OrderExportToDeliveryView(APIView):
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 
-        # --- Noest / Ecotrack integration ---
-        elif company.name == 'noest' and config.api_key:
-            # Validate required credentials
-            if not config.api_id:
-                return Response(
-                    {'detail': 'Noest configuration is missing the User GUID (API ID). Please set it in Delivery Settings.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        # --- EcoTrack-based integrations (Noest, ZR Express, Ecolog, Guepex, DHD, Yaliteck, Flash, etc.) ---
+        elif (company.name in ('noest', 'zr_express', 'ecolog', 'guepex', 'dhd', 'yaliteck', 'flash_delivery') or 'ecotrack' in (company.api_base_url or '').lower()) and config.api_key:
             try:
-                # Ecotrack NOEST API Payload validation structure
+                # Ecotrack API Payload validation structure
                 payload = {
                     'reference': order.order_number,
                     'nom_client': order.full_name or 'Client',
@@ -358,7 +352,7 @@ class OrderExportToDeliveryView(APIView):
                     'stop_desk': 0,
                 }
 
-                logger.info("[EXPORT] Noest/Ecotrack payload: %s", {k: v for k, v in payload.items() if k != 'api_token'})
+                logger.info("[EXPORT] %s payload: %s", company.display_name, {k: v for k, v in payload.items() if k != 'api_token'})
 
                 headers = {
                     'Content-Type': 'application/json',
@@ -366,13 +360,40 @@ class OrderExportToDeliveryView(APIView):
                     'Authorization': f'Bearer {config.api_key}',
                 }
 
-                domains = ['https://noest.ecotrack.dz', 'https://app.noest-dz.com']
+                # Resolve base URL from company settings
+                base_url = (company.api_base_url or '').strip()
+                if base_url.endswith('/'):
+                    base_url = base_url[:-1]
+                if base_url.endswith('/api/v1'):
+                    base_url = base_url[:-7]
+                elif base_url.endswith('/api'):
+                    base_url = base_url[:-4]
+
+                domains = []
+                if base_url:
+                    domains.append(base_url)
+
+                # For Noest specifically, we add the default fallbacks
+                if company.name == 'noest':
+                    if 'https://noest.ecotrack.dz' not in domains:
+                        domains.append('https://noest.ecotrack.dz')
+                    if 'https://app.noest-dz.com' not in domains:
+                        domains.append('https://app.noest-dz.com')
+                # For ZR Express specifically, we add its fallbacks if not configured properly
+                elif company.name == 'zr_express':
+                    if 'https://zr.ecotrack.dz' not in domains:
+                        domains.append('https://zr.ecotrack.dz')
+                    if 'https://app.zrexpress.com' not in domains:
+                        domains.append('https://app.zrexpress.com')
+                    if 'https://zrexpress.com' not in domains:
+                        domains.append('https://zrexpress.com')
+
                 resp = None
                 last_err = None
 
                 for domain in domains:
                     ecotrack_url = f"{domain}/api/v1/create/order"
-                    logger.info("[EXPORT] Trying Noest/Ecotrack URL: %s", ecotrack_url)
+                    logger.info("[EXPORT] Trying %s URL: %s", company.display_name, ecotrack_url)
                     try:
                         resp = requests.post(
                             ecotrack_url,
@@ -380,7 +401,7 @@ class OrderExportToDeliveryView(APIView):
                             headers=headers,
                             timeout=15,
                         )
-                        logger.info("[EXPORT] Noest response status=%s body=%s", resp.status_code, resp.text[:1000])
+                        logger.info("[EXPORT] %s response status=%s body=%s", company.display_name, resp.status_code, resp.text[:1000])
                         if resp.status_code != 404:
                             break
                     except requests.RequestException as e:
@@ -389,7 +410,7 @@ class OrderExportToDeliveryView(APIView):
 
                 if resp is None:
                     return Response(
-                        {'detail': f'Failed to connect to Noest: {str(last_err or "All domains failed to connect")}'},
+                        {'detail': f'Failed to connect to {company.display_name}: {str(last_err or "All domains failed to connect")}'},
                         status=status.HTTP_502_BAD_GATEWAY,
                     )
 
@@ -397,42 +418,41 @@ class OrderExportToDeliveryView(APIView):
                     try:
                         data = resp.json()
                     except ValueError:
-                        logger.error("[EXPORT] Noest returned non-JSON body: %s", resp.text[:1000])
+                        logger.error("[EXPORT] %s returned non-JSON body: %s", company.display_name, resp.text[:1000])
                         return Response(
-                            {'detail': f'Noest returned HTML/invalid JSON: {resp.text[:300]}'},
+                            {'detail': f'{company.display_name} returned HTML/invalid JSON: {resp.text[:300]}'},
                             status=status.HTTP_502_BAD_GATEWAY,
                         )
                     if isinstance(data, dict):
-                        # Ecotrack may return tracking in various formats
+                        # Check for error inside 200 response
+                        if data.get('success') is False or data.get('error'):
+                            err_msg = data.get('message', data.get('error', 'Validation error'))
+                            logger.error("[EXPORT] %s returned error: %s", company.display_name, err_msg)
+                            return Response(
+                                {'detail': f'{company.display_name} error: {err_msg}'},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+
                         tracking_number = str(data.get('tracking', data.get('tracking_number', data.get('code', ''))))
                         external_id = str(data.get('id', data.get('order_id', '')))
                         label_url = data.get('label', data.get('label_url', data.get('bordereau', '')))
                         if not label_url:
                             label_url = ''
 
-                        # Check for error inside 200 response
-                        if data.get('success') is False or data.get('error'):
-                            err_msg = data.get('message', data.get('error', 'Validation error'))
-                            logger.error("[EXPORT] Noest returned error: %s", err_msg)
-                            return Response(
-                                {'detail': f'Noest error: {err_msg}'},
-                                status=status.HTTP_400_BAD_REQUEST,
-                            )
+                        logger.info("[EXPORT] %s success: tracking=%s external_id=%s", company.display_name, tracking_number, external_id)
 
-                        logger.info("[EXPORT] Noest success: tracking=%s external_id=%s", tracking_number, external_id)
-
-                    status_message = 'Order sent to Noest successfully'
+                    status_message = f'Order sent to {company.display_name} successfully'
                 else:
                     err_text = resp.text[:500]
-                    logger.error("[EXPORT] Noest HTTP %s: %s", resp.status_code, err_text)
+                    logger.error("[EXPORT] %s HTTP %s: %s", company.display_name, resp.status_code, err_text)
                     return Response(
-                        {'detail': f'Noest error (HTTP {resp.status_code}): {err_text}'},
+                        {'detail': f'{company.display_name} error (HTTP {resp.status_code}): {err_text}'},
                         status=status.HTTP_502_BAD_GATEWAY,
                     )
             except Exception as e:
-                logger.exception("[EXPORT] Noest processing error")
+                logger.exception("[EXPORT] %s processing error", company.display_name)
                 return Response(
-                    {'detail': f'Failed to process Noest: {str(e)}'},
+                    {'detail': f'Failed to process {company.display_name}: {str(e)}'},
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 
