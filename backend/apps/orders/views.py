@@ -350,6 +350,9 @@ class OrderExportToDeliveryView(APIView):
                     ) or order.order_number,
                     'type': 1, # 1 = Livraison
                     'stop_desk': 0,
+                    'user_guid': config.api_id or '',
+                    'api_id': config.api_id or '',
+                    'api_token': config.api_key,
                 }
 
                 logger.info("[EXPORT] %s payload: %s", company.display_name, {k: v for k, v in payload.items() if k != 'api_token'})

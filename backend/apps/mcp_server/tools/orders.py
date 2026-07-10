@@ -433,6 +433,9 @@ def ship_order(store, arguments):
                 ) or order.order_number,
                 'type': 1, # 1 = Livraison
                 'stop_desk': 0,
+                'user_guid': config.api_id or '',
+                'api_id': config.api_id or '',
+                'api_token': config.api_key,
             }
 
             headers = {
