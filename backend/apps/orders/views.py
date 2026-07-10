@@ -131,6 +131,38 @@ class OrderExportView(APIView):
                     'Remarque': order.notes,
                     'Type d\'envoi': 'A domicile',
                 })
+        elif template in ('ecotrack', 'noest'):
+            import re
+            for order in orders:
+                items_summary = ', '.join([f"{i.product_title} x{i.quantity}" for i in order.items.all()]) or order.order_number
+                search_text = f"{order.notes} {order.address}".lower()
+                is_stop_desk = any(keyword in search_text for keyword in ['stopdesk', 'stop desk', 'stop-desk', 'bureau', 'desk'])
+                stop_desk_val = "OUI" if is_stop_desk else ""
+                
+                station_code = ""
+                if is_stop_desk:
+                    match = re.search(r'\b[0-9]{1,2}-[A-Za-z]\b|\b[0-9]{1,2}[A-Za-z]\b', search_text)
+                    if match:
+                        station_code = match.group(0).upper()
+
+                data.append({
+                    'reference commande': order.order_number,
+                    'nom et prenom du client (obligatoire)': order.full_name,
+                    'telephone (obligatoire)': order.phone,
+                    'telephone 2': order.phone2 or '',
+                    'adresse de livraison (obligatoire)': order.address or '',
+                    'commune de livraison': order.commune.name_fr if order.commune else '',
+                    'montant du colis (obligatoire)': float(order.total),
+                    'code wilaya (obligatoire)': order.wilaya.code if order.wilaya else '',
+                    'produit': items_summary,
+                    'remarque': order.notes or '',
+                    'poids (en kg)': 1,
+                    'PICK UP ( si oui mettez OUI sinon laissez vide )': '',
+                    'ECHANGE ( si oui mettez OUI sinon laissez vide )': '',
+                    'STOP DESK ( si oui mettez OUI sinon laissez vide )': stop_desk_val,
+                    'Ouvrir le colis ( si oui mettez OUI sinon laissez vide )': 'OUI',
+                    'Code de station ( obligatoire si stopdesk = OUI )': station_code,
+                })
         else:
             for order in orders:
                 data.append({

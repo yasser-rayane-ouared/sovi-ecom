@@ -754,6 +754,14 @@ export default function OrdersDashboard() {
             >
               {t("ordersBulkExportZr")}
             </Button>
+            <Button
+              onClick={() => handleCustomTemplateExport("ecotrack")}
+              variant="outline"
+              size="sm"
+              className="border-border dark:border-white/10 hover:bg-muted dark:hover:bg-white/5 text-xs gap-1.5"
+            >
+              {t("ordersBulkExportEcotrack")}
+            </Button>
             
             <div className="h-5 w-px bg-border dark:bg-white/10 mx-1 hidden md:block" />
             
