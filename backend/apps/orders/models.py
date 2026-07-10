@@ -46,6 +46,7 @@ class Order(TenantModel):
     coupon_code = models.CharField(max_length=50, blank=True, default='')
     coupon_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     inventory_deducted = models.BooleanField(default=False)
+    whatsapp_sent = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'orders'

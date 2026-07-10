@@ -57,7 +57,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'status', 'source', 'utm_source', 'utm_medium', 'utm_campaign',
             'is_abandoned', 'items', 'status_history', 'created_at', 'updated_at',
             'is_duplicate', 'duplicate_count', 'risk_score',
-            'coupon_code', 'coupon_discount',
+            'coupon_code', 'coupon_discount', 'whatsapp_sent',
         ]
         read_only_fields = ['id', 'order_number', 'created_at', 'updated_at']
 

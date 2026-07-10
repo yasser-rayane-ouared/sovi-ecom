@@ -343,6 +343,11 @@ export default function OrdersDashboard() {
       }
     }
     window.open(formatWhatsAppUrl(order.phone, text), "_blank");
+    api.patch(`/orders/${currentStoreId}/${order.id}/`, { whatsapp_sent: true })
+      .then(() => {
+        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, whatsapp_sent: true } : o));
+      })
+      .catch(err => console.error("Failed to mark order as WhatsApp contacted:", err));
   };
 
   const handleWhatsAppRecover = (order: any) => {
@@ -356,6 +361,11 @@ export default function OrdersDashboard() {
       text = `Hello ${order.full_name},\nWe noticed you didn't complete your order for:\n- ${itemsSummary}\n\nDid you face any issues during checkout? We would love to help you complete it now with a special discount or fast shipping!\nJust reply to this message.`;
     }
     window.open(formatWhatsAppUrl(order.phone, text), "_blank");
+    api.patch(`/orders/${currentStoreId}/${order.id}/`, { whatsapp_sent: true })
+      .then(() => {
+        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, whatsapp_sent: true } : o));
+      })
+      .catch(err => console.error("Failed to mark order as WhatsApp contacted:", err));
   };
 
   // Fraud / Duplicates Modal Handler
@@ -484,10 +494,12 @@ export default function OrdersDashboard() {
 
       // WhatsApp Button is always visible for active order statuses
       visibleButtons.push({
-        label: t("ordersActionWhatsapp"),
-        icon: <MessageSquare className="h-3.5 w-3.5" />,
+        label: o.whatsapp_sent ? t("ordersActionWhatsappContacted") : t("ordersActionWhatsapp"),
+        icon: o.whatsapp_sent ? <Check className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />,
         onClick: () => handleWhatsAppConfirm(o),
-        className: "bg-green-600 hover:bg-green-700 text-white font-bold"
+        className: o.whatsapp_sent
+          ? "border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10 font-bold"
+          : "bg-green-600 hover:bg-green-700 text-white font-bold"
       });
 
       // Status choices (cases) go in the dropdown
@@ -539,10 +551,12 @@ export default function OrdersDashboard() {
     } else {
       // Abandoned tab: WhatsApp recover is visible
       visibleButtons.push({
-        label: t("ordersActionRecoverWhatsapp"),
-        icon: <MessageSquare className="h-3.5 w-3.5" />,
+        label: o.whatsapp_sent ? t("ordersActionWhatsappContacted") : t("ordersActionRecoverWhatsapp"),
+        icon: o.whatsapp_sent ? <Check className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />,
         onClick: () => handleWhatsAppRecover(o),
-        className: "bg-green-600 hover:bg-green-700 text-white font-bold"
+        className: o.whatsapp_sent
+          ? "border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10 font-bold"
+          : "bg-green-600 hover:bg-green-700 text-white font-bold"
       });
       
       // Restore is in dropdown
