@@ -653,6 +653,171 @@ class OrderSyncTrackingView(APIView):
                                 updates_summary.append(f'{shipment.order.order_number}: {old_ord_status} -> {new_order_status} ({ext_status})')
                 except Exception as e:
                     updates_summary.append(f'خطأ أثناء الاتصال بـ Yalidine: {str(e)}')
+        # Process EcoTrack-based shipments (Noest, ZR Express, Ecolog, Guepex, DHD, Yaliteck, Flash, etc.)
+        ecotrack_companies = ('noest', 'zr_express', 'ecolog', 'guepex', 'dhd', 'yaliteck', 'flash_delivery')
+        ecotrack_shipments = [s for s in active_shipments if s.company.name in ecotrack_companies or 'ecotrack' in (s.company.api_base_url or '').lower()]
+
+        # Group ecotrack shipments by company to handle their API configs
+        ecotrack_shipments_by_company = {}
+        for s in ecotrack_shipments:
+            c_name = s.company.name
+            if c_name not in ecotrack_shipments_by_company:
+                ecotrack_shipments_by_company[c_name] = []
+            ecotrack_shipments_by_company[c_name].append(s)
+
+        for c_name, c_shipments in ecotrack_shipments_by_company.items():
+            cfg = config_map.get(c_name)
+            if not cfg or not cfg.api_key:
+                continue
+
+            tracking_numbers = [s.tracking_number for s in c_shipments if s.tracking_number]
+            if not tracking_numbers:
+                continue
+
+            headers = {
+                'Authorization': f'Bearer {cfg.api_key}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            }
+
+            # Resolve base URL from company settings
+            base_url = (cfg.company.api_base_url or '').strip()
+            if base_url.endswith('/'):
+                base_url = base_url[:-1]
+            if base_url.endswith('/api/v1'):
+                base_url = base_url[:-7]
+            elif base_url.endswith('/api'):
+                base_url = base_url[:-4]
+
+            domains = []
+            if base_url:
+                domains.append(base_url)
+
+            # For Noest specifically, we add default fallbacks
+            if c_name == 'noest':
+                if 'https://noest.ecotrack.dz' not in domains:
+                    domains.append('https://noest.ecotrack.dz')
+                if 'https://app.noest-dz.com' not in domains:
+                    domains.append('https://app.noest-dz.com')
+            # For ZR Express specifically, we add fallbacks
+            elif c_name == 'zr_express':
+                if 'https://zr.ecotrack.dz' not in domains:
+                    domains.append('https://zr.ecotrack.dz')
+                if 'https://app.zrexpress.com' not in domains:
+                    domains.append('https://app.zrexpress.com')
+                if 'https://zrexpress.com' not in domains:
+                    domains.append('https://zrexpress.com')
+
+            resp = None
+            last_err = None
+
+            for domain in domains:
+                if c_name == 'noest':
+                    url = f"{domain}/api/public/get/trackings/info"
+                else:
+                    url = f"{domain}/api/v1/get/trackings/info"
+                
+                try:
+                    logger.info("[SYNC TRACKING] Fetching %s tracking from: %s", cfg.company.display_name, url)
+                    resp = requests.post(
+                        url,
+                        json={'trackings': tracking_numbers},
+                        headers=headers,
+                        timeout=15
+                    )
+                    logger.info("[SYNC TRACKING] %s response status=%s body=%s", cfg.company.display_name, resp.status_code, resp.text[:200])
+                    if resp.status_code != 404:
+                        break
+                except requests.RequestException as e:
+                    last_err = e
+                    logger.warning("[SYNC TRACKING] Failed to connect to %s: %s", domain, str(e))
+
+            if resp and resp.status_code == 200:
+                try:
+                    tracking_data = resp.json()
+                    # Response maps tracking -> order details
+                    for shipment in c_shipments:
+                        t_num = shipment.tracking_number
+                        shipment_info = tracking_data.get(t_num)
+                        if not shipment_info:
+                            continue
+
+                        synced_count += 1
+                        
+                        # Resolve the event status
+                        ext_status = ""
+                        activity = shipment_info.get('activity', [])
+                        if activity and isinstance(activity, list):
+                            last_event = activity[-1]
+                            if isinstance(last_event, dict):
+                                ext_status = last_event.get('event', last_event.get('event_key', ''))
+
+                        if not ext_status:
+                            order_info = shipment_info.get('OrderInfo', {})
+                            if isinstance(order_info, dict):
+                                ext_status = order_info.get('status', '')
+
+                        if not ext_status:
+                            continue
+
+                        ext_status = str(ext_status).strip()
+                        ext_status_lower = ext_status.lower()
+
+                        new_shipment_status = shipment.status
+                        new_order_status = shipment.order.status
+
+                        # Check Delivered
+                        if any(x in ext_status_lower for x in ['livre', 'livred', 'delivered', 'validation_reception_cash']):
+                            new_shipment_status = 'delivered'
+                            new_order_status = 'delivered'
+                        # Check Returned
+                        elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus', 'retour_dispatched', 'colis_retour', 'livraison_echoue', 'failed_attempt']):
+                            new_shipment_status = 'returned'
+                            new_order_status = 'returned'
+                        # Check Out For Delivery
+                        elif any(x in ext_status_lower for x in ['livraison', 'fdr_activated', 'out for delivery']):
+                            new_shipment_status = 'out_for_delivery'
+                            new_order_status = 'shipped'
+                        # Check In Transit
+                        elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'voyage', 'transit', 'collect', 'picked', 'reception', 'upload', 'validation']):
+                            new_shipment_status = 'in_transit'
+                            new_order_status = 'shipped'
+                        # Check Cancelled
+                        elif any(x in ext_status_lower for x in ['annul', 'cancel', 'delete']):
+                            new_shipment_status = 'failed'
+                            new_order_status = 'cancelled'
+
+                        changed = False
+                        if shipment.status != new_shipment_status:
+                            shipment.status = new_shipment_status
+                            changed = True
+
+                        if ext_status and shipment.status_message != ext_status:
+                            shipment.status_message = ext_status
+                            changed = True
+
+                        if changed:
+                            shipment.save()
+
+                        if shipment.order.status != new_order_status:
+                            old_ord_status = shipment.order.status
+                            shipment.order.status = new_order_status
+                            shipment.order.save()
+                            OrderStatusHistory.objects.create(
+                                order=shipment.order,
+                                from_status=old_ord_status,
+                                to_status=new_order_status,
+                                note=f'تحديث تلقائي من {cfg.company.display_name}: {ext_status}'
+                            )
+                            updated_count += 1
+                            updates_summary.append(f'{shipment.order.order_number}: {old_ord_status} -> {new_order_status} ({ext_status})')
+
+                except Exception as e:
+                    logger.exception("[SYNC TRACKING] Processing error for %s", cfg.company.display_name)
+                    updates_summary.append(f'خطأ أثناء معالجة بيانات {cfg.company.display_name}: {str(e)}')
+            else:
+                err_text = resp.text[:200] if resp else str(last_err or "All domains failed")
+                updates_summary.append(f'فشل الاتصال بـ {cfg.company.display_name}: {err_text}')
 
         detail_msg = f'تمت مزامنة {synced_count} شحنة بنجاح.'
         if updated_count > 0:
