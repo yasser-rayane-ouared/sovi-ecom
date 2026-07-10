@@ -16,4 +16,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ .
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 10 --access-logfile - config.wsgi:application"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 10 --access-logfile - config.wsgi:application"]
