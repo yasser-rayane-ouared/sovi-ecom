@@ -66,14 +66,33 @@ export default function OrdersDashboard() {
   // Row dropdown state
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const fetchOrders = () => {
     if (!currentStoreId) return;
     setLoading(true);
     const isAbandoned = activeTab === "abandoned";
-    api.get(`/orders/${currentStoreId}/?is_abandoned=${isAbandoned}`)
+    
+    let url = `/orders/${currentStoreId}/?is_abandoned=${isAbandoned}&page=${page}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    if (activeTab === "active" && selectedSubTab !== "all") {
+      url += `&status=${selectedSubTab}`;
+    }
+
+    api.get(url)
       .then((res) => {
         const data = res.data;
-        setOrders(Array.isArray(data) ? data : (data.results ?? []));
+        if (Array.isArray(data)) {
+          setOrders(data);
+          setTotalCount(data.length);
+        } else {
+          setOrders(data.results ?? []);
+          setTotalCount(data.count ?? 0);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -104,11 +123,19 @@ export default function OrdersDashboard() {
     }
   };
 
+  // Reset page to 1 when filters or search change
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, selectedSubTab, search]);
+
   useEffect(() => {
     fetchOrders();
-    fetchDeliveryConfigs();
     setSelectedOrders([]);
-  }, [currentStoreId, activeTab]);
+  }, [currentStoreId, activeTab, page, selectedSubTab, search]);
+
+  useEffect(() => {
+    fetchDeliveryConfigs();
+  }, [currentStoreId]);
 
   const handleUpdateStatus = async (storeId: string, id: string, newStatus: string) => {
     try {
@@ -409,22 +436,7 @@ export default function OrdersDashboard() {
     }
   };
 
-  const filteredOrders = orders.filter((o) => {
-    const matchesSearch =
-      (o.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (o.phone || "").includes(search) ||
-      (o.order_number || "").includes(search);
-    
-    if (!matchesSearch) return false;
-    
-    if (activeTab === "active" && selectedSubTab !== "all") {
-      if (selectedSubTab === "no_answer") {
-        return ["no_answer", "no_answer_1", "no_answer_2", "no_answer_3"].includes(o.status);
-      }
-      return o.status === selectedSubTab;
-    }
-    return true;
-  });
+  const filteredOrders = orders;
 
   const toggleSelectAll = () => {
     if (selectedOrders.length === filteredOrders.length) {
@@ -986,6 +998,37 @@ export default function OrdersDashboard() {
               </tbody>
             </table>
           </div>
+          {Math.ceil(totalCount / 20) > 1 && (
+            <div className="p-4 border-t border-border dark:border-white/5 flex items-center justify-between bg-muted/10 dark:bg-white/[0.01] flex-wrap gap-3">
+              <span className="text-xs text-muted-foreground font-semibold">
+                {language === "ar"
+                  ? `عرض الصفحة ${page} من ${Math.ceil(totalCount / 20)} (إجمالي ${totalCount} طلب)`
+                  : language === "fr"
+                  ? `Page ${page} sur ${Math.ceil(totalCount / 20)} (${totalCount} commandes au total)`
+                  : `Page ${page} of ${Math.ceil(totalCount / 20)} (${totalCount} total orders)`}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page === 1}
+                  onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                  className="h-8 border-border dark:border-white/10 hover:bg-muted dark:hover:bg-white/5 font-bold"
+                >
+                  {language === "ar" ? "السابق" : language === "fr" ? "Précédent" : "Previous"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page === Math.ceil(totalCount / 20)}
+                  onClick={() => setPage(prev => Math.min(prev + 1, Math.ceil(totalCount / 20)))}
+                  className="h-8 border-border dark:border-white/10 hover:bg-muted dark:hover:bg-white/5 font-bold"
+                >
+                  {language === "ar" ? "التالي" : language === "fr" ? "Suivant" : "Next"}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
