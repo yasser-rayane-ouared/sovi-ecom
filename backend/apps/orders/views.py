@@ -33,15 +33,24 @@ ECOTRACK_COMPANIES = {
 
 class OrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
-    filterset_fields = ['status', 'is_abandoned']
+    filterset_fields = ['is_abandoned']
     search_fields = ['order_number', 'full_name', 'phone']
     ordering_fields = ['created_at', 'total', 'status']
 
     def get_queryset(self):
         store = get_store_for_user(self.kwargs['store_id'], self.request.user, 'orders')
-        return Order.objects.filter(store=store).select_related(
+        queryset = Order.objects.filter(store=store).select_related(
             'wilaya', 'commune'
         ).prefetch_related('items__product', 'status_history', 'shipments__company')
+        
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            if status_param == 'no_answer':
+                queryset = queryset.filter(status__in=['no_answer', 'no_answer_1', 'no_answer_2', 'no_answer_3'])
+            else:
+                queryset = queryset.filter(status=status_param)
+                
+        return queryset
 
 
 class OrderDetailView(generics.RetrieveUpdateAPIView):

@@ -303,10 +303,21 @@ export default function OrdersDashboard() {
     }
   };
 
-  // Reset page to 1 when filters or search change
-  useEffect(() => {
+  const handleTabChange = (tab: "active" | "abandoned") => {
+    setActiveTab(tab);
+    setSelectedSubTab("all");
     setPage(1);
-  }, [activeTab, selectedSubTab, search]);
+  };
+
+  const handleFilterChange = (subTab: string) => {
+    setSelectedSubTab(subTab);
+    setPage(1);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -909,7 +920,7 @@ export default function OrdersDashboard() {
       {/* Tabs Navigation */}
       <div className="flex gap-2 border-b border-border dark:border-white/10 pb-px">
         <button
-          onClick={() => { setActiveTab("active"); setSelectedSubTab("all"); }}
+          onClick={() => handleTabChange("active")}
           className={`flex items-center gap-2 px-6 py-3 border-b-2 text-sm font-bold transition-all ${
             activeTab === "active"
               ? "border-primary text-primary"
@@ -919,7 +930,7 @@ export default function OrdersDashboard() {
           <Layers className="h-4 w-4" /> {t("ordersTabActive")}
         </button>
         <button
-          onClick={() => { setActiveTab("abandoned"); setSelectedSubTab("all"); }}
+          onClick={() => handleTabChange("abandoned")}
           className={`flex items-center gap-2 px-6 py-3 border-b-2 text-sm font-bold transition-all ${
             activeTab === "abandoned"
               ? "border-primary text-primary"
@@ -939,7 +950,7 @@ export default function OrdersDashboard() {
               type="text"
               placeholder={t("ordersSearchPlaceholder")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className={`bg-transparent border-none text-sm text-foreground focus:outline-none w-full placeholder:text-muted-foreground ${isRtl ? "text-right" : "text-left"}`}
             />
           </Card>
@@ -957,7 +968,7 @@ export default function OrdersDashboard() {
               return (
                 <button
                   key={status.key}
-                  onClick={() => setSelectedSubTab(status.key)}
+                  onClick={() => handleFilterChange(status.key)}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold border transition-all duration-200 shrink-0 ${
                     isActive
                       ? "bg-primary text-primary-foreground border-primary shadow-sm scale-105"
