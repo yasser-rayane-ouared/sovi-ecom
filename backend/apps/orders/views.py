@@ -888,3 +888,145 @@ class OrderSyncTrackingView(APIView):
             'updated_count': updated_count,
             'updates': updates_summary
         }, status=status.HTTP_200_OK)
+
+
+class OrderPrintLabelView(APIView):
+    """Retrieve the printable label PDF URL for an order."""
+    def get(self, request, store_id, pk):
+        store = get_store_for_user(store_id, request.user, 'orders')
+        order = get_object_or_404(Order, id=pk, store=store)
+        shipment = order.shipments.order_by('-id').first()
+        if not shipment:
+            return Response(
+                {'detail': 'No shipment found for this order. Export to delivery first.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 1. If we already have label_url in the database, return it
+        if shipment.label_url:
+            return Response({'label_url': shipment.label_url})
+
+        # 2. If label_url is empty, fetch it dynamically from the courier API
+        company = shipment.company
+        config = StoreDeliveryConfig.objects.filter(store=store, company=company, is_active=True).first()
+        if not config:
+            return Response(
+                {'detail': f'Active delivery config not found for {company.display_name}.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        tracking_number = shipment.tracking_number
+        if not tracking_number:
+            return Response(
+                {'detail': 'Tracking number is missing for this shipment.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        label_url = None
+
+        # Yalidine Dynamic Retrieval
+        if company.name == 'yalidine' and config.api_id and config.api_key:
+            try:
+                headers = {
+                    'X-API-ID': config.api_id,
+                    'X-API-Token': config.api_key,
+                }
+                import requests
+                resp = requests.get(
+                    f'https://api.yalidine.app/v1/parcels/{tracking_number}',
+                    headers=headers,
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    parcel_info = data.get('data', [])
+                    if parcel_info and isinstance(parcel_info, list):
+                        label_url = parcel_info[0].get('label')
+            except Exception as e:
+                logger.warning("[PRINT LABEL] Yalidine fetch failed: %s", str(e))
+
+        # EcoTrack Dynamic Retrieval
+        elif company.name in ECOTRACK_COMPANIES or 'ecotrack' in (company.api_base_url or '').lower():
+            if config.api_key:
+                headers = {
+                    'Authorization': f'Bearer {config.api_key}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+                base_url = (company.api_base_url or '').strip()
+                if base_url.endswith('/'):
+                    base_url = base_url[:-1]
+                if base_url.endswith('/api/v1'):
+                    base_url = base_url[:-7]
+                elif base_url.endswith('/api'):
+                    base_url = base_url[:-4]
+
+                domains = []
+                if base_url:
+                    domains.append(base_url)
+
+                slug = company.name
+                dash_subdomain = slug.replace('_', '-')
+                flat_subdomain = slug.replace('_', '')
+                domains.extend([
+                    f"https://{dash_subdomain}.ecotrack.dz",
+                    f"https://{flat_subdomain}.ecotrack.dz"
+                ])
+                if company.name in ('noest', 'noest_express'):
+                    domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
+                elif company.name in ('dhd', 'dhd_express'):
+                    domains.append('https://dhd.ecotrack.dz')
+                elif company.name == 'msm_go':
+                    domains.append('https://msmgo.ecotrack.dz')
+                elif company.name == 'ontime_ecotrack':
+                    domains.append('https://ontime.ecotrack.dz')
+
+                unique_domains = []
+                for d in domains:
+                    if d not in unique_domains:
+                        unique_domains.append(d)
+
+                # Try fetching via tracking info endpoint
+                import requests
+                for domain in unique_domains:
+                    for endpoint in ['/api/public/get/trackings/info', '/api/v1/get/trackings/info']:
+                        url = f"{domain}{endpoint}"
+                        try:
+                            resp = requests.post(
+                                url,
+                                json={'trackings': [tracking_number]},
+                                headers=headers,
+                                timeout=10
+                            )
+                            if resp.status_code == 200:
+                                tracking_data = resp.json()
+                                shipment_info = tracking_data.get(tracking_number)
+                                if shipment_info:
+                                    order_info = shipment_info.get('OrderInfo', {})
+                                    if isinstance(order_info, dict):
+                                        label_url = order_info.get('label', order_info.get('label_url', order_info.get('bordereau')))
+                                    if not label_url:
+                                        label_url = shipment_info.get('label', shipment_info.get('label_url', shipment_info.get('bordereau')))
+                                if label_url:
+                                    break
+                        except Exception:
+                            pass
+                    if label_url:
+                        break
+
+        if label_url:
+            shipment.label_url = label_url
+            shipment.save(update_fields=['label_url'])
+            return Response({'label_url': label_url})
+
+        # 3. Fallback for Yalidine
+        if company.name == 'yalidine':
+            fallback_url = f"https://yalidine.app/print/parcels?tracking={tracking_number}"
+            shipment.label_url = fallback_url
+            shipment.save(update_fields=['label_url'])
+            return Response({'label_url': fallback_url})
+
+        return Response(
+            {'detail': 'Could not retrieve shipment label PDF from the courier API.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
