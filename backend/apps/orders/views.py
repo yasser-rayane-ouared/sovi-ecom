@@ -1007,22 +1007,36 @@ class OrderDownloadPDFView(APIView):
         # EcoTrack Partners Handling
         elif company.name in ECOTRACK_COMPANIES or 'ecotrack' in (company.api_base_url or '').lower():
             # If we already have label_url cached, try retrieving it
-            if shipment.label_url and 'trackings[]=' in shipment.label_url:
+            if shipment.label_url:
                 try:
                     headers = {
                         'Authorization': f'Bearer {config.api_key}',
+                        'Content-Type': 'application/json',
                     }
-                    resp = requests.get(shipment.label_url, headers=headers, timeout=15)
+                    if 'trackings[]=' in shipment.label_url:
+                        resp = requests.get(shipment.label_url, headers=headers, timeout=15)
+                    else:
+                        resp = requests.post(shipment.label_url, json={'trackings': [tracking_number]}, headers=headers, timeout=15)
+                        
                     if resp.status_code == 200:
                         content_type = resp.headers.get('Content-Type', '').lower()
-                        if 'application/pdf' in content_type or len(resp.content) > 1000:
+                        if 'application/pdf' in content_type:
                             return HttpResponse(resp.content, content_type='application/pdf')
+                        else:
+                            try:
+                                data = resp.json()
+                                lbl_url = data.get('label', data.get('label_url', data.get('url', data.get('pdf'))))
+                                if lbl_url and lbl_url.startswith('http'):
+                                    return HttpResponseRedirect(lbl_url)
+                            except Exception:
+                                pass
                 except Exception:
                     pass
 
             headers = {
                 'Authorization': f'Bearer {config.api_key}',
                 'Accept': 'application/json',
+                'Content-Type': 'application/json',
             }
             base_url = (company.api_base_url or '').strip()
             if base_url.endswith('/'):
@@ -1060,15 +1074,25 @@ class OrderDownloadPDFView(APIView):
             # Try to get printable PDF directly from Ecotrack endpoints
             for domain in unique_domains:
                 for endpoint in ['/api/v1/print/parcels', '/api/public/print/parcels']:
-                    url = f"{domain}{endpoint}?trackings[]={tracking_number}"
+                    url = f"{domain}{endpoint}"
                     try:
-                        resp = requests.get(url, headers=headers, timeout=15)
+                        resp = requests.post(url, json={'trackings': [tracking_number]}, headers=headers, timeout=15)
                         if resp.status_code == 200:
                             content_type = resp.headers.get('Content-Type', '').lower()
                             if 'application/pdf' in content_type or len(resp.content) > 1000:
                                 shipment.label_url = url
                                 shipment.save(update_fields=['label_url'])
                                 return HttpResponse(resp.content, content_type='application/pdf')
+                            else:
+                                try:
+                                    data = resp.json()
+                                    lbl_url = data.get('label', data.get('label_url', data.get('url', data.get('pdf'))))
+                                    if lbl_url and lbl_url.startswith('http'):
+                                        shipment.label_url = lbl_url
+                                        shipment.save(update_fields=['label_url'])
+                                        return HttpResponseRedirect(lbl_url)
+                                except Exception:
+                                    pass
                     except Exception:
                         pass
 
