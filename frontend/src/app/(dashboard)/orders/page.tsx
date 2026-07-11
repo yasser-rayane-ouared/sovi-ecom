@@ -804,22 +804,16 @@ export default function OrdersDashboard() {
     return (
       <div className={`relative flex items-center gap-1.5 ${isRtl ? "justify-end" : "justify-start"} flex-wrap md:flex-nowrap`}>
         {o.delivery_company_name && (
-          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
-              <Truck className="h-3 w-3" />
-              {language === "ar" ? `تم الإرسال عبر ${o.delivery_company_name}` : language === "fr" ? `Envoyé via ${o.delivery_company_name}` : `Sent with ${o.delivery_company_name}`}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={printingId === o.id}
-              onClick={() => handlePrintLabel(o.id)}
-              className="inline-flex items-center justify-center h-8 px-3 rounded-lg border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 transition-colors text-xs font-bold gap-1 shadow-sm"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              <span>{printingId === o.id ? (language === "ar" ? "جاري التحميل..." : "Chargement...") : (language === "ar" ? "طباعة البوليصة" : "Imprimer le bon")}</span>
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={printingId === o.id}
+            onClick={() => handlePrintLabel(o.id)}
+            className="inline-flex items-center justify-center h-8 px-3 rounded-lg border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 transition-colors text-xs font-bold gap-1 shadow-sm shrink-0"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            <span>{printingId === o.id ? (language === "ar" ? "جاري التحميل..." : "Chargement...") : (language === "ar" ? "طباعة البوليصة" : "Imprimer le bon")}</span>
+          </Button>
         )}
         {visibleButtons.map((btn, index) => (
           <Button
@@ -1194,7 +1188,17 @@ export default function OrdersDashboard() {
                         </td>
                         <td className="p-4 text-xs max-w-xs truncate" title={itemsSummary}>{itemsSummary}</td>
                         <td className="p-4 font-extrabold font-outfit">{formatCurrency(parseFloat(o.total))}</td>
-                        {activeTab === "active" && <td className="p-4">{getStatusBadge(o.status)}</td>}
+                        {activeTab === "active" && <td className="p-4">
+                          <div className="flex flex-col gap-1.5 items-start">
+                            {getStatusBadge(o.status)}
+                            {o.delivery_company_name && (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5 whitespace-nowrap">
+                                <Truck className="h-2.5 w-2.5" />
+                                {o.delivery_company_name}
+                              </span>
+                            )}
+                          </div>
+                        </td>}
                         <td className={`p-4 ${isRtl ? "text-left" : "text-right"}`}>
                           {renderActions(o)}
                         </td>
