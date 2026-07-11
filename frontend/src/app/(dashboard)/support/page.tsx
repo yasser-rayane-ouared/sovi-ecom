@@ -536,10 +536,7 @@ export default function SupportChatPage() {
               </p>
               <div className="border-t border-border pt-3 mt-3 flex flex-col gap-2 text-xs">
                 <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                  <Mail className="h-4 w-4" /> support@sovi.com
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                  <Phone className="h-4 w-4" /> +213 (0) 555 12 34 56
+                  <Mail className="h-4 w-4" /> sovi.algeria@gmail.com
                 </div>
               </div>
             </CardContent>
