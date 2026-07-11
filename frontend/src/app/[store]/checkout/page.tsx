@@ -47,6 +47,11 @@ export default function StorefrontCheckout() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Stopdesks state
+  const [stopdesks, setStopdesks] = useState<any[]>([]);
+  const [selectedStopdesk, setSelectedStopdesk] = useState("");
+  const [loadingStopdesks, setLoadingStopdesks] = useState(false);
+
   // Firebase OTP States
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
@@ -268,6 +273,28 @@ export default function StorefrontCheckout() {
     }
   }, [selectedWilaya, subdomain]);
 
+  // Fetch stopdesks when wilaya or delivery method changes
+  useEffect(() => {
+    if (selectedWilaya && deliveryMethod === 'desk' && subdomain) {
+      setLoadingStopdesks(true);
+      api.get(`/storefront/${subdomain}/wilayas/${selectedWilaya}/stopdesks/`)
+        .then((res) => {
+          setStopdesks(res.data.stopdesks || []);
+          setSelectedStopdesk("");
+        })
+        .catch(() => {
+          setStopdesks([]);
+          setSelectedStopdesk("");
+        })
+        .finally(() => {
+          setLoadingStopdesks(false);
+        });
+    } else {
+      setStopdesks([]);
+      setSelectedStopdesk("");
+    }
+  }, [selectedWilaya, deliveryMethod, subdomain]);
+
   // Handle sending OTP
   const handleSendOtp = async () => {
     setError("");
@@ -455,6 +482,9 @@ export default function StorefrontCheckout() {
         metadata: {
           ab_test_group: abTestGroup
         },
+        delivery_method: deliveryMethod,
+        stopdesk_id: selectedStopdesk,
+        stopdesk_name: stopdesks.find(s => s.id === selectedStopdesk)?.name || "",
         items: items.map((item) => ({
           product_id: item.product_id,
           variant_id: item.variant?.id || null,
@@ -728,6 +758,37 @@ export default function StorefrontCheckout() {
                       </button>
                     </div>
                   </div>
+
+                  {deliveryMethod === 'desk' && selectedWilaya && (
+                    <div className={`space-y-1.5 pt-1 ${!isArabic ? "text-left" : "text-right"} animate-in fade-in duration-200`}>
+                      <label className="text-sm font-bold text-slate-800">
+                        {t("مكتب استلام الطرود", "Bureau de retrait", "StopDesk Pickup Branch")}
+                      </label>
+                      {loadingStopdesks ? (
+                        <div className="text-xs text-muted-foreground py-2">
+                          {t("جاري تحميل المكاتب المتوفرة...", "Chargement des bureaux...", "Loading available branches...")}
+                        </div>
+                      ) : stopdesks.length > 0 ? (
+                        <select
+                          required
+                          value={selectedStopdesk}
+                          onChange={(e) => setSelectedStopdesk(e.target.value)}
+                          className="flex h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus:bg-white transition-all font-semibold"
+                        >
+                          <option value="">{t("اختر مكتب الاستلام", "Choisir le bureau", "Select Pickup Branch")}</option>
+                          {stopdesks.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} {s.address ? `(${s.address})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200/50 p-2.5 rounded-xl">
+                          {t("يرجى كتابة مكتب الاستلام المفضل لديك في خانة الملاحظات أدناه.", "Veuillez écrire votre bureau de retrait préféré dans le champ notes ci-dessous.", "Please specify your preferred pickup branch in the notes section below.")}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className={`space-y-1.5 ${!isArabic ? "text-left" : "text-right"}`}>
                     <label className="text-sm font-bold text-slate-800">{t("العنوان الكامل بالتفصيل", "Adresse complète détaillée", "Full Detailed Address")}</label>

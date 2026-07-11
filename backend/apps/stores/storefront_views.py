@@ -530,10 +530,11 @@ class StorefrontCheckoutView(APIView):
 
             # Calculate delivery price
             delivery_price = 0
+            delivery_method = request.data.get('delivery_method', 'home')
             from apps.delivery.models import DeliveryPricing
             try:
                 pricing = DeliveryPricing.objects.get(store=store, wilaya=db_wilaya)
-                delivery_price = pricing.home_price
+                delivery_price = pricing.desk_price if delivery_method == 'desk' else pricing.home_price
             except DeliveryPricing.DoesNotExist:
                 if hasattr(store, 'settings'):
                     delivery_price = store.settings.default_delivery_price
@@ -576,6 +577,13 @@ class StorefrontCheckoutView(APIView):
             # Clear existing items
             order.items.all().delete()
 
+            # Format stopdesk notes if applicable
+            order_notes = validated_data.get('notes', '')
+            stopdesk_name = request.data.get('stopdesk_name')
+            if delivery_method == 'desk' and stopdesk_name:
+                desk_str = f"[StopDesk: {request.data.get('stopdesk_id') or ''} - {stopdesk_name}]"
+                order_notes = f"{order_notes}\n{desk_str}" if order_notes else desk_str
+
             # Update order fields
             order.full_name = validated_data.get('full_name')
             order.phone = validated_data.get('phone')
@@ -583,7 +591,7 @@ class StorefrontCheckoutView(APIView):
             order.wilaya = db_wilaya
             order.commune = db_commune
             order.address = validated_data.get('address')
-            order.notes = validated_data.get('notes', '')
+            order.notes = order_notes
             order.subtotal = subtotal
             order.delivery_price = delivery_price
             order.total = total
@@ -959,3 +967,133 @@ class StorefrontProductReviewsView(APIView):
             {'message': 'شكراً على تقييمك! سيتم نشره بعد المراجعة.', 'id': str(review.id)},
             status=status.HTTP_201_CREATED
         )
+
+
+class StorefrontStopdesksView(APIView):
+    """List stopdesk centers/agencies for a wilaya from the store's active courier API."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, subdomain, wilaya_id):
+        import requests
+        import logging
+        logger = logging.getLogger(__name__)
+
+        store = get_store_or_404(subdomain)
+        if not store:
+            return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
+            
+        from apps.delivery.models import StoreDeliveryConfig, ECOTRACK_COMPANIES
+        config = StoreDeliveryConfig.objects.filter(store=store, is_active=True).first()
+        if not config:
+            return Response({'stopdesks': []})
+
+        company = config.company
+        
+        # 1. Yalidine Stopdesks
+        if company.name == 'yalidine' and config.api_id and config.api_key:
+            headers = {
+                'X-API-ID': config.api_id,
+                'X-API-Token': config.api_key,
+                'Content-Type': 'application/json',
+            }
+            try:
+                resp = requests.get(
+                    f'https://api.yalidine.app/v1/centers/?wilaya_id={wilaya_id}',
+                    headers=headers,
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    data = resp.json().get('data', [])
+                    stopdesks = []
+                    for item in data:
+                        stopdesks.append({
+                            'id': str(item.get('center_id') or item.get('id') or ''),
+                            'name': item.get('name') or '',
+                            'address': item.get('address') or ''
+                        })
+                    return Response({'stopdesks': stopdesks})
+            except Exception as e:
+                logger.warning("[STOPDESK] Yalidine centers fetch failed: %s", str(e))
+
+        # 2. EcoTrack Stopdesks
+        elif company.name in ECOTRACK_COMPANIES or 'ecotrack' in (company.api_base_url or '').lower():
+            if config.api_key:
+                headers = {
+                    'Authorization': f'Bearer {config.api_key}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+                # Resolve base URL from company settings
+                base_url = (company.api_base_url or '').strip()
+                if base_url.endswith('/'):
+                    base_url = base_url[:-1]
+                if base_url.endswith('/api/v1'):
+                    base_url = base_url[:-7]
+                elif base_url.endswith('/api'):
+                    base_url = base_url[:-4]
+
+                domains = []
+                if base_url:
+                    domains.append(base_url)
+
+                slug = company.name
+                dash_subdomain = slug.replace('_', '-')
+                flat_subdomain = slug.replace('_', '')
+                
+                domains.append(f"https://{dash_subdomain}.ecotrack.dz")
+                domains.append(f"https://{flat_subdomain}.ecotrack.dz")
+
+                if company.name in ('noest', 'noest_express'):
+                    domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
+                elif company.name in ('dhd', 'dhd_express'):
+                    domains.append('https://dhd.ecotrack.dz')
+                elif company.name == 'msm_go':
+                    domains.append('https://msmgo.ecotrack.dz')
+                elif company.name == 'ontime_ecotrack':
+                    domains.append('https://ontime.ecotrack.dz')
+
+                unique_domains = []
+                for d in domains:
+                    if d not in unique_domains:
+                        unique_domains.append(d)
+
+                resp = None
+                endpoints = ['/api/v1/get/centers', '/api/public/get/centers']
+
+                for domain in unique_domains:
+                    for endpoint in endpoints:
+                        url = f"{domain}{endpoint}"
+                        try:
+                            resp = requests.get(url, headers=headers, timeout=10)
+                            if resp.status_code == 200:
+                                break
+                        except Exception:
+                            pass
+                    if resp and resp.status_code == 200:
+                        break
+
+                if resp and resp.status_code == 200:
+                    try:
+                        data = resp.json()
+                        stopdesks = []
+                        if isinstance(data, list):
+                            for item in data:
+                                # Filter by wilaya
+                                item_wilaya_raw = item.get('wilaya_id') or item.get('wilaya_code') or item.get('wilaya')
+                                if item_wilaya_raw is not None:
+                                    try:
+                                        item_wilaya = int(item_wilaya_raw)
+                                    except ValueError:
+                                        item_wilaya = 0
+                                    
+                                    if item_wilaya == int(wilaya_id):
+                                        stopdesks.append({
+                                            'id': str(item.get('id') or item.get('centre_id') or ''),
+                                            'name': item.get('name') or item.get('name_ar') or item.get('name_fr') or '',
+                                            'address': item.get('address') or item.get('adresse') or ''
+                                        })
+                        return Response({'stopdesks': stopdesks})
+                    except Exception as e:
+                        logger.warning("[STOPDESK] Ecotrack parse failed: %s", str(e))
+
+        return Response({'stopdesks': []})

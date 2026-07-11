@@ -9,7 +9,7 @@ import { Card, CardContent } from "../../../components/ui/card";
 import {
   Search, Download, Truck, Check, X, Package, AlertCircle, ExternalLink,
   RefreshCw, CheckSquare, Square, ShieldAlert, Trash2, ArrowUpRight, MessageSquare,
-  Sparkles, Layers, Tag, Phone, Clock, MoreHorizontal
+  Sparkles, Layers, Tag, Phone, Clock, MoreHorizontal, Printer
 } from "lucide-react";
 import { formatCurrency } from "../../../lib/utils";
 
@@ -564,10 +564,23 @@ export default function OrdersDashboard() {
     return (
       <div className={`relative flex items-center gap-1.5 ${isRtl ? "justify-end" : "justify-start"} flex-wrap md:flex-nowrap`}>
         {o.delivery_company_name && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1 shrink-0">
-            <Truck className="h-3 w-3" />
-            {language === "ar" ? `تم الإرسال عبر ${o.delivery_company_name}` : language === "fr" ? `Envoyé via ${o.delivery_company_name}` : `Sent with ${o.delivery_company_name}`}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
+              <Truck className="h-3 w-3" />
+              {language === "ar" ? `تم الإرسال عبر ${o.delivery_company_name}` : language === "fr" ? `Envoyé via ${o.delivery_company_name}` : `Sent with ${o.delivery_company_name}`}
+            </span>
+            {o.label_url && (
+              <a 
+                href={o.label_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center h-8 px-3 rounded-lg border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 transition-colors text-xs font-bold gap-1 shadow-sm"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                <span>{language === "ar" ? "طباعة البوليصة" : "Imprimer le bon"}</span>
+              </a>
+            )}
+          </div>
         )}
         {visibleButtons.map((btn, index) => (
           <Button

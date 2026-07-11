@@ -255,7 +255,28 @@ class OrderExportToDeliveryView(APIView):
         label_url = ''
         status_message = ''
 
-        logger.info("[EXPORT] Exporting order %s to company=%s (config=%s)", order.order_number, company.name, config.id)
+        # Check if stopdesk/desk is requested by parsing notes
+        is_stopdesk = False
+        stopdesk_id = None
+        
+        notes_str = order.notes or ''
+        import re
+        match = re.search(r'\[StopDesk:\s*([^\]]*)\s*-\s*([^\]]*)\]', notes_str)
+        if match:
+            is_stopdesk = True
+            stopdesk_id = match.group(1).strip()
+            stopdesk_name = match.group(2).strip()
+        else:
+            match_simple = re.search(r'\[StopDesk:\s*([^\]]*)\]', notes_str)
+            if match_simple:
+                is_stopdesk = True
+                stopdesk_name = match_simple.group(1).strip()
+                if ' - ' in stopdesk_name:
+                    parts = stopdesk_name.split(' - ', 1)
+                    stopdesk_id = parts[0].strip()
+                    stopdesk_name = parts[1].strip()
+
+        logger.info("[EXPORT] Exporting order %s to company=%s (config=%s) is_stopdesk=%s stopdesk_id=%s", order.order_number, company.name, config.id, is_stopdesk, stopdesk_id)
 
         # --- Yalidine integration ---
         if company.name == 'yalidine' and config.api_id and config.api_key:
@@ -285,7 +306,8 @@ class OrderExportToDeliveryView(APIView):
                     'length': 30,
                     'weight': 1,
                     'freeshipping': False,
-                    'is_stopdesk': False,
+                    'is_stopdesk': is_stopdesk,
+                    'stopdesk_id': int(stopdesk_id) if (is_stopdesk and stopdesk_id and str(stopdesk_id).isdigit()) else None,
                     'has_exchange': False,
                 }]
 
@@ -384,7 +406,9 @@ class OrderExportToDeliveryView(APIView):
                     'type': 1,
                     
                     # Delivery options
-                    'stop_desk': 0,
+                    'stop_desk': 1 if is_stopdesk else 0,
+                    'centre_id': int(stopdesk_id) if (is_stopdesk and stopdesk_id and str(stopdesk_id).isdigit()) else None,
+                    'center_id': int(stopdesk_id) if (is_stopdesk and stopdesk_id and str(stopdesk_id).isdigit()) else None,
                     'can_open': 1,
                 }
 

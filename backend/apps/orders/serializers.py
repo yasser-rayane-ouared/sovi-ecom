@@ -56,6 +56,14 @@ class OrderSerializer(serializers.ModelSerializer):
             return shipment.company.display_name
         return None
 
+    label_url = serializers.SerializerMethodField(read_only=True)
+
+    def get_label_url(self, obj):
+        shipment = obj.shipments.order_by('-id').first()
+        if shipment:
+            return shipment.label_url
+        return None
+
     class Meta:
         model = Order
         fields = [
@@ -65,7 +73,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'status', 'source', 'utm_source', 'utm_medium', 'utm_campaign',
             'is_abandoned', 'items', 'status_history', 'created_at', 'updated_at',
             'is_duplicate', 'duplicate_count', 'risk_score',
-            'coupon_code', 'coupon_discount', 'delivery_company_name',
+            'coupon_code', 'coupon_discount', 'delivery_company_name', 'label_url',
         ]
         read_only_fields = ['id', 'order_number', 'created_at', 'updated_at']
 
@@ -88,6 +96,9 @@ class OrderCreateSerializer(serializers.Serializer):
     firebase_token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     coupon_code = serializers.CharField(required=False, allow_blank=True, default='', max_length=50)
     commitment_checked = serializers.BooleanField(required=False, default=False)
+    delivery_method = serializers.CharField(required=False, default='home')
+    stopdesk_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    stopdesk_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     def validate(self, attrs):
         store = self.context['store']
@@ -316,12 +327,13 @@ class OrderCreateSerializer(serializers.Serializer):
         items_data = validated_data.pop('items')
         wilaya = validated_data.pop('wilaya')
         commune = validated_data.pop('commune')
+        delivery_method = validated_data.get('delivery_method', 'home')
 
         # Calculate delivery price
         delivery_price = 0
         try:
             pricing = DeliveryPricing.objects.get(store=store, wilaya=wilaya)
-            delivery_price = pricing.home_price
+            delivery_price = pricing.desk_price if delivery_method == 'desk' else pricing.home_price
         except DeliveryPricing.DoesNotExist:
             if hasattr(store, 'settings'):
                 delivery_price = store.settings.default_delivery_price
@@ -360,6 +372,13 @@ class OrderCreateSerializer(serializers.Serializer):
 
         total = subtotal - coupon_discount + delivery_price
 
+        # Format stopdesk notes if applicable
+        notes = validated_data.get('notes', '')
+        stopdesk_name = validated_data.get('stopdesk_name')
+        if delivery_method == 'desk' and stopdesk_name:
+            desk_str = f"[StopDesk: {validated_data.get('stopdesk_id') or ''} - {stopdesk_name}]"
+            notes = f"{notes}\n{desk_str}" if notes else desk_str
+
         order = Order.objects.create(
             store=store,
             full_name=validated_data.get('full_name'),
@@ -368,7 +387,7 @@ class OrderCreateSerializer(serializers.Serializer):
             wilaya=wilaya,
             commune=commune,
             address=validated_data.get('address'),
-            notes=validated_data.get('notes', ''),
+            notes=notes,
             subtotal=subtotal,
             delivery_price=delivery_price,
             total=total,
