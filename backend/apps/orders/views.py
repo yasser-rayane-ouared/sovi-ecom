@@ -894,7 +894,10 @@ class OrderPrintLabelView(APIView):
     """Retrieve the printable label PDF URL for an order."""
     def get(self, request, store_id, pk):
         store = get_store_for_user(store_id, request.user, 'orders')
-        order = get_object_or_404(Order, id=pk, store=store)
+        try:
+            order = Order.objects.get(id=pk, store=store)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
         shipment = order.shipments.order_by('-id').first()
         if not shipment:
             return Response(
@@ -908,10 +911,10 @@ class OrderPrintLabelView(APIView):
 
         # 2. If label_url is empty, fetch it dynamically from the courier API
         company = shipment.company
-        config = StoreDeliveryConfig.objects.filter(store=store, company=company, is_active=True).first()
+        config = StoreDeliveryConfig.objects.filter(store=store, company=company).order_by('-is_active').first()
         if not config:
             return Response(
-                {'detail': f'Active delivery config not found for {company.display_name}.'},
+                {'detail': f'Delivery credentials config not found for {company.display_name}.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
