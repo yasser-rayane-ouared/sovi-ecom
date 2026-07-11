@@ -1039,6 +1039,17 @@ class OrderDownloadPDFView(APIView):
                 base_url = base_url[:-4]
 
             domains = []
+            
+            # Prioritize custom overrides / known active merchant dashboard domains first!
+            if company.name in ('noest', 'noest_express'):
+                domains.extend(['https://app.noest-dz.com', 'https://noest.ecotrack.dz'])
+            elif company.name in ('dhd', 'dhd_express'):
+                domains.extend(['https://dhd.ecotrack.dz', 'https://app.dhd-dz.com'])
+            elif company.name == 'msm_go':
+                domains.append('https://msmgo.ecotrack.dz')
+            elif company.name == 'ontime_ecotrack':
+                domains.append('https://ontime.ecotrack.dz')
+
             if base_url:
                 domains.append(base_url)
 
@@ -1062,15 +1073,6 @@ class OrderDownloadPDFView(APIView):
                 f"https://{clean_dash}.ecotrack.dz",
                 f"https://{clean_flat}.ecotrack.dz"
             ])
-
-            if company.name in ('noest', 'noest_express'):
-                domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
-            elif company.name in ('dhd', 'dhd_express'):
-                domains.append('https://dhd.ecotrack.dz')
-            elif company.name == 'msm_go':
-                domains.append('https://msmgo.ecotrack.dz')
-            elif company.name == 'ontime_ecotrack':
-                domains.append('https://ontime.ecotrack.dz')
 
             # De-duplicate domains while keeping order
             unique_domains = []
