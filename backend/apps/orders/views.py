@@ -433,15 +433,27 @@ class OrderExportToDeliveryView(APIView):
                 if base_url:
                     domains.append(base_url)
 
-                # Generate dynamic Ecotrack domains
                 slug = company.name
                 dash_subdomain = slug.replace('_', '-')
                 flat_subdomain = slug.replace('_', '')
-                
-                domains.append(f"https://{dash_subdomain}.ecotrack.dz")
-                domains.append(f"https://{flat_subdomain}.ecotrack.dz")
+                domains.extend([
+                    f"https://{dash_subdomain}.ecotrack.dz",
+                    f"https://{flat_subdomain}.ecotrack.dz"
+                ])
 
-                # Add known fallbacks for specific companies
+                # Clean suffix to generate stripped subdomains
+                clean_slug = slug
+                for suffix in ['_livraison', '_delivery', '_express', '_chrono', '_ecotrack']:
+                    if clean_slug.endswith(suffix):
+                        clean_slug = clean_slug[:-len(suffix)]
+                
+                clean_dash = clean_slug.replace('_', '-')
+                clean_flat = clean_slug.replace('_', '')
+                domains.extend([
+                    f"https://{clean_dash}.ecotrack.dz",
+                    f"https://{clean_flat}.ecotrack.dz"
+                ])
+
                 if company.name in ('noest', 'noest_express'):
                     domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
                 elif company.name in ('dhd', 'dhd_express'):
@@ -741,15 +753,27 @@ class OrderSyncTrackingView(APIView):
             if base_url:
                 domains.append(base_url)
 
-            # Generate dynamic Ecotrack domains
             slug = c_name
             dash_subdomain = slug.replace('_', '-')
             flat_subdomain = slug.replace('_', '')
-            
-            domains.append(f"https://{dash_subdomain}.ecotrack.dz")
-            domains.append(f"https://{flat_subdomain}.ecotrack.dz")
+            domains.extend([
+                f"https://{dash_subdomain}.ecotrack.dz",
+                f"https://{flat_subdomain}.ecotrack.dz"
+            ])
 
-            # Add known fallbacks for specific companies
+            # Clean suffix to generate stripped subdomains
+            clean_slug = slug
+            for suffix in ['_livraison', '_delivery', '_express', '_chrono', '_ecotrack']:
+                if clean_slug.endswith(suffix):
+                    clean_slug = clean_slug[:-len(suffix)]
+            
+            clean_dash = clean_slug.replace('_', '-')
+            clean_flat = clean_slug.replace('_', '')
+            domains.extend([
+                f"https://{clean_dash}.ecotrack.dz",
+                f"https://{clean_flat}.ecotrack.dz"
+            ])
+
             if c_name in ('noest', 'noest_express'):
                 domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
             elif c_name in ('dhd', 'dhd_express'):
@@ -1057,6 +1081,20 @@ class OrderDownloadPDFView(APIView):
                 f"https://{dash_subdomain}.ecotrack.dz",
                 f"https://{flat_subdomain}.ecotrack.dz"
             ])
+
+            # Clean suffix to generate stripped subdomains
+            clean_slug = slug
+            for suffix in ['_livraison', '_delivery', '_express', '_chrono', '_ecotrack']:
+                if clean_slug.endswith(suffix):
+                    clean_slug = clean_slug[:-len(suffix)]
+            
+            clean_dash = clean_slug.replace('_', '-')
+            clean_flat = clean_slug.replace('_', '')
+            domains.extend([
+                f"https://{clean_dash}.ecotrack.dz",
+                f"https://{clean_flat}.ecotrack.dz"
+            ])
+
             if company.name in ('noest', 'noest_express'):
                 domains.extend(['https://noest.ecotrack.dz', 'https://app.noest-dz.com'])
             elif company.name in ('dhd', 'dhd_express'):
@@ -1066,6 +1104,7 @@ class OrderDownloadPDFView(APIView):
             elif company.name == 'ontime_ecotrack':
                 domains.append('https://ontime.ecotrack.dz')
 
+            # De-duplicate domains while keeping order
             unique_domains = []
             for d in domains:
                 if d not in unique_domains:
