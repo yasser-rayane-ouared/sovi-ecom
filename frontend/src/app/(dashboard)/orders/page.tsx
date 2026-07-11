@@ -695,6 +695,16 @@ export default function OrdersDashboard() {
         });
       }
 
+      // Direct visible Edit button for any active order before it is sent to the courier
+      if (!o.delivery_company_name && !["shipped", "delivered", "returned", "cancelled"].includes(o.status)) {
+        visibleButtons.push({
+          label: language === "ar" ? "تعديل" : language === "fr" ? "Modifier" : "Edit",
+          icon: <Edit className="h-3.5 w-3.5" />,
+          onClick: () => openEditModal(o),
+          className: "border border-border dark:border-white/10 hover:bg-muted dark:hover:bg-white/5 text-foreground font-semibold"
+        });
+      }
+
       // WhatsApp Button is always visible for active order statuses
       visibleButtons.push({
         label: t("ordersActionWhatsapp"),
@@ -750,8 +760,8 @@ export default function OrdersDashboard() {
         });
       }
 
-      // Edit order action (always allow editing if not shipped, delivered, returned, or cancelled)
-      if (!["shipped", "delivered", "returned", "cancelled"].includes(o.status)) {
+      // Edit order action inside dropdown (only if already sent to the courier, as it has a direct button otherwise)
+      if (o.delivery_company_name && !["shipped", "delivered", "returned", "cancelled"].includes(o.status)) {
         dropdownActions.push({
           label: language === "ar" ? "تعديل الطلب" : language === "fr" ? "Modifier la commande" : "Edit Order",
           icon: <Edit className="h-3.5 w-3.5" />,
