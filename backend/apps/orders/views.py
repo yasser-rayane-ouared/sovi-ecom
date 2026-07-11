@@ -1030,38 +1030,6 @@ class OrderDownloadPDFView(APIView):
 
         # EcoTrack Partners Handling
         elif company.name in ECOTRACK_COMPANIES or 'ecotrack' in (company.api_base_url or '').lower():
-            # If we already have label_url cached, try retrieving it
-            if shipment.label_url:
-                try:
-                    headers = {
-                        'Authorization': f'Bearer {config.api_key}',
-                        'Content-Type': 'application/json',
-                    }
-                    if 'trackings[]=' in shipment.label_url:
-                        resp = requests.get(shipment.label_url, headers=headers, timeout=15)
-                    else:
-                        resp = requests.post(shipment.label_url, json={'trackings': [tracking_number]}, headers=headers, timeout=15)
-                        
-                    if resp.status_code == 200:
-                        content_type = resp.headers.get('Content-Type', '').lower()
-                        if 'application/pdf' in content_type:
-                            return HttpResponse(resp.content, content_type='application/pdf')
-                        else:
-                            try:
-                                data = resp.json()
-                                lbl_url = data.get('label', data.get('label_url', data.get('url', data.get('pdf'))))
-                                if lbl_url and lbl_url.startswith('http'):
-                                    return HttpResponseRedirect(lbl_url)
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-
-            headers = {
-                'Authorization': f'Bearer {config.api_key}',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            }
             base_url = (company.api_base_url or '').strip()
             if base_url.endswith('/'):
                 base_url = base_url[:-1]
@@ -1110,39 +1078,17 @@ class OrderDownloadPDFView(APIView):
                 if d not in unique_domains:
                     unique_domains.append(d)
 
-            # Try to get printable PDF directly from Ecotrack endpoints
-            for domain in unique_domains:
-                for endpoint in ['/api/v1/print/parcels', '/api/public/print/parcels']:
-                    url = f"{domain}{endpoint}"
-                    try:
-                        resp = requests.post(url, json={'trackings': [tracking_number]}, headers=headers, timeout=15)
-                        if resp.status_code == 200:
-                            content_type = resp.headers.get('Content-Type', '').lower()
-                            if 'application/pdf' in content_type or len(resp.content) > 1000:
-                                shipment.label_url = url
-                                shipment.save(update_fields=['label_url'])
-                                return HttpResponse(resp.content, content_type='application/pdf')
-                            else:
-                                try:
-                                    data = resp.json()
-                                    lbl_url = data.get('label', data.get('label_url', data.get('url', data.get('pdf'))))
-                                    if lbl_url and lbl_url.startswith('http'):
-                                        shipment.label_url = lbl_url
-                                        shipment.save(update_fields=['label_url'])
-                                        return HttpResponseRedirect(lbl_url)
-                                except Exception:
-                                    pass
-                    except Exception:
-                        pass
-
-            # Fallback construct: redirect to direct print link on Ecotrack if fetch failed
-            for domain in unique_domains:
-                fallback_url = f"{domain}/print/parcels?trackings[]={tracking_number}"
-                try:
-                    resp = requests.head(fallback_url, timeout=5)
-                    if resp.status_code in (200, 302):
-                        return HttpResponseRedirect(fallback_url)
-                except Exception:
-                    pass
+            # Construct the direct authenticated print URL on Ecotrack.
+            # We prefer the first resolved domain (which is either their custom base_url or the stripped partner domain).
+            target_domain = unique_domains[0] if unique_domains else f"https://{clean_flat}.ecotrack.dz"
+            
+            # Construct standard Ecotrack authenticated GET print URL
+            authenticated_print_url = f"{target_domain}/api/v1/print/parcels?trackings[]={tracking_number}&api_token={config.api_key}"
+            
+            # Cache the URL
+            shipment.label_url = authenticated_print_url
+            shipment.save(update_fields=['label_url'])
+            
+            return HttpResponseRedirect(authenticated_print_url)
 
         return HttpResponse('Could not retrieve shipment label PDF from the courier API.', status=404)
