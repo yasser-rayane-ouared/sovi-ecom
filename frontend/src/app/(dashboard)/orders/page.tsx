@@ -9,7 +9,7 @@ import { Card, CardContent } from "../../../components/ui/card";
 import {
   Search, Download, Truck, Check, X, Package, AlertCircle, ExternalLink,
   RefreshCw, CheckSquare, Square, ShieldAlert, Trash2, ArrowUpRight, MessageSquare,
-  Sparkles, Layers, Tag, Phone, Clock, MoreHorizontal, Printer
+  Sparkles, Layers, Tag, Phone, Clock, MoreHorizontal, Printer, Edit, Save, Loader2
 } from "lucide-react";
 import { formatCurrency } from "../../../lib/utils";
 
@@ -69,6 +69,186 @@ export default function OrdersDashboard() {
   // Pagination states
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+
+  // Edit Modal states
+  const [editModal, setEditModal] = useState<{
+    open: boolean;
+    order: any;
+    fullName: string;
+    phone: string;
+    phone2: string;
+    wilayaId: string;
+    communeId: string;
+    address: string;
+    deliveryMethod: 'home' | 'desk';
+    stopdeskId: string;
+    stopdeskName: string;
+    total: string;
+    loading: boolean;
+  } | null>(null);
+
+  const [editWilayas, setEditWilayas] = useState<any[]>([]);
+  const [editCommunes, setEditCommunes] = useState<any[]>([]);
+  const [editStopdesks, setEditStopdesks] = useState<any[]>([]);
+  const [editLoadingCommunes, setEditLoadingCommunes] = useState(false);
+  const [editLoadingStopdesks, setEditLoadingStopdesks] = useState(false);
+
+  const fetchEditCommunesAndStopdesks = async (wilayaId: string, subdomain: string) => {
+    if (!subdomain || !wilayaId) return;
+    setEditLoadingCommunes(true);
+    setEditLoadingStopdesks(true);
+    
+    // Find wilaya code from id/code
+    let wilayaCode = wilayaId;
+    if (editWilayas.length > 0) {
+      const wilayaObj = editWilayas.find(w => w.id === wilayaId || w.code?.toString() === wilayaId.toString());
+      if (wilayaObj) {
+        wilayaCode = wilayaObj.code || wilayaId;
+      }
+    }
+    
+    try {
+      const communesRes = await api.get(`/storefront/${subdomain}/wilayas/${wilayaCode}/communes/`);
+      setEditCommunes(communesRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch communes", err);
+    } finally {
+      setEditLoadingCommunes(false);
+    }
+    
+    try {
+      const stopdesksRes = await api.get(`/storefront/${subdomain}/wilayas/${wilayaCode}/stopdesks/`);
+      const stopdesksData = stopdesksRes.data?.stopdesks ?? stopdesksRes.data ?? [];
+      setEditStopdesks(stopdesksData);
+    } catch (err) {
+      console.error("Failed to fetch stopdesks", err);
+    } finally {
+      setEditLoadingStopdesks(false);
+    }
+  };
+
+  const openEditModal = async (order: any) => {
+    if (!selectedStore?.subdomain) return;
+    
+    let deliveryMethod: 'home' | 'desk' = 'home';
+    let stopdeskId = '';
+    let stopdeskName = '';
+    
+    const notesStr = order.notes || '';
+    const match = notesStr.match(/\[StopDesk:\s*([^\]]*)\s*-\s*([^\]]*)\]/);
+    if (match) {
+      deliveryMethod = 'desk';
+      stopdeskId = match[1].trim();
+      stopdeskName = match[2].trim();
+    } else {
+      const matchSimple = notesStr.match(/\[StopDesk:\s*([^\]]*)\]/);
+      if (matchSimple) {
+        deliveryMethod = 'desk';
+        stopdeskName = matchSimple[1].trim();
+        if (stopdeskName.includes(' - ')) {
+          const parts = stopdeskName.split(' - ', 2);
+          stopdeskId = parts[0].trim();
+          stopdeskName = parts[1].trim();
+        }
+      }
+    }
+    
+    setEditModal({
+      open: true,
+      order,
+      fullName: order.full_name || '',
+      phone: order.phone || '',
+      phone2: order.phone2 || '',
+      wilayaId: order.wilaya || '',
+      communeId: order.commune || '',
+      address: order.address || '',
+      deliveryMethod,
+      stopdeskId,
+      stopdeskName,
+      total: order.total || '0',
+      loading: false
+    });
+
+    let loadedWilayas = editWilayas;
+    if (editWilayas.length === 0) {
+      try {
+        const res = await api.get(`/storefront/${selectedStore.subdomain}/wilayas/`);
+        loadedWilayas = res.data || [];
+        setEditWilayas(loadedWilayas);
+      } catch (err) {
+        console.error("Failed to fetch wilayas", err);
+      }
+    }
+    
+    if (order.wilaya) {
+      // Find wilaya code from ID
+      let wilayaCode = order.wilaya;
+      const wilayaObj = loadedWilayas.find(w => w.id === order.wilaya || w.code?.toString() === order.wilaya.toString());
+      if (wilayaObj) {
+        wilayaCode = wilayaObj.code || order.wilaya;
+      }
+      
+      setEditLoadingCommunes(true);
+      setEditLoadingStopdesks(true);
+      
+      try {
+        const communesRes = await api.get(`/storefront/${selectedStore.subdomain}/wilayas/${wilayaCode}/communes/`);
+        setEditCommunes(communesRes.data || []);
+      } catch (err) {
+        console.error("Failed to fetch communes", err);
+      } finally {
+        setEditLoadingCommunes(false);
+      }
+      
+      try {
+        const stopdesksRes = await api.get(`/storefront/${selectedStore.subdomain}/wilayas/${wilayaCode}/stopdesks/`);
+        const stopdesksData = stopdesksRes.data?.stopdesks ?? stopdesksRes.data ?? [];
+        setEditStopdesks(stopdesksData);
+      } catch (err) {
+        console.error("Failed to fetch stopdesks", err);
+      } finally {
+        setEditLoadingStopdesks(false);
+      }
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editModal || !currentStoreId) return;
+    setEditModal(prev => prev ? { ...prev, loading: true } : null);
+    
+    const cleanNotes = (notesStr: string) => {
+      return notesStr.replace(/\[StopDesk:\s*[^\]]*\]/g, '').trim();
+    };
+    
+    let notes = cleanNotes(editModal.order.notes || '');
+    if (editModal.deliveryMethod === 'desk' && editModal.stopdeskName) {
+      const deskTag = `[StopDesk: ${editModal.stopdeskId} - ${editModal.stopdeskName}]`;
+      notes = notes ? `${notes}\n${deskTag}` : deskTag;
+    }
+    
+    const payload = {
+      full_name: editModal.fullName,
+      phone: editModal.phone,
+      phone2: editModal.phone2,
+      wilaya: editModal.wilayaId,
+      commune: editModal.communeId,
+      address: editModal.address,
+      notes,
+      subtotal: parseFloat(editModal.total),
+      total: parseFloat(editModal.total),
+    };
+    
+    try {
+      await api.put(`/orders/${currentStoreId}/${editModal.order.id}/`, payload);
+      alert(language === "ar" ? "تم تحديث الطلب بنجاح!" : language === "fr" ? "Commande mise à jour avec succès !" : "Order updated successfully!");
+      setEditModal(null);
+      fetchOrders();
+    } catch (err) {
+      alert(language === "ar" ? "فشل تحديث الطلب." : language === "fr" ? "Échec de la mise à jour." : "Failed to update order details.");
+    } finally {
+      setEditModal(prev => prev ? { ...prev, loading: false } : null);
+    }
+  };
 
   const fetchOrders = () => {
     if (!currentStoreId) return;
@@ -567,6 +747,16 @@ export default function OrdersDashboard() {
           icon: <X className="h-3.5 w-3.5" />,
           onClick: () => handleUpdateStatus(currentStoreId!, o.id, "cancelled"),
           className: "text-rose-600 hover:bg-rose-500/10 font-bold"
+        });
+      }
+
+      // Edit order action (always allow editing if not shipped, delivered, returned, or cancelled)
+      if (!["shipped", "delivered", "returned", "cancelled"].includes(o.status)) {
+        dropdownActions.push({
+          label: language === "ar" ? "تعديل الطلب" : language === "fr" ? "Modifier la commande" : "Edit Order",
+          icon: <Edit className="h-3.5 w-3.5" />,
+          onClick: () => openEditModal(o),
+          className: "text-primary hover:bg-primary/5 font-bold"
         });
       }
     } else {
@@ -1214,6 +1404,236 @@ export default function OrdersDashboard() {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Order Details Modal */}
+      {editModal?.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
+          <Card className="w-full max-w-lg border-border dark:border-white/10 bg-background dark:bg-[#0f1118] shadow-2xl overflow-hidden my-8">
+            <CardContent className="p-6 space-y-5">
+              {/* Header */}
+              <div className={`flex items-center justify-between border-b border-border dark:border-white/5 pb-3 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">
+                    {language === "ar" ? "تعديل بيانات الطلب" : language === "fr" ? "Modifier la commande" : "Edit Order Details"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-outfit mt-0.5">
+                    {language === "ar" ? `رقم الطلب: ${editModal.order.order_number}` : `Order: ${editModal.order.order_number}`}
+                  </p>
+                </div>
+                <button onClick={() => setEditModal(null)} className="text-muted-foreground hover:text-foreground dark:hover:text-white transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Body */}
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                {/* Full Name */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {language === "ar" ? "الاسم الكامل للزبون" : language === "fr" ? "Nom complet" : "Customer Full Name"}
+                  </label>
+                  <input
+                    type="text"
+                    value={editModal.fullName}
+                    onChange={(e) => setEditModal(prev => prev ? { ...prev, fullName: e.target.value } : null)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+
+                {/* Phone numbers */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground block">
+                      {language === "ar" ? "رقم الهاتف" : language === "fr" ? "Téléphone" : "Phone Number"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editModal.phone}
+                      onChange={(e) => setEditModal(prev => prev ? { ...prev, phone: e.target.value } : null)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-outfit"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground block">
+                      {language === "ar" ? "رقم هاتف بديل" : language === "fr" ? "Téléphone 2" : "Alternative Phone"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editModal.phone2}
+                      onChange={(e) => setEditModal(prev => prev ? { ...prev, phone2: e.target.value } : null)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-outfit"
+                    />
+                  </div>
+                </div>
+
+                {/* Wilaya and Commune selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground block">
+                      {language === "ar" ? "الولاية" : language === "fr" ? "Wilaya" : "Province/Wilaya"}
+                    </label>
+                    <select
+                      value={editModal.wilayaId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditModal(prev => prev ? { ...prev, wilayaId: val, communeId: '', stopdeskId: '', stopdeskName: '' } : null);
+                        fetchEditCommunesAndStopdesks(val, selectedStore.subdomain);
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    >
+                      <option value="" disabled className="dark:bg-[#0f1118]">
+                        {language === "ar" ? "اختر الولاية" : "Select Wilaya"}
+                      </option>
+                      {editWilayas.map((w) => (
+                        <option key={w.id} value={w.id} className="dark:bg-[#0f1118]">
+                          {w.code} - {isRtl ? w.name_ar : w.name_fr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground block">
+                      {language === "ar" ? "البلدية" : language === "fr" ? "Commune" : "City/Commune"}
+                    </label>
+                    <select
+                      value={editModal.communeId}
+                      disabled={!editModal.wilayaId || editLoadingCommunes}
+                      onChange={(e) => setEditModal(prev => prev ? { ...prev, communeId: e.target.value } : null)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50"
+                    >
+                      <option value="" disabled className="dark:bg-[#0f1118]">
+                        {editLoadingCommunes ? (language === "ar" ? "جاري التحميل..." : "Chargement...") : (language === "ar" ? "اختر البلدية" : "Select Commune")}
+                      </option>
+                      {editCommunes.map((c) => (
+                        <option key={c.id} value={c.id} className="dark:bg-[#0f1118]">
+                          {isRtl ? c.name_ar : c.name_fr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Delivery Method Choice */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {language === "ar" ? "نوع التوصيل" : language === "fr" ? "Type de livraison" : "Delivery Method"}
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditModal(prev => prev ? { ...prev, deliveryMethod: 'home', stopdeskId: '', stopdeskName: '' } : null)}
+                      className={`px-3 py-2.5 rounded-xl border transition-all text-sm font-semibold flex items-center justify-center gap-2 ${
+                        editModal.deliveryMethod === 'home'
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border dark:border-white/10 bg-card dark:bg-white/[0.01] text-muted-foreground"
+                      }`}
+                    >
+                      <Package className="h-4 w-4" />
+                      <span>{language === "ar" ? "توصيل للمنزل" : language === "fr" ? "À Domicile" : "Home Delivery"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditModal(prev => prev ? { ...prev, deliveryMethod: 'desk' } : null)}
+                      className={`px-3 py-2.5 rounded-xl border transition-all text-sm font-semibold flex items-center justify-center gap-2 ${
+                        editModal.deliveryMethod === 'desk'
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border dark:border-white/10 bg-card dark:bg-white/[0.01] text-muted-foreground"
+                      }`}
+                    >
+                      <Truck className="h-4 w-4" />
+                      <span>{language === "ar" ? "استلام من المكتب" : language === "fr" ? "Bureau StopDesk" : "StopDesk Center"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stopdesk select (only if desk method chosen) */}
+                {editModal.deliveryMethod === 'desk' && (
+                  <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <label className="text-xs font-bold text-muted-foreground block">
+                      {language === "ar" ? "مكتب التوصيل / مركز الاستلام" : language === "fr" ? "Bureau StopDesk" : "Stopdesk Agency/Center"}
+                    </label>
+                    <select
+                      value={editModal.stopdeskId}
+                      disabled={editLoadingStopdesks}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        const obj = editStopdesks.find(s => s.id?.toString() === id.toString() || s.center_id?.toString() === id.toString());
+                        const name = obj ? (obj.name || obj.center_name || '') : '';
+                        setEditModal(prev => prev ? { ...prev, stopdeskId: id, stopdeskName: name } : null);
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50"
+                    >
+                      <option value="" disabled className="dark:bg-[#0f1118]">
+                        {editLoadingStopdesks ? (language === "ar" ? "جاري التحميل..." : "Chargement...") : (language === "ar" ? "اختر مكتب التوصيل" : "Select Stopdesk")}
+                      </option>
+                      {editStopdesks.map((s, idx) => {
+                        const sId = s.id || s.center_id || idx.toString();
+                        const sName = s.name || s.center_name || '';
+                        return (
+                          <option key={sId} value={sId} className="dark:bg-[#0f1118]">
+                            {sName}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
+                {/* Detailed Address */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {language === "ar" ? "العنوان بالتفصيل" : language === "fr" ? "Adresse" : "Detailed Address"}
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editModal.address}
+                    onChange={(e) => setEditModal(prev => prev ? { ...prev, address: e.target.value } : null)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                  />
+                </div>
+
+                {/* Order Total Price */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    {language === "ar" ? "المبلغ الإجمالي (شامل الشحن)" : language === "fr" ? "Total de la commande" : "Order Total Price (DZD)"}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editModal.total}
+                    onChange={(e) => setEditModal(prev => prev ? { ...prev, total: e.target.value } : null)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border dark:border-white/10 bg-card dark:bg-white/[0.02] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-outfit"
+                  />
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className={`flex gap-3 pt-3 border-t border-border dark:border-white/5 justify-end ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={editModal.loading || !editModal.fullName || !editModal.phone || !editModal.wilayaId}
+                  className="px-5 font-bold flex items-center gap-1.5"
+                >
+                  {editModal.loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  <span>{language === "ar" ? "حفظ التغييرات" : language === "fr" ? "Enregistrer" : "Save Changes"}</span>
+                </Button>
+                <Button
+                  onClick={() => setEditModal(null)}
+                  variant="outline"
+                  className="border-border dark:border-white/10"
+                >
+                  {language === "ar" ? "إلغاء" : "Cancel"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
