@@ -51,7 +51,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_delivery_company_name(self, obj):
         """Return the display name of the delivery company if the order has been exported."""
-        shipment = obj.shipments.select_related('company').order_by('-id').first()
+        shipment = getattr(obj, '_last_shipment', None)
+        if shipment is None:
+            shipment = obj.shipments.select_related('company').order_by('-id').first()
+            obj._last_shipment = shipment if shipment else False
         if shipment:
             return shipment.company.display_name
         return None
@@ -59,7 +62,10 @@ class OrderSerializer(serializers.ModelSerializer):
     label_url = serializers.SerializerMethodField(read_only=True)
 
     def get_label_url(self, obj):
-        shipment = obj.shipments.order_by('-id').first()
+        shipment = getattr(obj, '_last_shipment', None)
+        if shipment is None:
+            shipment = obj.shipments.order_by('-id').first()
+            obj._last_shipment = shipment if shipment else False
         if shipment:
             return shipment.label_url
         return None

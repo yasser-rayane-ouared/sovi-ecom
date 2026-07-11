@@ -41,7 +41,7 @@ class OrderListView(generics.ListAPIView):
         store = get_store_for_user(self.kwargs['store_id'], self.request.user, 'orders')
         return Order.objects.filter(store=store).select_related(
             'wilaya', 'commune'
-        ).prefetch_related('items__product', 'status_history')
+        ).prefetch_related('items__product', 'status_history', 'shipments__company')
 
 
 class OrderDetailView(generics.RetrieveUpdateAPIView):
@@ -51,7 +51,7 @@ class OrderDetailView(generics.RetrieveUpdateAPIView):
         store = get_store_for_user(self.kwargs['store_id'], self.request.user, 'orders')
         return Order.objects.filter(store=store).select_related(
             'wilaya', 'commune'
-        ).prefetch_related('items__product', 'status_history')
+        ).prefetch_related('items__product', 'status_history', 'shipments__company')
 
 
 class OrderStatusUpdateView(APIView):

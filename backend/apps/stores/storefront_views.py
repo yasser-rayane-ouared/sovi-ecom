@@ -984,7 +984,7 @@ class StorefrontStopdesksView(APIView):
             
         from apps.delivery.models import StoreDeliveryConfig, ECOTRACK_COMPANIES
         config = StoreDeliveryConfig.objects.filter(store=store, is_active=True).first()
-        if not config:
+        if not config or not getattr(config, 'company', None):
             return Response({'stopdesks': []})
 
         company = config.company
@@ -1003,14 +1003,17 @@ class StorefrontStopdesksView(APIView):
                     timeout=10
                 )
                 if resp.status_code == 200:
-                    data = resp.json().get('data', [])
+                    raw_data = resp.json().get('data') or []
+                    if not isinstance(raw_data, list):
+                        raw_data = []
                     stopdesks = []
-                    for item in data:
-                        stopdesks.append({
-                            'id': str(item.get('center_id') or item.get('id') or ''),
-                            'name': item.get('name') or '',
-                            'address': item.get('address') or ''
-                        })
+                    for item in raw_data:
+                        if isinstance(item, dict):
+                            stopdesks.append({
+                                'id': str(item.get('center_id') or item.get('id') or ''),
+                                'name': item.get('name') or '',
+                                'address': item.get('address') or ''
+                            })
                     return Response({'stopdesks': stopdesks})
             except Exception as e:
                 logger.warning("[STOPDESK] Yalidine centers fetch failed: %s", str(e))
@@ -1076,22 +1079,27 @@ class StorefrontStopdesksView(APIView):
                     try:
                         data = resp.json()
                         stopdesks = []
-                        if isinstance(data, list):
-                            for item in data:
-                                # Filter by wilaya
-                                item_wilaya_raw = item.get('wilaya_id') or item.get('wilaya_code') or item.get('wilaya')
-                                if item_wilaya_raw is not None:
-                                    try:
-                                        item_wilaya = int(item_wilaya_raw)
-                                    except ValueError:
-                                        item_wilaya = 0
-                                    
-                                    if item_wilaya == int(wilaya_id):
-                                        stopdesks.append({
-                                            'id': str(item.get('id') or item.get('centre_id') or ''),
-                                            'name': item.get('name') or item.get('name_ar') or item.get('name_fr') or '',
-                                            'address': item.get('address') or item.get('adresse') or ''
-                                        })
+                        centers_list = data if isinstance(data, list) else (data.get('data') if isinstance(data, dict) else [])
+                        if not isinstance(centers_list, list):
+                            centers_list = []
+                            
+                        for item in centers_list:
+                            if not isinstance(item, dict):
+                                continue
+                            # Filter by wilaya
+                            item_wilaya_raw = item.get('wilaya_id') or item.get('wilaya_code') or item.get('wilaya')
+                            if item_wilaya_raw is not None:
+                                try:
+                                    item_wilaya = int(item_wilaya_raw)
+                                except (ValueError, TypeError):
+                                    item_wilaya = 0
+                                
+                                if item_wilaya == int(wilaya_id):
+                                    stopdesks.append({
+                                        'id': str(item.get('id') or item.get('centre_id') or ''),
+                                        'name': item.get('name') or item.get('name_ar') or item.get('name_fr') or '',
+                                        'address': item.get('address') or item.get('adresse') or ''
+                                    })
                         return Response({'stopdesks': stopdesks})
                     except Exception as e:
                         logger.warning("[STOPDESK] Ecotrack parse failed: %s", str(e))
