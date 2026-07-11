@@ -1082,8 +1082,8 @@ class OrderDownloadPDFView(APIView):
             # We prefer the first resolved domain (which is either their custom base_url or the stripped partner domain).
             target_domain = unique_domains[0] if unique_domains else f"https://{clean_flat}.ecotrack.dz"
             
-            # Construct standard Ecotrack public GET print URL
-            authenticated_print_url = f"{target_domain}/print/parcels?trackings[]={tracking_number}"
+            # Construct standard Ecotrack expéditeur GET print URL
+            authenticated_print_url = f"{target_domain}/expediteur/print/parcels?trackings[]={tracking_number}"
             
             # Cache the URL
             shipment.label_url = authenticated_print_url
