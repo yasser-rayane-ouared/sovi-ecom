@@ -82,6 +82,41 @@ export default function ConsumerLandingPage() {
     }
   }, [selectedWilaya, subdomain]);
 
+  // Lead capture state for abandoned carts
+  const [leadId, setLeadId] = useState<string | null>(null);
+
+  // Pre-Submit Lead Capture (Cart Abandonment)
+  useEffect(() => {
+    const cleanPhone = phone.replace(/\s+/g, '');
+    const algPhoneRegex = /^(0|\+213|00213|213)?(5|6|7)[0-9]{8}$/;
+
+    if (!algPhoneRegex.test(cleanPhone)) return;
+    if (!pageData?.product_data?.id) return;
+
+    const timer = setTimeout(() => {
+      api.post(`/storefront/${subdomain}/leads/`, {
+        phone: cleanPhone,
+        full_name: fullName,
+        wilaya: selectedWilaya ? parseInt(selectedWilaya) : null,
+        items: [{
+          product_id: pageData.product_data.id,
+          variant_id: null,
+          quantity,
+        }],
+      })
+      .then((res) => {
+        if (res.data?.lead_id) {
+          setLeadId(res.data.lead_id);
+        }
+      })
+      .catch((err) => {
+        console.error("Lead sync failed:", err);
+      });
+    }, 1000); // 1s debounce
+
+    return () => clearTimeout(timer);
+  }, [phone, fullName, selectedWilaya, pageData, quantity, subdomain]);
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -100,6 +135,7 @@ export default function ConsumerLandingPage() {
         wilaya: parseInt(selectedWilaya),
         commune: parseInt(selectedCommune),
         address,
+        lead_id: leadId,
         items: [
           {
             product_id: pageData.product_data.id,
