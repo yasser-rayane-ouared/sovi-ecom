@@ -51,6 +51,13 @@ class OrderListView(generics.ListAPIView):
             else:
                 queryset = queryset.filter(status=status_param)
                 
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(created_at__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(created_at__date__lte=end_date)
+
         return queryset
 
 

@@ -33,6 +33,9 @@ export default function OrdersDashboard() {
   const [search, setSearch] = useState("");
   const [selectedSubTab, setSelectedSubTab] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"active" | "abandoned">("active");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const statusKeys = [
     { key: "all", label: t("ordersAllStatuses") },
@@ -254,12 +257,47 @@ export default function OrdersDashboard() {
     setLoading(true);
     const isAbandoned = activeTab === "abandoned";
     
+    let startParam = "";
+    let endParam = "";
+
+    const today = new Date();
+    if (dateFilter === "today") {
+      const yyyymmdd = today.toISOString().split('T')[0];
+      startParam = yyyymmdd;
+      endParam = yyyymmdd;
+    } else if (dateFilter === "yesterday") {
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      const yyyymmdd = yesterday.toISOString().split('T')[0];
+      startParam = yyyymmdd;
+      endParam = yyyymmdd;
+    } else if (dateFilter === "last_7_days") {
+      const past = new Date();
+      past.setDate(today.getDate() - 7);
+      startParam = past.toISOString().split('T')[0];
+      endParam = today.toISOString().split('T')[0];
+    } else if (dateFilter === "last_30_days") {
+      const past = new Date();
+      past.setDate(today.getDate() - 30);
+      startParam = past.toISOString().split('T')[0];
+      endParam = today.toISOString().split('T')[0];
+    } else if (dateFilter === "custom") {
+      startParam = startDate;
+      endParam = endDate;
+    }
+
     let url = `/orders/${currentStoreId}/?is_abandoned=${isAbandoned}`;
     if (search) {
       url += `&search=${encodeURIComponent(search)}`;
     }
     if (activeTab === "active" && selectedSubTab !== "all") {
       url += `&status=${selectedSubTab}`;
+    }
+    if (startParam) {
+      url += `&start_date=${startParam}`;
+    }
+    if (endParam) {
+      url += `&end_date=${endParam}`;
     }
 
     api.get(url)
@@ -318,7 +356,7 @@ export default function OrdersDashboard() {
   useEffect(() => {
     fetchOrders();
     setSelectedOrders([]);
-  }, [currentStoreId, activeTab, selectedSubTab, search]);
+  }, [currentStoreId, activeTab, selectedSubTab, search, dateFilter, startDate, endDate]);
 
   useEffect(() => {
     fetchDeliveryConfigs();
@@ -977,17 +1015,55 @@ export default function OrdersDashboard() {
 
       {/* Filters & Sub-Tabs */}
       <div className="space-y-5">
-        <div className="grid grid-cols-1 gap-4">
-          <Card className={`border-border dark:border-white/5 bg-card/50 dark:bg-white/5 p-3 flex items-center gap-2 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-            <Search className="h-5 w-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={t("ordersSearchPlaceholder")}
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className={`bg-transparent border-none text-sm text-foreground focus:outline-none w-full placeholder:text-muted-foreground ${isRtl ? "text-right" : "text-left"}`}
-            />
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          {/* Search Input */}
+          <div className={`${dateFilter === "custom" ? "lg:col-span-6" : "lg:col-span-8"}`}>
+            <Card className={`border-border dark:border-white/5 bg-card/50 dark:bg-white/5 p-3 flex items-center gap-2 ${isRtl ? "flex-row" : "flex-row-reverse"} h-12`}>
+              <Search className="h-5 w-5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder={t("ordersSearchPlaceholder")}
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className={`bg-transparent border-none text-sm text-foreground focus:outline-none w-full placeholder:text-muted-foreground ${isRtl ? "text-right" : "text-left"}`}
+              />
+            </Card>
+          </div>
+
+          {/* Date Filter Select */}
+          <div className={`${dateFilter === "custom" ? "lg:col-span-3" : "lg:col-span-4"}`}>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card dark:bg-white/5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+            >
+              <option value="all">{language === 'ar' ? 'كل الأوقات' : language === 'fr' ? 'Tout le temps' : 'All Time'}</option>
+              <option value="today">{language === 'ar' ? 'اليوم' : language === 'fr' ? "Aujourd'hui" : 'Today'}</option>
+              <option value="yesterday">{language === 'ar' ? 'البارحة' : language === 'fr' ? 'Hier' : 'Yesterday'}</option>
+              <option value="last_7_days">{language === 'ar' ? 'آخر 7 أيام' : language === 'fr' ? '7 derniers jours' : 'Last 7 Days'}</option>
+              <option value="last_30_days">{language === 'ar' ? 'آخر 30 يوم' : language === 'fr' ? '30 derniers jours' : 'Last 30 Days'}</option>
+              <option value="custom">{language === 'ar' ? 'فترة مخصصة' : language === 'fr' ? 'Période personnalisée' : 'Custom Range'}</option>
+            </select>
+          </div>
+
+          {/* Custom Date Inputs */}
+          {dateFilter === "custom" && (
+            <div className="lg:col-span-3 flex gap-2 items-center">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-1/2 h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card dark:bg-white/5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+              <span className="text-muted-foreground text-xs">{language === 'ar' ? 'إلى' : 'to'}</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-1/2 h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card dark:bg-white/5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+            </div>
+          )}
         </div>
 
         {activeTab === "active" && (
