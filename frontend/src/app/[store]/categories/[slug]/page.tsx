@@ -55,6 +55,30 @@ export default function StorefrontCategoryPage() {
     }
   }, [category, store]);
 
+  useEffect(() => {
+    if (!store || !category || !subdomain) return;
+
+    let sessionId = localStorage.getItem('ab_session_id');
+    if (!sessionId) {
+      sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('ab_session_id', sessionId);
+    }
+
+    api.post('/analytics/track/', {
+      store: subdomain,
+      event_type: 'page_view',
+      value: 0,
+      metadata: {
+        is_category: true,
+        category_id: category.id,
+        category_slug: slug,
+        page_url: window.location.href,
+        referrer: document.referrer
+      },
+      session_id: sessionId
+    }).catch(() => {});
+  }, [category, store, subdomain, slug]);
+
   if (loading || !store || !category) {
     const defaultIsArabic = store?.language !== "fr" && store?.language !== "en";
     return (

@@ -463,7 +463,9 @@ export default function StorefrontProductDetail() {
       value: 0,
       metadata: {
         product_id: rawProduct.id,
-        ab_test_group: rawProduct.enable_ab_test && rawProduct.ab_test_product_b_detail ? assignedGroup : null
+        ab_test_group: rawProduct.enable_ab_test && rawProduct.ab_test_product_b_detail ? assignedGroup : null,
+        page_url: window.location.href,
+        referrer: document.referrer
       },
       session_id: sessionId
     }).catch(() => {});

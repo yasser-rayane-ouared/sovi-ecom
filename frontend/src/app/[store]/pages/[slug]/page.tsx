@@ -70,6 +70,32 @@ export default function ConsumerLandingPage() {
     }
   }, [pageData, store]);
 
+  // Track page view event for landing page
+  useEffect(() => {
+    if (!pageData || !subdomain || !pageData.product_data?.id) return;
+    
+    let sessionId = localStorage.getItem('ab_session_id');
+    if (!sessionId) {
+      sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('ab_session_id', sessionId);
+    }
+
+    api.post('/analytics/track/', {
+      store: subdomain,
+      event_type: 'view_content',
+      product_id: pageData.product_data.id,
+      value: 0,
+      metadata: {
+        product_id: pageData.product_data.id,
+        is_landing_page: true,
+        landing_page_slug: slug,
+        page_url: window.location.href,
+        referrer: document.referrer
+      },
+      session_id: sessionId
+    }).catch(() => {});
+  }, [pageData, subdomain, slug]);
+
   // Fetch communes when wilaya changes
   useEffect(() => {
     if (selectedWilaya && subdomain) {

@@ -52,6 +52,28 @@ export default function StorefrontHome() {
     }
   }, [subdomain]);
 
+  useEffect(() => {
+    if (!store || !subdomain) return;
+
+    let sessionId = localStorage.getItem('ab_session_id');
+    if (!sessionId) {
+      sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('ab_session_id', sessionId);
+    }
+
+    api.post('/analytics/track/', {
+      store: subdomain,
+      event_type: 'page_view',
+      value: 0,
+      metadata: {
+        is_store_home: true,
+        page_url: window.location.href,
+        referrer: document.referrer
+      },
+      session_id: sessionId
+    }).catch(() => {});
+  }, [store, subdomain]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center font-cairo">

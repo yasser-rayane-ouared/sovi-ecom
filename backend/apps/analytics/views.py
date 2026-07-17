@@ -221,6 +221,45 @@ class TrackEventView(APIView):
             session_id=request.data.get('session_id', ''),
             source=request.data.get('source', ''),
         )
+
+        # Also create a PageView record for dashboard store views tracking
+        event_type = request.data.get('event_type', 'page_view')
+        if event_type in ['page_view', 'view_content']:
+            import hashlib
+            
+            # Get IP and hash it
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip = request.META.get('REMOTE_ADDR', '')
+            
+            ip_hash = hashlib.sha256(ip.encode('utf-8')).hexdigest() if ip else ''
+            
+            # Detect device type from user agent
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            ua_lower = user_agent.lower()
+            device = 'desktop'
+            if 'mobi' in ua_lower or 'android' in ua_lower or 'iphone' in ua_lower:
+                device = 'mobile'
+            elif 'tablet' in ua_lower or 'ipad' in ua_lower:
+                device = 'tablet'
+
+            # Referrer and page_url
+            page_url = request.data.get('metadata', {}).get('page_url') or request.META.get('HTTP_REFERER', '') or '/'
+            referrer = request.data.get('metadata', {}).get('referrer') or ''
+
+            PageView.objects.create(
+                store=store,
+                page_url=page_url[:500],
+                referrer=referrer[:500],
+                user_agent=user_agent,
+                ip_hash=ip_hash,
+                country=request.META.get('HTTP_CF_IPCOUNTRY', '')[:2],
+                device=device,
+                session_id=request.data.get('session_id', '')[:100]
+            )
+
         return Response({'ok': True})
 
 
