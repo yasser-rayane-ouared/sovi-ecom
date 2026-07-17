@@ -621,17 +621,25 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                       </p>
                       <div className="space-y-2 pt-1 font-mono text-[10px]" dir="ltr">
                         <div className="flex justify-between bg-muted/20 p-2 rounded-lg border border-border">
-                          <span className="text-muted-foreground">Type: <strong className="text-foreground">CNAME</strong></span>
-                          <span className="text-muted-foreground">Host: <strong className="text-foreground">www</strong></span>
-                          <span className="text-muted-foreground">Target: <strong className="text-foreground">{getRootDomain().split(':')[0]}</strong></span>
+                          <span className="text-muted-foreground">Type: <strong className="text-foreground">CNAME (Flattened)</strong></span>
+                          <span className="text-muted-foreground">Host: <strong className="text-foreground">@</strong></span>
+                          <span className="text-muted-foreground">Target: <strong className="text-foreground">{getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}</strong></span>
                         </div>
                         <div className="flex justify-between bg-muted/20 p-2 rounded-lg border border-border">
-                          <span className="text-muted-foreground">Type: <strong className="text-foreground">A</strong></span>
-                          <span className="text-muted-foreground">Host: <strong className="text-foreground">@</strong></span>
-                          <span className="text-muted-foreground">Value: <strong className="text-foreground">127.0.0.1</strong></span>
+                          <span className="text-muted-foreground">Type: <strong className="text-foreground">CNAME</strong></span>
+                          <span className="text-muted-foreground">Host: <strong className="text-foreground">www</strong></span>
+                          <span className="text-muted-foreground">Target: <strong className="text-foreground">{getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}</strong></span>
                         </div>
                       </div>
                       <p className="text-[10px] text-amber-500 font-semibold leading-relaxed font-cairo">
+                        {language === 'ar' 
+                          ? "* في Cloudflare، اختر CNAME لكل من @ و www ووجههما إلى النطاق الرئيسي للمنصة." 
+                          : language === 'fr' 
+                          ? "* Sur Cloudflare, choisissez CNAME pour @ et www et pointez-les vers le domaine principal de la plateforme." 
+                          : "* On Cloudflare, choose CNAME for both @ and www and target them to the platform's main root domain."
+                        }
+                      </p>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed font-cairo">
                         {t("settingsDomainDnsWarning")}
                       </p>
                     </div>
