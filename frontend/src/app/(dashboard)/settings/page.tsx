@@ -631,15 +631,25 @@ export default function SettingsDashboard({ storeId }: SettingsProps) {
                           <span className="text-muted-foreground">Target: <strong className="text-foreground">{getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}</strong></span>
                         </div>
                       </div>
-                      <p className="text-[10px] text-amber-500 font-semibold leading-relaxed font-cairo">
-                        {language === 'ar' 
-                          ? "* في Cloudflare، اختر CNAME لكل من @ و www ووجههما إلى النطاق الرئيسي للمنصة." 
-                          : language === 'fr' 
-                          ? "* Sur Cloudflare, choisissez CNAME pour @ et www et pointez-les vers le domaine principal de la plateforme." 
-                          : "* On Cloudflare, choose CNAME for both @ and www and target them to the platform's main root domain."
-                        }
-                      </p>
-                      <p className="text-[10px] text-muted-foreground leading-relaxed font-cairo">
+                      <div className="text-[10px] leading-relaxed font-cairo space-y-1 mt-2">
+                        <p className="text-amber-500 font-bold">
+                          {language === 'ar'
+                            ? `* للربط عبر Cloudflare (مستحسن): أضف سجل CNAME لكل من @ و www ووجههما إلى ${getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}.`
+                            : language === 'fr'
+                            ? `* Pour Cloudflare (Recommandé) : Ajoutez un enregistrement CNAME pour @ et www pointant vers ${getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}.`
+                            : `* For Cloudflare (Recommended): Add a CNAME record for both @ and www pointing to ${getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}.`
+                          }
+                        </p>
+                        <p className="text-muted-foreground">
+                          {language === 'ar'
+                            ? `* لمزودي النطاقات الآخرين: أضف سجل CNAME للـ www موجه إلى ${getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}، وسجل A للـ @ موجه إلى عنوان IP الخاص بالمنصة.`
+                            : language === 'fr'
+                            ? `* Pour les autres fournisseurs : Ajoutez un CNAME pour www pointant vers ${getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}, et un enregistrement A pour @ pointant vers l'IP publique de la plateforme.`
+                            : `* For other DNS providers: Add a CNAME record for www pointing to ${getRootDomain().split(':')[0] === 'localhost' ? 'sovi-ecom.dz' : getRootDomain().split(':')[0]}, and an A record for @ pointing to the platform's public IP.`
+                          }
+                        </p>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed font-cairo mt-1">
                         {t("settingsDomainDnsWarning")}
                       </p>
                     </div>
