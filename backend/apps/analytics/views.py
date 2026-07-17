@@ -423,3 +423,208 @@ class SectionHeatmapView(APIView):
             'product_views': product_views,
             'heatmap': heatmap_data
         })
+
+
+class ProductAnalyticsView(APIView):
+    """Detailed analytics for a single product."""
+
+    def get(self, request, store_id, product_id):
+        from apps.products.models import Product
+        from apps.orders.models import OrderItem
+
+        store = get_store_for_user(store_id, request.user, None)
+        try:
+            product = Product.objects.get(id=product_id, store=store)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found.'}, status=404)
+
+        days = int(request.query_params.get('days', 30))
+        since = timezone.now() - timedelta(days=days)
+
+        # Page views for this product
+        views_count = ConversionEvent.objects.filter(
+            store=store, product=product, event_type='view_content', created_at__gte=since
+        ).count()
+
+        # Order items for this product (non-abandoned orders)
+        order_items = OrderItem.objects.filter(
+            order__store=store, product=product,
+            order__is_abandoned=False, order__created_at__gte=since
+        ).select_related('order')
+
+        total_orders = order_items.count()
+        total_qty = order_items.aggregate(s=Sum('quantity'))['s'] or 0
+
+        # Status breakdown via order
+        status_counts = {}
+        revenue = 0.0
+        sourcing_cost = 0.0
+        ad_spend = 0.0
+        delivery_loss = 0.0
+
+        cost_price = float(product.cost_price or 0)
+        ad_cost = float(product.ad_cost_per_order or 0)
+
+        for oi in order_items:
+            st = oi.order.status
+            status_counts[st] = status_counts.get(st, 0) + 1
+            qty = oi.quantity
+
+            ad_spend += ad_cost * qty
+
+            if st == 'delivered':
+                revenue += float(oi.total)
+                sourcing_cost += cost_price * qty
+            elif st == 'returned':
+                delivery_loss += float(oi.order.delivery_price)
+
+        confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered'}
+        confirmed_count = sum(v for k, v in status_counts.items() if k in confirmed_statuses)
+        delivered_count = status_counts.get('delivered', 0)
+        returned_count = status_counts.get('returned', 0)
+
+        confirmation_rate = (confirmed_count / total_orders * 100) if total_orders > 0 else 0
+        delivery_rate = (delivered_count / (delivered_count + returned_count) * 100) if (delivered_count + returned_count) > 0 else 0
+        net_profit = revenue - sourcing_cost - ad_spend - delivery_loss
+
+        return Response({
+            'product_id': str(product.id),
+            'product_title': product.title,
+            'views': views_count,
+            'total_orders': total_orders,
+            'total_qty_sold': total_qty,
+            'status_breakdown': status_counts,
+            'confirmation_rate': round(confirmation_rate, 1),
+            'delivery_rate': round(delivery_rate, 1),
+            'revenue': round(revenue, 2),
+            'ad_spend': round(ad_spend, 2),
+            'sourcing_cost': round(sourcing_cost, 2),
+            'delivery_loss': round(delivery_loss, 2),
+            'net_profit': round(net_profit, 2),
+            'stock': product.stock_quantity,
+            'low_stock_threshold': product.low_stock_threshold,
+            'track_inventory': product.track_inventory,
+            'cost_price': float(product.cost_price or 0),
+            'ad_cost_per_order': float(product.ad_cost_per_order or 0),
+        })
+
+
+class ProductsSummaryView(APIView):
+    """Analytics summary for all products in a store — powers the enhanced Top Products table."""
+
+    def get(self, request, store_id):
+        from apps.products.models import Product
+        from apps.orders.models import OrderItem
+        from collections import defaultdict
+
+        store = get_store_for_user(store_id, request.user, None)
+        days = int(request.query_params.get('days', 30))
+        since = timezone.now() - timedelta(days=days)
+
+        # All active products for this store
+        products = Product.objects.filter(store=store, status='active')
+
+        # Batch: views per product
+        views_qs = ConversionEvent.objects.filter(
+            store=store, event_type='view_content', product__isnull=False, created_at__gte=since
+        ).values('product_id').annotate(views=Count('id'))
+        views_map = {str(row['product_id']): row['views'] for row in views_qs}
+
+        # Batch: order items with order data
+        order_items = OrderItem.objects.filter(
+            order__store=store, order__is_abandoned=False, order__created_at__gte=since,
+            product__in=products
+        ).select_related('order', 'product')
+
+        # Aggregate per product
+        product_data = defaultdict(lambda: {
+            'total_orders': 0,
+            'total_qty': 0,
+            'confirmed': 0,
+            'delivered': 0,
+            'returned': 0,
+            'cancelled': 0,
+            'revenue': 0.0,
+            'ad_spend': 0.0,
+            'sourcing_cost': 0.0,
+            'delivery_loss': 0.0,
+        })
+
+        confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered'}
+
+        for oi in order_items:
+            pid = str(oi.product_id)
+            d = product_data[pid]
+            st = oi.order.status
+            qty = oi.quantity
+
+            d['total_orders'] += 1
+            d['total_qty'] += qty
+
+            ad_cost = float(oi.product.ad_cost_per_order or 0)
+            cost_price = float(oi.product.cost_price or 0)
+
+            d['ad_spend'] += ad_cost * qty
+
+            if st in confirmed_statuses:
+                d['confirmed'] += 1
+            if st == 'delivered':
+                d['delivered'] += 1
+                d['revenue'] += float(oi.total)
+                d['sourcing_cost'] += cost_price * qty
+            elif st == 'returned':
+                d['returned'] += 1
+                d['delivery_loss'] += float(oi.order.delivery_price)
+            elif st == 'cancelled':
+                d['cancelled'] += 1
+
+        # Build response list
+        result = []
+        for product in products:
+            pid = str(product.id)
+            d = product_data.get(pid, {
+                'total_orders': 0, 'total_qty': 0, 'confirmed': 0,
+                'delivered': 0, 'returned': 0, 'cancelled': 0,
+                'revenue': 0.0, 'ad_spend': 0.0, 'sourcing_cost': 0.0, 'delivery_loss': 0.0,
+            })
+
+            total_orders = d['total_orders']
+            delivered = d['delivered']
+            returned = d['returned']
+            revenue = d['revenue']
+            ad_spend = d['ad_spend']
+            sourcing_cost = d['sourcing_cost']
+            delivery_loss = d['delivery_loss']
+
+            confirmation_rate = (d['confirmed'] / total_orders * 100) if total_orders > 0 else 0
+            delivery_rate = (delivered / (delivered + returned) * 100) if (delivered + returned) > 0 else 0
+            net_profit = revenue - sourcing_cost - ad_spend - delivery_loss
+
+            result.append({
+                'product_id': pid,
+                'title': product.title,
+                'primary_image': product.primary_image,
+                'views': views_map.get(pid, 0),
+                'total_orders': total_orders,
+                'total_qty': d['total_qty'],
+                'confirmed': d['confirmed'],
+                'delivered': delivered,
+                'returned': returned,
+                'cancelled': d['cancelled'],
+                'confirmation_rate': round(confirmation_rate, 1),
+                'delivery_rate': round(delivery_rate, 1),
+                'revenue': round(revenue, 2),
+                'ad_spend': round(ad_spend, 2),
+                'sourcing_cost': round(sourcing_cost, 2),
+                'delivery_loss': round(delivery_loss, 2),
+                'net_profit': round(net_profit, 2),
+                'stock': product.stock_quantity,
+                'low_stock_threshold': product.low_stock_threshold,
+                'track_inventory': product.track_inventory,
+            })
+
+        # Sort by total orders descending
+        result.sort(key=lambda x: x['total_orders'], reverse=True)
+
+        return Response(result)
+

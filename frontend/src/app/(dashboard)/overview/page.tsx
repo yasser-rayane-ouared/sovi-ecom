@@ -68,6 +68,20 @@ const localTranslations: Record<string, Record<string, string>> = {
     deliveryLossTooltip: "تكاليف الشحن المدفوعة لشركات التوصيل مقابل الطرود المرتجعة.",
     adSpendTooltip: "إجمالي تكاليف الإعلانات المحسوبة بناءً على تكلفة الإعلان للطلب المحددة في إعدادات المنتجات.",
     sourcingCostTooltip: "التكلفة الإجمالية لشراء/تصنيع السلع التي تم تسليمها بالفعل للمشترين.",
+    prdAnalyticsTitle: "📊 تحليلات المنتجات التفصيلية",
+    prdProduct: "المنتج",
+    prdViews: "المشاهدات",
+    prdOrders: "الطلبات",
+    prdConfRate: "التأكيد",
+    prdDelRate: "التوصيل",
+    prdRevenue: "الإيرادات",
+    prdAdCost: "الإعلانات",
+    prdSourcing: "التكلفة",
+    prdProfit: "الربح",
+    prdStock: "المخزون",
+    prdNoData: "لا توجد بيانات منتجات بعد",
+    prdLowStock: "مخزون منخفض",
+    prdOutOfStock: "نفد المخزون",
   },
   en: {
     funnelTitle: "COD Order Confirmation Funnel",
@@ -114,6 +128,20 @@ const localTranslations: Record<string, Record<string, string>> = {
     deliveryLossTooltip: "Total delivery fees paid to shipping partners for returned packages.",
     adSpendTooltip: "Total advertising costs calculated based on ad cost per order set in product details.",
     sourcingCostTooltip: "Total sourcing cost for delivered/completed orders.",
+    prdAnalyticsTitle: "\ud83d\udcca Product Analytics Breakdown",
+    prdProduct: "Product",
+    prdViews: "Views",
+    prdOrders: "Orders",
+    prdConfRate: "Conf. Rate",
+    prdDelRate: "Del. Rate",
+    prdRevenue: "Revenue",
+    prdAdCost: "Ad Cost",
+    prdSourcing: "Sourcing",
+    prdProfit: "Profit",
+    prdStock: "Stock",
+    prdNoData: "No product data yet",
+    prdLowStock: "Low stock",
+    prdOutOfStock: "Out of stock",
   },
   fr: {
     funnelTitle: "Tunnel de Confirmation des Commandes COD",
@@ -160,6 +188,20 @@ const localTranslations: Record<string, Record<string, string>> = {
     deliveryLossTooltip: "Frais d'expédition payés aux partenaires pour les colis retournés.",
     adSpendTooltip: "Coût publicitaire total calculé selon le coût pub par commande configuré dans le produit.",
     sourcingCostTooltip: "Coût total d'achat des produits pour les commandes livrées.",
+    prdAnalyticsTitle: "📊 Analyse détaillée des produits",
+    prdProduct: "Produit",
+    prdViews: "Vues",
+    prdOrders: "Commandes",
+    prdConfRate: "Taux Conf.",
+    prdDelRate: "Taux Livr.",
+    prdRevenue: "Revenus",
+    prdAdCost: "Pub",
+    prdSourcing: "Coût",
+    prdProfit: "Bénéfice",
+    prdStock: "Stock",
+    prdNoData: "Aucune donnée produit",
+    prdLowStock: "Stock bas",
+    prdOutOfStock: "Rupture de stock",
   }
 };
 
@@ -239,6 +281,7 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
   const { t, language, isRtl } = useLanguageStore();
   const currentStoreId = storeId || selectedStore?.id;
   const [data, setData] = useState<any>(null);
+  const [productsSummary, setProductsSummary] = useState<any[]>([]);
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
 
@@ -274,10 +317,13 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
   useEffect(() => {
     if (currentStoreId) {
       setLoading(true);
-      api
-        .get(`/analytics/${currentStoreId}/dashboard/?days=${days}`)
-        .then((res) => {
-          setData(res.data);
+      Promise.all([
+        api.get(`/analytics/${currentStoreId}/dashboard/?days=${days}`),
+        api.get(`/analytics/${currentStoreId}/products-summary/?days=${days}`),
+      ])
+        .then(([dashRes, prodRes]) => {
+          setData(dashRes.data);
+          setProductsSummary(Array.isArray(prodRes.data) ? prodRes.data : []);
         })
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -1077,27 +1123,105 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
         </Card>
       </div>
 
-      {/* Top Products & Status Breakdowns (Original lists, moved to bottom) */}
+      {/* Per-Product Analytics Table */}
+      <Card className="border-border bg-card border p-6 space-y-4 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <Layers className="h-5 w-5 text-accent" />
+          {l('prdAnalyticsTitle')}
+        </h3>
+        <div className="overflow-x-auto -mx-2">
+          {productsSummary.length > 0 ? (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="text-start px-3 py-2.5 font-semibold text-xs uppercase tracking-wider">{l('prdProduct')}</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">
+                    <span className="flex items-center justify-center gap-1"><Eye className="h-3.5 w-3.5" />{l('prdViews')}</span>
+                  </th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">
+                    <span className="flex items-center justify-center gap-1"><ShoppingCart className="h-3.5 w-3.5" />{l('prdOrders')}</span>
+                  </th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">{l('prdConfRate')}</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">
+                    <span className="flex items-center justify-center gap-1"><Truck className="h-3.5 w-3.5" />{l('prdDelRate')}</span>
+                  </th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">{l('prdRevenue')}</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">{l('prdAdCost')}</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">{l('prdSourcing')}</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">{l('prdProfit')}</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-xs uppercase tracking-wider">{l('prdStock')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productsSummary.map((p: any, i: number) => {
+                  const stockColor = !p.track_inventory ? 'text-muted-foreground' : p.stock <= 0 ? 'text-red-400' : p.stock <= p.low_stock_threshold ? 'text-amber-400' : 'text-emerald-400';
+                  const stockBg = !p.track_inventory ? '' : p.stock <= 0 ? 'bg-red-500/10' : p.stock <= p.low_stock_threshold ? 'bg-amber-500/10' : 'bg-emerald-500/10';
+                  const profitColor = p.net_profit > 0 ? 'text-emerald-400' : p.net_profit < 0 ? 'text-red-400' : 'text-muted-foreground';
+                  return (
+                    <tr key={p.product_id} className={`border-b border-border/50 transition-colors hover:bg-muted/30 ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2.5 min-w-[140px]">
+                          {p.primary_image ? (
+                            <img src={p.primary_image} alt="" className="h-8 w-8 rounded-lg object-cover border border-border/50 shrink-0" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span className="font-semibold text-xs truncate max-w-[150px]" title={p.title}>{p.title}</span>
+                        </div>
+                      </td>
+                      <td className="text-center px-2 py-3 font-outfit text-xs font-medium">{p.views.toLocaleString()}</td>
+                      <td className="text-center px-2 py-3 font-outfit text-xs font-bold">{p.total_orders}</td>
+                      <td className="text-center px-2 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                          p.confirmation_rate >= 70 ? 'bg-emerald-500/15 text-emerald-400' :
+                          p.confirmation_rate >= 40 ? 'bg-amber-500/15 text-amber-400' :
+                          'bg-red-500/15 text-red-400'
+                        }`}>
+                          {p.confirmation_rate}%
+                        </span>
+                      </td>
+                      <td className="text-center px-2 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                          p.delivery_rate >= 80 ? 'bg-emerald-500/15 text-emerald-400' :
+                          p.delivery_rate >= 50 ? 'bg-amber-500/15 text-amber-400' :
+                          p.delivery_rate > 0 ? 'bg-red-500/15 text-red-400' :
+                          'bg-muted/20 text-muted-foreground'
+                        }`}>
+                          {p.delivery_rate > 0 ? `${p.delivery_rate}%` : '—'}
+                        </span>
+                      </td>
+                      <td className="text-center px-2 py-3 font-outfit text-xs font-semibold text-emerald-400">{p.revenue > 0 ? p.revenue.toLocaleString() : '—'}</td>
+                      <td className="text-center px-2 py-3 font-outfit text-xs text-orange-400">{p.ad_spend > 0 ? p.ad_spend.toLocaleString() : '—'}</td>
+                      <td className="text-center px-2 py-3 font-outfit text-xs text-blue-400">{p.sourcing_cost > 0 ? p.sourcing_cost.toLocaleString() : '—'}</td>
+                      <td className={`text-center px-2 py-3 font-outfit text-xs font-extrabold ${profitColor}`}>
+                        {p.net_profit !== 0 ? (p.net_profit > 0 ? '+' : '') + p.net_profit.toLocaleString() : '—'}
+                      </td>
+                      <td className="text-center px-2 py-3">
+                        {p.track_inventory ? (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${stockBg} ${stockColor}`}>
+                            {p.stock}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground text-sm">{l('prdNoData')}</div>
+          )}
+        </div>
+      </Card>
+
+      {/* Status Breakdowns */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-start">
-        {/* Top Products */}
-        <Card className="lg:col-span-2 border-border bg-card border p-6 space-y-4 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
-          <h3 className="text-lg font-bold flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-accent" /> {t('topProducts')}</h3>
-          <div className="divide-y divide-border">
-            {top_products.length > 0 ? (
-              top_products.map((p: any, i: number) => (
-                <div key={i} className="py-3 flex justify-between items-center">
-                  <span className="text-sm font-semibold truncate max-w-[200px]">{p.product_title}</span>
-                  <div className="text-start">
-                    <span className="text-sm font-bold font-outfit block">{p.count} {t('pieces')}</span>
-                    <span className="text-xs text-muted-foreground font-outfit">{p.revenue} DZD</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-6 text-center text-muted text-sm">{t('noSalesRegistered')}</div>
-            )}
-          </div>
-        </Card>
+        {/* spacer for layout */}
+        <div className="lg:col-span-2" />
 
         {/* Original Status Breakdowns */}
         <Card className="border-border bg-card border backdrop-blur-sm p-6 space-y-6 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
