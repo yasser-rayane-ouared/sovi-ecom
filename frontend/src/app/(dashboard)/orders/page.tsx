@@ -9,7 +9,8 @@ import { Card, CardContent } from "../../../components/ui/card";
 import {
   Search, Download, Truck, Check, X, Package, AlertCircle, ExternalLink,
   RefreshCw, CheckSquare, Square, ShieldAlert, Trash2, ArrowUpRight, MessageSquare,
-  Sparkles, Layers, Tag, Phone, Clock, MoreHorizontal, Printer, Edit, Save, Loader2
+  Sparkles, Layers, Tag, Phone, Clock, MoreHorizontal, Printer, Edit, Save, Loader2,
+  Calendar, ChevronDown
 } from "lucide-react";
 import { formatCurrency } from "../../../lib/utils";
 
@@ -36,6 +37,26 @@ export default function OrdersDashboard() {
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+
+  const getDateFilterLabel = (key: string) => {
+    switch (key) {
+      case "all":
+        return language === 'ar' ? 'كل الأوقات' : language === 'fr' ? 'Tout le temps' : 'All Time';
+      case "today":
+        return language === 'ar' ? 'اليوم' : language === 'fr' ? "Aujourd'hui" : 'Today';
+      case "yesterday":
+        return language === 'ar' ? 'البارحة' : language === 'fr' ? 'Hier' : 'Yesterday';
+      case "last_7_days":
+        return language === 'ar' ? 'آخر 7 أيام' : language === 'fr' ? '7 derniers jours' : 'Last 7 Days';
+      case "last_30_days":
+        return language === 'ar' ? 'آخر 30 يوم' : language === 'fr' ? '30 derniers jours' : 'Last 30 Days';
+      case "custom":
+        return language === 'ar' ? 'فترة مخصصة' : language === 'fr' ? 'Période personnalisée' : 'Custom Range';
+      default:
+        return "";
+    }
+  };
 
   const statusKeys = [
     { key: "all", label: t("ordersAllStatuses") },
@@ -1030,20 +1051,47 @@ export default function OrdersDashboard() {
             </Card>
           </div>
 
-          {/* Date Filter Select */}
-          <div className={`${dateFilter === "custom" ? "lg:col-span-3" : "lg:col-span-4"}`}>
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card dark:bg-white/5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+          {/* Custom Luxury Date Filter Dropdown */}
+          <div className={`relative ${dateFilter === "custom" ? "lg:col-span-3" : "lg:col-span-4"}`}>
+            {dateDropdownOpen && (
+              <div 
+                className="fixed inset-0 z-20 cursor-default" 
+                onClick={() => setDateDropdownOpen(false)} 
+              />
+            )}
+            <button
+              onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
+              className="w-full h-12 px-4 border border-border dark:border-white/10 rounded-xl bg-card/50 dark:bg-white/5 text-sm text-foreground focus:outline-none hover:border-primary/30 hover:bg-muted/30 dark:hover:bg-white/[0.04] transition-all duration-300 flex items-center justify-between gap-2 shadow-sm font-semibold select-none z-30 relative cursor-pointer"
             >
-              <option value="all">{language === 'ar' ? 'كل الأوقات' : language === 'fr' ? 'Tout le temps' : 'All Time'}</option>
-              <option value="today">{language === 'ar' ? 'اليوم' : language === 'fr' ? "Aujourd'hui" : 'Today'}</option>
-              <option value="yesterday">{language === 'ar' ? 'البارحة' : language === 'fr' ? 'Hier' : 'Yesterday'}</option>
-              <option value="last_7_days">{language === 'ar' ? 'آخر 7 أيام' : language === 'fr' ? '7 derniers jours' : 'Last 7 Days'}</option>
-              <option value="last_30_days">{language === 'ar' ? 'آخر 30 يوم' : language === 'fr' ? '30 derniers jours' : 'Last 30 Days'}</option>
-              <option value="custom">{language === 'ar' ? 'فترة مخصصة' : language === 'fr' ? 'Période personnalisée' : 'Custom Range'}</option>
-            </select>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <span>{getDateFilterLabel(dateFilter)}</span>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${dateDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {dateDropdownOpen && (
+              <div className="absolute top-14 left-0 right-0 z-30 bg-card/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border/80 dark:border-white/10 rounded-xl shadow-2xl p-1.5 space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                {["all", "today", "yesterday", "last_7_days", "last_30_days", "custom"].map((key) => {
+                  const isActive = dateFilter === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setDateFilter(key);
+                        setDateDropdownOpen(false);
+                      }}
+                      className={`w-full text-start px-3.5 py-2.5 rounded-lg text-xs font-semibold hover:bg-primary/10 hover:text-primary transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                        isActive ? "bg-primary/5 text-primary" : "text-foreground/80"
+                      }`}
+                    >
+                      <span>{getDateFilterLabel(key)}</span>
+                      {isActive && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Custom Date Inputs */}
@@ -1053,14 +1101,14 @@ export default function OrdersDashboard() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-1/2 h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card dark:bg-white/5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="w-1/2 h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card/50 dark:bg-white/5 text-xs text-foreground focus:outline-none hover:border-primary/30 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-semibold"
               />
-              <span className="text-muted-foreground text-xs">{language === 'ar' ? 'إلى' : 'to'}</span>
+              <span className="text-muted-foreground text-xs font-semibold">{language === 'ar' ? 'إلى' : 'to'}</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-1/2 h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card dark:bg-white/5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="w-1/2 h-12 px-3 border border-border dark:border-white/10 rounded-xl bg-card/50 dark:bg-white/5 text-xs text-foreground focus:outline-none hover:border-primary/30 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-semibold"
               />
             </div>
           )}
