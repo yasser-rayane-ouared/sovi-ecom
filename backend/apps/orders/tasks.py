@@ -262,23 +262,23 @@ def sync_all_stores_tracking():
                         new_order_status = shipment.order.status
 
                         # Check Delivered
-                        if any(x in ext_status_lower for x in ['livre', 'livred', 'delivered', 'validation_reception_cash']):
+                        if any(x in ext_status_lower for x in ['livre', 'livred', 'delivered', 'validation_reception_cash', 'encaiss', 'paye', 'تم التسليم', 'مستلم', 'مسلم', 'موزع', 'livré', 'encaissé', 'payé']):
                             new_shipment_status = 'delivered'
                             new_order_status = 'delivered'
                         # Check Returned
-                        elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus', 'retour_dispatched', 'colis_retour', 'livraison_echoue', 'failed_attempt']):
+                        elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus', 'retour_dispatched', 'colis_retour', 'livraison_echoue', 'failed_attempt', 'تم الإرجاع', 'مرفوض', 'راجع', 'قيد الإرجاع', 'مسترجع', 'ارجاع', 'رجوع', 'رفض', 'echoué', 'echoue', 'refusé', 'refuse', 'retourné', 'retourne']):
                             new_shipment_status = 'returned'
                             new_order_status = 'returned'
                         # Check Out For Delivery
-                        elif any(x in ext_status_lower for x in ['livraison', 'fdr_activated', 'out for delivery']):
+                        elif any(x in ext_status_lower for x in ['livraison', 'fdr_activated', 'out for delivery', 'قيد التوزيع', 'توزيع', 'مع الموزع', 'خارج للتوصيل']):
                             new_shipment_status = 'out_for_delivery'
                             new_order_status = 'shipped'
                         # Check In Transit
-                        elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'voyage', 'transit', 'collect', 'picked', 'reception', 'upload', 'validation']):
+                        elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'voyage', 'transit', 'collect', 'picked', 'reception', 'upload', 'validation', 'تم الشحن', 'قيد الشحن', 'شحن', 'في الطريق', 'في المركز', 'مستقبل', 'expedie', 'recu', 'collecté', 'collecte']):
                             new_shipment_status = 'in_transit'
                             new_order_status = 'shipped'
                         # Check Cancelled
-                        elif any(x in ext_status_lower for x in ['annul', 'cancel', 'delete']):
+                        elif any(x in ext_status_lower for x in ['annul', 'cancel', 'delete', 'ملغي', 'ملغى', 'annulé', 'annule']):
                             new_shipment_status = 'failed'
                             new_order_status = 'cancelled'
 
