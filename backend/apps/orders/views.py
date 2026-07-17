@@ -840,12 +840,28 @@ class OrderSyncTrackingView(APIView):
                         if activity and isinstance(activity, list):
                             last_event = activity[-1]
                             if isinstance(last_event, dict):
-                                ext_status = last_event.get('event', last_event.get('event_key', ''))
+                                ext_status = (
+                                    last_event.get('event') or
+                                    last_event.get('event_key') or
+                                    last_event.get('status') or
+                                    last_event.get('status_ar') or
+                                    last_event.get('status_fr') or
+                                    last_event.get('event_name') or
+                                    last_event.get('event_translated') or
+                                    last_event.get('description') or
+                                    ''
+                                )
 
                         if not ext_status:
                             order_info = shipment_info.get('OrderInfo', {})
                             if isinstance(order_info, dict):
-                                ext_status = order_info.get('status', '')
+                                ext_status = (
+                                    order_info.get('status') or
+                                    order_info.get('status_message') or
+                                    order_info.get('event') or
+                                    order_info.get('last_status') or
+                                    ''
+                                )
 
                         if not ext_status:
                             continue
@@ -861,7 +877,7 @@ class OrderSyncTrackingView(APIView):
                             new_shipment_status = 'delivered'
                             new_order_status = 'delivered'
                         # Check Returned
-                        elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus', 'retour_dispatched', 'colis_retour', 'livraison_echoue', 'failed_attempt', 'تم الإرجاع', 'مرفوض', 'راجع', 'قيد الإرجاع', 'مسترجع', 'ارجاع', 'رجوع', 'رفض', 'echoué', 'echoue', 'refusé', 'refuse', 'retourné', 'retourne']):
+                        elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus', 'retour_dispatched', 'colis_retour', 'livraison_echoue', 'failed_attempt', 'تم الإرجاع', 'مرفوض', 'راجع', 'قيد الإرجاع', 'مسترجع', 'ارجاع', 'رجوع', 'رفض', 'echoué', 'echoue', 'refusé', 'refuse', 'retourné', 'retourne', 'echec', 'échec', 'echecs', 'échecs', 'فشل']):
                             new_shipment_status = 'returned'
                             new_order_status = 'returned'
                         # Check Out For Delivery
