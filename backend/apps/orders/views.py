@@ -36,6 +36,7 @@ class OrderListView(generics.ListAPIView):
     filterset_fields = ['is_abandoned']
     search_fields = ['order_number', 'full_name', 'phone']
     ordering_fields = ['created_at', 'total', 'status']
+    pagination_class = None
 
     def get_queryset(self):
         store = get_store_for_user(self.kwargs['store_id'], self.request.user, 'orders')

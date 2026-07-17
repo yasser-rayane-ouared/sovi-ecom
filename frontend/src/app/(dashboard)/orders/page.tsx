@@ -66,8 +66,7 @@ export default function OrdersDashboard() {
   // Row dropdown state
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
-  // Pagination states
-  const [page, setPage] = useState(1);
+  // Pagination states (disabled, keeping count state)
   const [totalCount, setTotalCount] = useState(0);
 
   // Edit Modal states
@@ -255,7 +254,7 @@ export default function OrdersDashboard() {
     setLoading(true);
     const isAbandoned = activeTab === "abandoned";
     
-    let url = `/orders/${currentStoreId}/?is_abandoned=${isAbandoned}&page=${page}`;
+    let url = `/orders/${currentStoreId}/?is_abandoned=${isAbandoned}`;
     if (search) {
       url += `&search=${encodeURIComponent(search)}`;
     }
@@ -306,23 +305,20 @@ export default function OrdersDashboard() {
   const handleTabChange = (tab: "active" | "abandoned") => {
     setActiveTab(tab);
     setSelectedSubTab("all");
-    setPage(1);
   };
 
   const handleFilterChange = (subTab: string) => {
     setSelectedSubTab(subTab);
-    setPage(1);
   };
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   useEffect(() => {
     fetchOrders();
     setSelectedOrders([]);
-  }, [currentStoreId, activeTab, page, selectedSubTab, search]);
+  }, [currentStoreId, activeTab, selectedSubTab, search]);
 
   useEffect(() => {
     fetchDeliveryConfigs();
@@ -628,6 +624,50 @@ export default function OrdersDashboard() {
   };
 
   const filteredOrders = orders;
+
+  const groupedList = React.useMemo(() => {
+    const dayOrderMap: Record<string, any[]> = {};
+    
+    filteredOrders.forEach((o) => {
+      const d = new Date(o.created_at);
+      const dateKey = d.toDateString(); // unique key per day
+      if (!dayOrderMap[dateKey]) {
+        dayOrderMap[dateKey] = [];
+      }
+      dayOrderMap[dateKey].push(o);
+    });
+
+    const items: any[] = [];
+    Object.keys(dayOrderMap).forEach((dateKey) => {
+      const dayOrders = dayOrderMap[dateKey];
+      const dateObj = new Date(dayOrders[0].created_at);
+      
+      const formattedDate = dateObj.toLocaleDateString(
+        language === 'ar' ? 'ar-DZ' : language === 'fr' ? 'fr-FR' : 'en-US', 
+        { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+      );
+
+      const totalSales = dayOrders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
+      
+      items.push({
+        type: 'day_header',
+        id: dateKey,
+        date: formattedDate,
+        count: dayOrders.length,
+        total: totalSales
+      });
+      
+      dayOrders.forEach((o) => {
+        items.push({
+          type: 'order_row',
+          id: o.id,
+          order: o
+        });
+      });
+    });
+    
+    return items;
+  }, [filteredOrders, language]);
 
   const toggleSelectAll = () => {
     if (selectedOrders.length === filteredOrders.length) {
@@ -1121,8 +1161,32 @@ export default function OrdersDashboard() {
                   <tr>
                     <td colSpan={10} className="p-8 text-center text-muted-foreground animate-pulse">Loading...</td>
                   </tr>
-                ) : filteredOrders.length > 0 ? (
-                  filteredOrders.map((o) => {
+                ) : groupedList.length > 0 ? (
+                  groupedList.map((item) => {
+                    if (item.type === 'day_header') {
+                      return (
+                        <tr key={item.id} className="bg-muted/35 dark:bg-white/[0.03] backdrop-blur-sm border-y border-border select-none">
+                          <td colSpan={10} className="px-4 py-3 font-semibold text-xs text-muted-foreground">
+                            <div className="flex justify-between items-center flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3.5 w-3.5 text-primary" />
+                                <span className="text-foreground dark:text-white font-bold">{item.date}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-bold">
+                                  {item.count} {language === "ar" ? "طلبات" : language === "fr" ? "commandes" : "orders"}
+                                </span>
+                                <span className="bg-emerald-500/10 text-emerald-500 px-2.5 py-0.5 rounded-full font-bold font-outfit">
+                                  {formatCurrency(item.total)}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    const o = item.order;
                     const isSelected = selectedOrders.includes(o.id);
                     const itemsSummary = o.items?.map((i: any) => `${i.product_title} (${i.quantity}x)`).join("، ") || "—";
                     return (
@@ -1137,7 +1201,7 @@ export default function OrdersDashboard() {
                           </button>
                         </td>
                         <td className="p-4 font-bold font-outfit text-primary">{o.order_number}</td>
-                        <td className="p-4 text-xs text-muted-foreground font-outfit">{new Date(o.created_at).toLocaleDateString()}</td>
+                        <td className="p-4 text-xs text-muted-foreground font-outfit">{new Date(o.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
                         <td className="p-4 font-bold">
                           <div className="flex flex-col gap-1">
                             <span>{o.full_name}</span>
@@ -1213,37 +1277,6 @@ export default function OrdersDashboard() {
               </tbody>
             </table>
           </div>
-          {Math.ceil(totalCount / 20) > 1 && (
-            <div className="p-4 border-t border-border dark:border-white/5 flex items-center justify-between bg-muted/10 dark:bg-white/[0.01] flex-wrap gap-3">
-              <span className="text-xs text-muted-foreground font-semibold">
-                {language === "ar"
-                  ? `عرض الصفحة ${page} من ${Math.ceil(totalCount / 20)} (إجمالي ${totalCount} طلب)`
-                  : language === "fr"
-                  ? `Page ${page} sur ${Math.ceil(totalCount / 20)} (${totalCount} commandes au total)`
-                  : `Page ${page} of ${Math.ceil(totalCount / 20)} (${totalCount} total orders)`}
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page === 1}
-                  onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                  className="h-8 border-border dark:border-white/10 hover:bg-muted dark:hover:bg-white/5 font-bold"
-                >
-                  {language === "ar" ? "السابق" : language === "fr" ? "Précédent" : "Previous"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page === Math.ceil(totalCount / 20)}
-                  onClick={() => setPage(prev => Math.min(prev + 1, Math.ceil(totalCount / 20)))}
-                  className="h-8 border-border dark:border-white/10 hover:bg-muted dark:hover:bg-white/5 font-bold"
-                >
-                  {language === "ar" ? "التالي" : language === "fr" ? "Suivant" : "Next"}
-                </Button>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
