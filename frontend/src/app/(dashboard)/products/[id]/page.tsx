@@ -732,6 +732,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
   const [comparePrice, setComparePrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
   const [adCostPerOrder, setAdCostPerOrder] = useState("");
+  const [confirmationCost, setConfirmationCost] = useState("");
+  const [packagingCost, setPackagingCost] = useState("");
+  const [returnCost, setReturnCost] = useState("");
+  const [otherCosts, setOtherCosts] = useState("");
   const [stock, setStock] = useState("100");
   const [primaryImage, setPrimaryImage] = useState("");
   const [images, setImages] = useState<{ id?: string; clientId: string; image_url: string; alt_text?: string; position: number; is_primary: boolean }[]>([]);
@@ -886,6 +890,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       comparePrice,
       costPrice,
       adCostPerOrder,
+      confirmationCost,
+      packagingCost,
+      returnCost,
+      otherCosts,
       stock,
       selectedCategory,
       sku,
@@ -907,6 +915,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     comparePrice,
     costPrice,
     adCostPerOrder,
+    confirmationCost,
+    packagingCost,
+    returnCost,
+    otherCosts,
     stock,
     selectedCategory,
     sku,
@@ -932,6 +944,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
     if (d.comparePrice !== undefined) setComparePrice(d.comparePrice);
     if (d.costPrice !== undefined) setCostPrice(d.costPrice);
     if (d.adCostPerOrder !== undefined) setAdCostPerOrder(d.adCostPerOrder);
+    if (d.confirmationCost !== undefined) setConfirmationCost(d.confirmationCost);
+    if (d.packagingCost !== undefined) setPackagingCost(d.packagingCost);
+    if (d.returnCost !== undefined) setReturnCost(d.returnCost);
+    if (d.otherCosts !== undefined) setOtherCosts(d.otherCosts);
     if (d.stock !== undefined) setStock(d.stock);
     if (d.selectedCategory !== undefined) setSelectedCategory(d.selectedCategory);
     if (d.sku !== undefined) setSku(d.sku);
@@ -1282,6 +1298,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       setComparePrice("");
       setCostPrice("");
       setAdCostPerOrder("");
+      setConfirmationCost("");
+      setPackagingCost("");
+      setReturnCost("");
+      setOtherCosts("");
       setStock("100");
       setPrimaryImage("");
       setImages([]);
@@ -1345,6 +1365,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       setComparePrice(p.compare_price ? p.compare_price.toString() : "");
       setCostPrice(p.cost_price ? p.cost_price.toString() : "");
       setAdCostPerOrder(p.ad_cost_per_order ? p.ad_cost_per_order.toString() : "");
+      setConfirmationCost(p.confirmation_cost ? p.confirmation_cost.toString() : "");
+      setPackagingCost(p.packaging_cost ? p.packaging_cost.toString() : "");
+      setReturnCost(p.return_cost ? p.return_cost.toString() : "");
+      setOtherCosts(p.other_costs ? p.other_costs.toString() : "");
       setStock(p.stock ? p.stock.toString() : "100");
       setPrimaryImage(p.primary_image || "");
       
@@ -1401,7 +1425,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       setActiveSections({
         basicInfo: true,
         pricing: true,
-        profitability: !!(p.cost_price || p.ad_cost_per_order),
+        profitability: !!(p.cost_price || p.ad_cost_per_order || p.confirmation_cost || p.packaging_cost || p.return_cost || p.other_costs),
         media: !!p.primary_image,
         description: !!p.description,
         offers: !!(p.quantity_offers && p.quantity_offers.length > 0),
@@ -1432,6 +1456,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
       compare_price: comparePrice ? parseFloat(comparePrice) : null,
       cost_price: activeSections.profitability && costPrice ? parseFloat(costPrice) : null,
       ad_cost_per_order: activeSections.profitability && adCostPerOrder ? parseFloat(adCostPerOrder) : null,
+      confirmation_cost: activeSections.profitability && confirmationCost ? parseFloat(confirmationCost) : null,
+      packaging_cost: activeSections.profitability && packagingCost ? parseFloat(packagingCost) : null,
+      return_cost: activeSections.profitability && returnCost ? parseFloat(returnCost) : null,
+      other_costs: activeSections.profitability && otherCosts ? parseFloat(otherCosts) : null,
       category: selectedCategory || null,
       stock: parseInt(stock) || 100,
       primary_image: images.length > 0 ? images[0].image_url : primaryImage,
@@ -1962,6 +1990,10 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
           compare_price: comparePrice ? parseFloat(comparePrice) : null,
           cost_price: activeSections.profitability && costPrice ? parseFloat(costPrice) : null,
           ad_cost_per_order: activeSections.profitability && adCostPerOrder ? parseFloat(adCostPerOrder) : null,
+          confirmation_cost: activeSections.profitability && confirmationCost ? parseFloat(confirmationCost) : null,
+          packaging_cost: activeSections.profitability && packagingCost ? parseFloat(packagingCost) : null,
+          return_cost: activeSections.profitability && returnCost ? parseFloat(returnCost) : null,
+          other_costs: activeSections.profitability && otherCosts ? parseFloat(otherCosts) : null,
           category: selectedCategory || null,
           stock: parseInt(stock) || 100,
           primary_image: images.length > 0 ? images[0].image_url : primaryImage,
@@ -2825,14 +2857,38 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                         />
                       </div>
                       {activeSections.profitability && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-xs text-muted-foreground">{language === 'ar' ? "سعر الشراء / التكلفة (DZD)" : (language === 'fr' ? "Prix d'achat (DZD)" : "Cost Price (DZD)")}</label>
-                            <Input type="number" placeholder="2500" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-xs text-muted-foreground">{language === 'ar' ? "سعر الشراء / التكلفة (DZD)" : (language === 'fr' ? "Prix d'achat (DZD)" : "Cost Price (DZD)")}</label>
+                              <Input type="number" placeholder="2500" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-xs text-muted-foreground">{language === 'ar' ? "تكلفة الإعلان لكل طلب (DZD)" : (language === 'fr' ? "Coût pub / commande (DZD)" : "Ad Cost per Order (DZD)")}</label>
+                              <Input type="number" placeholder="500" value={adCostPerOrder} onChange={(e) => setAdCostPerOrder(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                            </div>
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs text-muted-foreground">{language === 'ar' ? "تكلفة الإعلان لكل طلب (DZD)" : (language === 'fr' ? "Coût pub / commande (DZD)" : "Ad Cost per Order (DZD)")}</label>
-                            <Input type="number" placeholder="500" value={adCostPerOrder} onChange={(e) => setAdCostPerOrder(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-xs text-muted-foreground">{language === 'ar' ? "تكلفة تأكيد الطلب (DZD)" : (language === 'fr' ? "Coût confirmation (DZD)" : "Confirmation Cost (DZD)")}</label>
+                              <Input type="number" placeholder="100" value={confirmationCost} onChange={(e) => setConfirmationCost(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-xs text-muted-foreground">{language === 'ar' ? "تكلفة التغليف والعلب (DZD)" : (language === 'fr' ? "Coût emballage (DZD)" : "Packaging Cost (DZD)")}</label>
+                              <Input type="number" placeholder="50" value={packagingCost} onChange={(e) => setPackagingCost(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-xs text-muted-foreground">{language === 'ar' ? "تكلفة الإرجاع (DZD)" : (language === 'fr' ? "Coût de retour (DZD)" : "Return Cost (DZD)")}</label>
+                              <Input type="number" placeholder="300" value={returnCost} onChange={(e) => setReturnCost(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-xs text-muted-foreground">{language === 'ar' ? "تكاليف أخرى (DZD)" : (language === 'fr' ? "Autres coûts (DZD)" : "Other Costs (DZD)")}</label>
+                              <Input type="number" placeholder="100" value={otherCosts} onChange={(e) => setOtherCosts(e.target.value)} className="pr-3 text-right font-outfit text-xs" />
+                            </div>
                           </div>
                         </div>
                       )}

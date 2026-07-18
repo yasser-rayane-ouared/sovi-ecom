@@ -284,6 +284,7 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
   const [productsSummary, setProductsSummary] = useState<any[]>([]);
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
 
   // SVG states
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
@@ -1158,56 +1159,117 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
                   const stockBg = !p.track_inventory ? '' : p.stock <= 0 ? 'bg-red-500/10' : p.stock <= p.low_stock_threshold ? 'bg-amber-500/10' : 'bg-emerald-500/10';
                   const profitColor = p.net_profit > 0 ? 'text-emerald-400' : p.net_profit < 0 ? 'text-red-400' : 'text-muted-foreground';
                   return (
-                    <tr key={p.product_id} className={`border-b border-border/50 transition-colors hover:bg-muted/30 ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-2.5 min-w-[140px]">
-                          {p.primary_image ? (
-                            <img src={p.primary_image} alt="" className="h-8 w-8 rounded-lg object-cover border border-border/50 shrink-0" />
-                          ) : (
-                            <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          <span className="font-semibold text-xs truncate max-w-[150px]" title={p.title}>{p.title}</span>
-                        </div>
-                      </td>
-                      <td className="text-center px-2 py-3 font-outfit text-xs font-medium">{p.views.toLocaleString()}</td>
-                      <td className="text-center px-2 py-3 font-outfit text-xs font-bold">{p.total_orders}</td>
-                      <td className="text-center px-2 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                          p.confirmation_rate >= 70 ? 'bg-emerald-500/15 text-emerald-400' :
-                          p.confirmation_rate >= 40 ? 'bg-amber-500/15 text-amber-400' :
-                          'bg-red-500/15 text-red-400'
-                        }`}>
-                          {p.confirmation_rate}%
-                        </span>
-                      </td>
-                      <td className="text-center px-2 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                          p.delivery_rate >= 80 ? 'bg-emerald-500/15 text-emerald-400' :
-                          p.delivery_rate >= 50 ? 'bg-amber-500/15 text-amber-400' :
-                          p.delivery_rate > 0 ? 'bg-red-500/15 text-red-400' :
-                          'bg-muted/20 text-muted-foreground'
-                        }`}>
-                          {p.delivery_rate > 0 ? `${p.delivery_rate}%` : '—'}
-                        </span>
-                      </td>
-                      <td className="text-center px-2 py-3 font-outfit text-xs font-semibold text-emerald-400">{p.revenue > 0 ? p.revenue.toLocaleString() : '—'}</td>
-                      <td className="text-center px-2 py-3 font-outfit text-xs text-orange-400">{p.ad_spend > 0 ? p.ad_spend.toLocaleString() : '—'}</td>
-                      <td className="text-center px-2 py-3 font-outfit text-xs text-blue-400">{p.sourcing_cost > 0 ? p.sourcing_cost.toLocaleString() : '—'}</td>
-                      <td className={`text-center px-2 py-3 font-outfit text-xs font-extrabold ${profitColor}`}>
-                        {p.net_profit !== 0 ? (p.net_profit > 0 ? '+' : '') + p.net_profit.toLocaleString() : '—'}
-                      </td>
-                      <td className="text-center px-2 py-3">
-                        {p.track_inventory ? (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${stockBg} ${stockColor}`}>
-                            {p.stock}
+                    <React.Fragment key={p.product_id}>
+                      <tr 
+                        onClick={() => setExpandedProductId(expandedProductId === p.product_id ? null : p.product_id)}
+                        className={`border-b border-border/50 transition-colors hover:bg-muted/30 cursor-pointer ${i % 2 === 0 ? '' : 'bg-muted/10'} ${expandedProductId === p.product_id ? 'bg-primary/5 hover:bg-primary/10' : ''}`}
+                      >
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-2.5 min-w-[140px]">
+                            {p.primary_image ? (
+                              <img src={p.primary_image} alt="" className="h-8 w-8 rounded-lg object-cover border border-border/50 shrink-0" />
+                            ) : (
+                              <div className="h-8 w-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span className="font-semibold text-xs truncate max-w-[150px]" title={p.title}>{p.title}</span>
+                          </div>
+                        </td>
+                        <td className="text-center px-2 py-3 font-outfit text-xs font-medium">{p.views.toLocaleString()}</td>
+                        <td className="text-center px-2 py-3 font-outfit text-xs font-bold">{p.total_orders}</td>
+                        <td className="text-center px-2 py-3">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                            p.confirmation_rate >= 70 ? 'bg-emerald-500/15 text-emerald-400' :
+                            p.confirmation_rate >= 40 ? 'bg-amber-500/15 text-amber-400' :
+                            'bg-red-500/15 text-red-400'
+                          }`}>
+                            {p.confirmation_rate}%
                           </span>
-                        ) : (
-                          <span className="text-[11px] text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="text-center px-2 py-3">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                            p.delivery_rate >= 80 ? 'bg-emerald-500/15 text-emerald-400' :
+                            p.delivery_rate >= 50 ? 'bg-amber-500/15 text-amber-400' :
+                            p.delivery_rate > 0 ? 'bg-red-500/15 text-red-400' :
+                            'bg-muted/20 text-muted-foreground'
+                          }`}>
+                            {p.delivery_rate > 0 ? `${p.delivery_rate}%` : '—'}
+                          </span>
+                        </td>
+                        <td className="text-center px-2 py-3 font-outfit text-xs font-semibold text-emerald-400">{p.revenue > 0 ? p.revenue.toLocaleString() : '—'}</td>
+                        <td className="text-center px-2 py-3 font-outfit text-xs text-orange-400">{p.ad_spend > 0 ? p.ad_spend.toLocaleString() : '—'}</td>
+                        <td className="text-center px-2 py-3 font-outfit text-xs text-blue-400">{p.sourcing_cost > 0 ? p.sourcing_cost.toLocaleString() : '—'}</td>
+                        <td className={`text-center px-2 py-3 font-outfit text-xs font-extrabold ${profitColor}`}>
+                          {p.net_profit !== 0 ? (p.net_profit > 0 ? '+' : '') + p.net_profit.toLocaleString() : '—'}
+                        </td>
+                        <td className="text-center px-2 py-3">
+                          {p.track_inventory ? (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${stockBg} ${stockColor}`}>
+                              {p.stock}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+
+                      {expandedProductId === p.product_id && (
+                        <tr className="bg-muted/10 dark:bg-white/[0.01]">
+                          <td colSpan={10} className="p-4 border-b border-border/50">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-card border border-border/70 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                              
+                              {/* Revenue Details */}
+                              <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                                  {language === 'ar' ? 'العائدات الإجمالية' : language === 'fr' ? 'Revenu Total' : 'Total Revenue'}
+                                </span>
+                                <p className="text-sm font-extrabold text-emerald-400 font-outfit">{p.revenue.toLocaleString()} DZD</p>
+                                <span className="text-[9px] text-muted-foreground">
+                                  {p.delivered} {language === 'ar' ? 'طلبات تم تسليمها' : language === 'fr' ? 'livrées' : 'delivered orders'}
+                                </span>
+                              </div>
+
+                              {/* Ads & Sourcing */}
+                              <div className="space-y-1 border-r border-border/30 pr-4">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                                  {language === 'ar' ? 'الإعلانات والسلعة' : language === 'fr' ? 'Publicité & Sourcing' : 'Ads & Sourcing'}
+                                </span>
+                                <div className="text-[11px] font-bold space-y-0.5">
+                                  <p className="text-orange-400">{language === 'ar' ? 'الإعلانات' : 'Ads'}: -{p.ad_spend.toLocaleString()} DZD</p>
+                                  <p className="text-blue-400">{language === 'ar' ? 'سعر الشراء' : 'Sourcing'}: -{p.sourcing_cost.toLocaleString()} DZD</p>
+                                </div>
+                              </div>
+
+                              {/* Operations breakdown */}
+                              <div className="space-y-1 border-r border-border/30 pr-4">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                                  {language === 'ar' ? 'المصاريف التشغيلية' : language === 'fr' ? 'Frais Opérationnels' : 'Operational Costs'}
+                                </span>
+                                <div className="text-[10px] text-muted-foreground space-y-0.5">
+                                  <p>{language === 'ar' ? 'التأكيد' : 'Confirmation'}: -{(p.confirmation_spend || 0).toLocaleString()} DZD</p>
+                                  <p>{language === 'ar' ? 'التغليف' : 'Emballage'}: -{(p.packaging_spend || 0).toLocaleString()} DZD</p>
+                                  <p>{language === 'ar' ? 'مصاريف أخرى' : 'مصاريف أخرى'} : -{(p.other_spend || 0).toLocaleString()} DZD</p>
+                                </div>
+                              </div>
+
+                              {/* Returns and delivery losses */}
+                              <div className="space-y-1 border-r border-border/30 pr-4">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                                  {language === 'ar' ? 'الشحن والمرتجعات' : language === 'fr' ? 'Retours & Livraison' : 'Shipping & Returns'}
+                                </span>
+                                <div className="text-[10px] text-muted-foreground space-y-0.5">
+                                  <p className="text-red-400">{language === 'ar' ? 'تكلفة المرجوع' : 'Return fee'}: -{(p.return_spend || 0).toLocaleString()} DZD</p>
+                                  <p className="text-red-500">{language === 'ar' ? 'خسارة التوصيل' : 'Delivery loss'}: -{(p.delivery_loss || 0).toLocaleString()} DZD</p>
+                                  <p className="text-[9px] text-muted-foreground italic">({p.returned} {language === 'ar' ? 'مرتجع' : language === 'fr' ? 'retours' : 'returns'})</p>
+                                </div>
+                              </div>
+
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
