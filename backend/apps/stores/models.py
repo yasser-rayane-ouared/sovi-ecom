@@ -1,5 +1,6 @@
 """
 Store models — the core of multi-tenancy.
+# Trigger redeploy: performance optimization & order cursor pagination
 """
 import uuid
 from django.db import models
