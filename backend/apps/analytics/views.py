@@ -72,8 +72,10 @@ class DashboardAnalyticsView(APIView):
                 'net_profit': 0.0,
             }
 
-        all_orders_data = orders.select_related('wilaya', 'commune').prefetch_related('items__product')
-        for order in all_orders_data:
+        all_orders_data = orders.only(
+            'id', 'status', 'total', 'subtotal', 'delivery_price', 'created_at'
+        ).prefetch_related('items__product')
+        for order in all_orders_data.iterator(chunk_size=200):
             order_date = order.created_at.date()
             if order_date not in daily_dict:
                 daily_dict[order_date] = {
@@ -88,23 +90,23 @@ class DashboardAnalyticsView(APIView):
             
             order_sourcing_cost = 0.0
             order_ad_spend = 0.0
-            order_delivery_loss = 0.0
             
-            for item in order.items.all():
+            # Single pass through items for both ad_spend and sourcing_cost
+            items_list = list(order.items.all())
+            for item in items_list:
                 qty = item.quantity
                 ad_val = float(item.product.ad_cost_per_order or 0)
                 order_ad_spend += ad_val * qty
+                if order.status == 'delivered':
+                    cost_val = float(item.product.cost_price or 0)
+                    order_sourcing_cost += cost_val * qty
+            
             total_ad_spend += order_ad_spend
             
             if order.status == 'delivered':
                 order_revenue = float(order.total)
                 delivered_subtotal = float(order.subtotal)
                 total_delivered_subtotal += delivered_subtotal
-                
-                for item in order.items.all():
-                    qty = item.quantity
-                    cost_val = float(item.product.cost_price or 0)
-                    order_sourcing_cost += cost_val * qty
                 total_sourcing_cost += order_sourcing_cost
                 
                 order_profit = delivered_subtotal - order_sourcing_cost - order_ad_spend

@@ -90,8 +90,10 @@ export default function OrdersDashboard() {
   // Row dropdown state
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
-  // Pagination states (disabled, keeping count state)
+  // Pagination states (cursor-based infinite scroll)
   const [totalCount, setTotalCount] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Edit Modal states
   const [editModal, setEditModal] = useState<{
@@ -273,9 +275,8 @@ export default function OrdersDashboard() {
     }
   };
 
-  const fetchOrders = () => {
-    if (!currentStoreId) return;
-    setLoading(true);
+  const buildOrdersUrl = () => {
+    if (!currentStoreId) return null;
     const isAbandoned = activeTab === "abandoned";
     
     let startParam = "";
@@ -320,6 +321,14 @@ export default function OrdersDashboard() {
     if (endParam) {
       url += `&end_date=${endParam}`;
     }
+    return url;
+  };
+
+  const fetchOrders = () => {
+    const url = buildOrdersUrl();
+    if (!url) return;
+    setLoading(true);
+    setNextCursor(null);
 
     api.get(url)
       .then((res) => {
@@ -327,13 +336,53 @@ export default function OrdersDashboard() {
         if (Array.isArray(data)) {
           setOrders(data);
           setTotalCount(data.length);
+          setNextCursor(null);
         } else {
           setOrders(data.results ?? []);
-          setTotalCount(data.count ?? 0);
+          setTotalCount(data.results?.length ?? 0);
+          // Extract cursor from next URL
+          if (data.next) {
+            try {
+              const nextUrl = new URL(data.next);
+              setNextCursor(nextUrl.searchParams.get('cursor'));
+            } catch {
+              setNextCursor(null);
+            }
+          } else {
+            setNextCursor(null);
+          }
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  const loadMoreOrders = () => {
+    if (!nextCursor || loadingMore) return;
+    const baseUrl = buildOrdersUrl();
+    if (!baseUrl) return;
+    setLoadingMore(true);
+
+    api.get(`${baseUrl}&cursor=${nextCursor}`)
+      .then((res) => {
+        const data = res.data;
+        if (!Array.isArray(data) && data.results) {
+          setOrders(prev => [...prev, ...data.results]);
+          setTotalCount(prev => prev + data.results.length);
+          if (data.next) {
+            try {
+              const nextUrl = new URL(data.next);
+              setNextCursor(nextUrl.searchParams.get('cursor'));
+            } catch {
+              setNextCursor(null);
+            }
+          } else {
+            setNextCursor(null);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMore(false));
   };
 
   const fetchDeliveryConfigs = () => {
@@ -1400,6 +1449,28 @@ export default function OrdersDashboard() {
                 )}
               </tbody>
             </table>
+
+            {/* Load More Button */}
+            {nextCursor && (
+              <div className="flex justify-center py-6">
+                <button
+                  onClick={loadMoreOrders}
+                  disabled={loadingMore}
+                  className="px-8 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-all duration-300 flex items-center gap-2 border border-primary/20 hover:border-primary/40 disabled:opacity-50"
+                >
+                  {loadingMore ? (
+                    <>
+                      <span className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                      {language === 'ar' ? 'جاري التحميل...' : language === 'fr' ? 'Chargement...' : 'Loading...'}
+                    </>
+                  ) : (
+                    <>
+                      {language === 'ar' ? 'تحميل المزيد من الطلبات' : language === 'fr' ? 'Charger plus de commandes' : 'Load More Orders'}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
