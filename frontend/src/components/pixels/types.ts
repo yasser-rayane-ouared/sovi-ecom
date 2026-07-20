@@ -2,6 +2,8 @@ export interface Pixel {
   id: string;
   platform: 'meta' | 'tiktok' | 'snapchat';
   pixel_id: string;
+  access_token?: string;
+  test_event_code?: string;
 }
 
 export interface PixelEventData {

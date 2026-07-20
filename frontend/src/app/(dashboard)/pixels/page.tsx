@@ -26,6 +26,7 @@ export default function PixelsDashboard() {
   const [platform, setPlatform] = useState("meta");
   const [pixelIdValue, setPixelIdValue] = useState("");
   const [accessToken, setAccessToken] = useState("");
+  const [testEventCode, setTestEventCode] = useState("");
   const [associatedProduct, setAssociatedProduct] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [pixelHealth, setPixelHealth] = useState<Record<string, 'loading' | 'valid' | 'invalid'>>({});
@@ -60,6 +61,7 @@ export default function PixelsDashboard() {
     setPlatform("meta");
     setPixelIdValue("");
     setAccessToken("");
+    setTestEventCode("");
     setAssociatedProduct("");
     setIsActive(true);
     setEditId(null);
@@ -81,6 +83,7 @@ export default function PixelsDashboard() {
     setPlatform(pixel.platform);
     setPixelIdValue(pixel.pixel_id);
     setAccessToken(pixel.access_token || "");
+    setTestEventCode(pixel.test_event_code || "");
     setAssociatedProduct(pixel.product || "");
     setIsActive(pixel.is_active);
     setIsEditing(true);
@@ -168,6 +171,7 @@ export default function PixelsDashboard() {
           initialPlatform={platform}
           initialPixelId={pixelIdValue}
           initialAccessToken={accessToken}
+          initialTestEventCode={testEventCode}
           initialProduct={associatedProduct}
           initialIsActive={isActive}
           products={products}

@@ -4,32 +4,33 @@ export function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-const loadMetaPixel = (pixelId: string) => {
-  if (typeof window === "undefined") return;
+const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
+  if (typeof window === "undefined" || !pixelId) return;
   const w = window as any;
-  if (w.fbq) {
-    w.fbq('set', 'autoConfig', true, pixelId);
-    w.fbq('trackSingle', pixelId, 'PageView');
-    return;
-  }
-  
-  w.fbq = function () {
-    w.fbq.callMethod ? w.fbq.callMethod.apply(w.fbq, arguments) : w.fbq.queue.push(arguments);
-  };
-  if (!w._fbq) w._fbq = w.fbq;
-  w.fbq.push = w.fbq;
-  w.fbq.loaded = true;
-  w.fbq.version = '2.0';
-  w.fbq.queue = [];
 
-  const s = document.createElement("script");
-  s.async = true;
-  s.src = "https://connect.facebook.net/en_US/fbevents.js";
-  const first = document.getElementsByTagName("script")[0];
-  first.parentNode?.insertBefore(s, first);
+  if (!w.fbq) {
+    w.fbq = function () {
+      w.fbq.callMethod ? w.fbq.callMethod.apply(w.fbq, arguments) : w.fbq.queue.push(arguments);
+    };
+    if (!w._fbq) w._fbq = w.fbq;
+    w.fbq.push = w.fbq;
+    w.fbq.loaded = true;
+    w.fbq.version = '2.0';
+    w.fbq.queue = [];
+
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = "https://connect.facebook.net/en_US/fbevents.js";
+    const first = document.getElementsByTagName("script")[0];
+    first.parentNode?.insertBefore(s, first);
+  }
 
   w.fbq('init', pixelId);
-  w.fbq('track', 'PageView');
+  w.fbq('set', 'autoConfig', true, pixelId);
+  if (testEventCode) {
+    w.fbq('set', 'testEventCode', testEventCode, pixelId);
+  }
+  w.fbq('trackSingle', pixelId, 'PageView');
 };
 
 const loadTikTokPixel = (pixelId: string) => {
@@ -80,7 +81,7 @@ export const initializePixels = (pixels: Pixel[]) => {
   pixels.forEach((pixel) => {
     if (!pixel.pixel_id) return;
     try {
-      if (pixel.platform === 'meta') loadMetaPixel(pixel.pixel_id);
+      if (pixel.platform === 'meta') loadMetaPixel(pixel.pixel_id, pixel.test_event_code);
       else if (pixel.platform === 'tiktok') loadTikTokPixel(pixel.pixel_id);
       else if (pixel.platform === 'snapchat') loadSnapchatPixel(pixel.pixel_id);
     } catch (e) {

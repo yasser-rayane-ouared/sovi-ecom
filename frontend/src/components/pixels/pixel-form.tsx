@@ -14,6 +14,7 @@ interface PixelFormProps {
   initialPlatform: string;
   initialPixelId: string;
   initialAccessToken: string;
+  initialTestEventCode?: string;
   initialProduct: string;
   initialIsActive: boolean;
   products: { id: string; title: string }[];
@@ -27,6 +28,7 @@ export function PixelForm({
   initialPlatform,
   initialPixelId,
   initialAccessToken,
+  initialTestEventCode = "",
   initialProduct,
   initialIsActive,
   products,
@@ -38,6 +40,7 @@ export function PixelForm({
   const [platform, setPlatform] = useState(initialPlatform);
   const [pixelIdValue, setPixelIdValue] = useState(initialPixelId);
   const [accessToken, setAccessToken] = useState(initialAccessToken);
+  const [testEventCode, setTestEventCode] = useState(initialTestEventCode);
   const [associatedProduct, setAssociatedProduct] = useState(initialProduct);
   const [isActive, setIsActive] = useState(initialIsActive);
   const [showToken, setShowToken] = useState(false);
@@ -52,6 +55,7 @@ export function PixelForm({
         platform,
         pixel_id: pixelIdValue.trim(),
         access_token: platform === "meta" ? accessToken.trim() : "",
+        test_event_code: platform === "meta" ? testEventCode.trim() : "",
         product: associatedProduct || null,
         is_active: isActive,
       });
@@ -129,28 +133,47 @@ export function PixelForm({
               </div>
 
               {platform === "meta" && (
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-sm font-semibold">{t("pixelsFormTokenLabel")}</label>
-                  <div className="relative">
-                    <textarea
-                      placeholder={t("pixelsFormTokenPlaceholder")}
-                      value={accessToken}
-                      onChange={(e) => setAccessToken(e.target.value)}
-                      rows={showToken ? 3 : 1}
-                      className={`flex min-h-[40px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground focus-visible:outline-none font-outfit ${isRtl ? "pr-10 text-right" : "pl-10 text-left"}`}
-                      style={{ WebkitTextSecurity: showToken ? 'none' : 'disc' } as any}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowToken((v) => !v)}
-                      className={`absolute ${isRtl ? "left-2" : "right-2"} top-2 p-1 text-muted-foreground hover:text-foreground transition-colors`}
-                      title={showToken ? 'Hide token' : 'Show token'}
-                    >
-                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                <>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-semibold">{t("pixelsFormTokenLabel")}</label>
+                    <div className="relative">
+                      <textarea
+                        placeholder={t("pixelsFormTokenPlaceholder")}
+                        value={accessToken}
+                        onChange={(e) => setAccessToken(e.target.value)}
+                        rows={showToken ? 3 : 1}
+                        className={`flex min-h-[40px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground focus-visible:outline-none font-outfit ${isRtl ? "pr-10 text-right" : "pl-10 text-left"}`}
+                        style={{ WebkitTextSecurity: showToken ? 'none' : 'disc' } as any}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowToken((v) => !v)}
+                        className={`absolute ${isRtl ? "left-2" : "right-2"} top-2 p-1 text-muted-foreground hover:text-foreground transition-colors`}
+                        title={showToken ? 'Hide token' : 'Show token'}
+                      >
+                        {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{t("pixelsFormTokenDesc")}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{t("pixelsFormTokenDesc")}</p>
-                </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-semibold">
+                      {isRtl ? "رمز اختبار الأحداث (Test Event Code - اختياري)" : "Meta Test Event Code (Optional)"}
+                    </label>
+                    <Input
+                      placeholder="e.g. TEST12345"
+                      value={testEventCode}
+                      onChange={(e) => setTestEventCode(e.target.value)}
+                      className={`font-outfit ${isRtl ? "pr-3 text-right" : "pl-3 text-left"}`}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      {isRtl
+                        ? "أدخل رمز الاختبار الموجود في تبويب Test Events في Facebook Events Manager لعرض الأحداث المباشرة عند التجربة."
+                        : "Enter your Test Event Code from the 'Test Events' tab in Facebook Events Manager to view live test events."}
+                    </p>
+                  </div>
+                </>
               )}
 
               <div className={`flex items-center gap-3 pt-4 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>

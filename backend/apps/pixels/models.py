@@ -15,6 +15,7 @@ class PixelConfig(TenantModel):
     platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
     pixel_id = models.CharField(max_length=255)
     access_token = models.TextField(blank=True, help_text='Required for Conversions API integrations (optional)')
+    test_event_code = models.CharField(max_length=100, blank=True, null=True, help_text='Optional Meta Test Event Code (e.g. TEST12345)')
     product = models.ForeignKey(
         'products.Product',
         on_delete=models.SET_NULL,

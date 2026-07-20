@@ -78,7 +78,7 @@ def normalize_phone(phone):
         clean = '213' + clean
     return clean
 
-def send_capi_event_thread(pixel_id, access_token, event_name, event_id, user_data, custom_data, source_url):
+def send_capi_event_thread(pixel_id, access_token, event_name, event_id, user_data, custom_data, source_url, test_event_code=None):
     url = f"https://graph.facebook.com/v19.0/{pixel_id}/events"
     payload = {
         "data": [
@@ -94,14 +94,17 @@ def send_capi_event_thread(pixel_id, access_token, event_name, event_id, user_da
         ],
         "access_token": access_token
     }
+    if test_event_code:
+        payload["test_event_code"] = test_event_code.strip()
     try:
         requests.post(url, json=payload, timeout=8)
     except Exception:
         pass
 
-def trigger_capi_events(pixels, event_name, event_id, user_data, custom_data, source_url):
+def trigger_capi_events(pixels, event_name, event_id, user_data, custom_data, source_url, request_test_code=None):
     for pixel in pixels:
         if pixel.access_token:
+            test_code = request_test_code or getattr(pixel, 'test_event_code', None)
             threading.Thread(
                 target=send_capi_event_thread,
                 args=(
@@ -111,7 +114,8 @@ def trigger_capi_events(pixels, event_name, event_id, user_data, custom_data, so
                     event_id,
                     user_data,
                     custom_data,
-                    source_url
+                    source_url,
+                    test_code
                 ),
                 daemon=True
             ).start()

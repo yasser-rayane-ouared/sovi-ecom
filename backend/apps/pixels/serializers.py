@@ -7,7 +7,7 @@ class PixelConfigSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PixelConfig
-        fields = ['id', 'name', 'platform', 'pixel_id', 'access_token', 'product', 'product_title', 'is_active']
+        fields = ['id', 'name', 'platform', 'pixel_id', 'access_token', 'test_event_code', 'product', 'product_title', 'is_active']
         read_only_fields = ['id']
 
     def create(self, validated_data):
