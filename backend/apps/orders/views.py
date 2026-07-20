@@ -5,7 +5,6 @@ import requests
 import pandas as pd
 from django.http import HttpResponse
 from rest_framework import generics, status
-from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.stores.models import Store
@@ -32,18 +31,12 @@ ECOTRACK_COMPANIES = {
 
 
 
-class OrderCursorPagination(CursorPagination):
-    page_size = 50
-    ordering = '-created_at'
-    cursor_query_param = 'cursor'
-
-
 class OrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
     filterset_fields = ['is_abandoned']
     search_fields = ['order_number', 'full_name', 'phone']
     ordering_fields = ['created_at', 'total', 'status']
-    pagination_class = OrderCursorPagination
+    pagination_class = None
 
     def get_queryset(self):
         store = get_store_for_user(self.kwargs['store_id'], self.request.user, 'orders')

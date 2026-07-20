@@ -72,10 +72,8 @@ class DashboardAnalyticsView(APIView):
                 'net_profit': 0.0,
             }
 
-        all_orders_data = orders.only(
-            'id', 'status', 'total', 'subtotal', 'delivery_price', 'created_at'
-        ).prefetch_related('items__product')
-        for order in all_orders_data.iterator(chunk_size=200):
+        all_orders_data = orders.select_related('wilaya', 'commune').prefetch_related('items__product')
+        for order in all_orders_data:
             order_date = order.created_at.date()
             if order_date not in daily_dict:
                 daily_dict[order_date] = {
@@ -90,23 +88,23 @@ class DashboardAnalyticsView(APIView):
             
             order_sourcing_cost = 0.0
             order_ad_spend = 0.0
+            order_delivery_loss = 0.0
             
-            # Single pass through items for both ad_spend and sourcing_cost
-            items_list = list(order.items.all())
-            for item in items_list:
+            for item in order.items.all():
                 qty = item.quantity
                 ad_val = float(item.product.ad_cost_per_order or 0)
                 order_ad_spend += ad_val * qty
-                if order.status == 'delivered':
-                    cost_val = float(item.product.cost_price or 0)
-                    order_sourcing_cost += cost_val * qty
-            
             total_ad_spend += order_ad_spend
             
             if order.status == 'delivered':
                 order_revenue = float(order.total)
                 delivered_subtotal = float(order.subtotal)
                 total_delivered_subtotal += delivered_subtotal
+                
+                for item in order.items.all():
+                    qty = item.quantity
+                    cost_val = float(item.product.cost_price or 0)
+                    order_sourcing_cost += cost_val * qty
                 total_sourcing_cost += order_sourcing_cost
                 
                 order_profit = delivered_subtotal - order_sourcing_cost - order_ad_spend
@@ -501,49 +499,32 @@ class ProductAnalyticsView(APIView):
         revenue = 0.0
         sourcing_cost = 0.0
         ad_spend = 0.0
-        confirmation_spend = 0.0
-        packaging_spend = 0.0
-        return_spend = 0.0
-        other_spend = 0.0
         delivery_loss = 0.0
 
         cost_price = float(product.cost_price or 0)
         ad_cost = float(product.ad_cost_per_order or 0)
-        conf_cost = float(product.confirmation_cost or 0)
-        pack_cost = float(product.packaging_cost or 0)
-        ret_cost = float(product.return_cost or 0)
-        oth_cost = float(product.other_costs or 0)
-
-        confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered', 'returned'}
-        shipped_statuses = {'shipped', 'delivered', 'returned'}
 
         for oi in order_items:
             st = oi.order.status
             status_counts[st] = status_counts.get(st, 0) + 1
             qty = oi.quantity
 
-            if st in confirmed_statuses:
-                ad_spend += ad_cost * qty
-                confirmation_spend += conf_cost * qty
-                other_spend += oth_cost * qty
-
-            if st in shipped_statuses:
-                packaging_spend += pack_cost * qty
+            ad_spend += ad_cost * qty
 
             if st == 'delivered':
                 revenue += float(oi.total)
                 sourcing_cost += cost_price * qty
             elif st == 'returned':
-                return_spend += ret_cost * qty
                 delivery_loss += float(oi.order.delivery_price)
 
+        confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered'}
         confirmed_count = sum(v for k, v in status_counts.items() if k in confirmed_statuses)
         delivered_count = status_counts.get('delivered', 0)
         returned_count = status_counts.get('returned', 0)
 
         confirmation_rate = (confirmed_count / total_orders * 100) if total_orders > 0 else 0
         delivery_rate = (delivered_count / (delivered_count + returned_count) * 100) if (delivered_count + returned_count) > 0 else 0
-        net_profit = revenue - sourcing_cost - ad_spend - confirmation_spend - packaging_spend - return_spend - other_spend - delivery_loss
+        net_profit = revenue - sourcing_cost - ad_spend - delivery_loss
 
         return Response({
             'product_id': str(product.id),
@@ -556,10 +537,6 @@ class ProductAnalyticsView(APIView):
             'delivery_rate': round(delivery_rate, 1),
             'revenue': round(revenue, 2),
             'ad_spend': round(ad_spend, 2),
-            'confirmation_spend': round(confirmation_spend, 2),
-            'packaging_spend': round(packaging_spend, 2),
-            'return_spend': round(return_spend, 2),
-            'other_spend': round(other_spend, 2),
             'sourcing_cost': round(sourcing_cost, 2),
             'delivery_loss': round(delivery_loss, 2),
             'net_profit': round(net_profit, 2),
@@ -568,10 +545,6 @@ class ProductAnalyticsView(APIView):
             'track_inventory': product.track_inventory,
             'cost_price': float(product.cost_price or 0),
             'ad_cost_per_order': float(product.ad_cost_per_order or 0),
-            'confirmation_cost': float(product.confirmation_cost or 0),
-            'packaging_cost': float(product.packaging_cost or 0),
-            'return_cost': float(product.return_cost or 0),
-            'other_costs': float(product.other_costs or 0),
         })
 
 
@@ -612,16 +585,11 @@ class ProductsSummaryView(APIView):
             'cancelled': 0,
             'revenue': 0.0,
             'ad_spend': 0.0,
-            'confirmation_spend': 0.0,
-            'packaging_spend': 0.0,
-            'return_spend': 0.0,
-            'other_spend': 0.0,
             'sourcing_cost': 0.0,
             'delivery_loss': 0.0,
         })
 
-        confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered', 'returned'}
-        shipped_statuses = {'shipped', 'delivered', 'returned'}
+        confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered'}
 
         for oi in order_items:
             pid = str(oi.product_id)
@@ -633,28 +601,18 @@ class ProductsSummaryView(APIView):
             d['total_qty'] += qty
 
             ad_cost = float(oi.product.ad_cost_per_order or 0)
-            conf_cost = float(oi.product.confirmation_cost or 0)
-            pack_cost = float(oi.product.packaging_cost or 0)
-            ret_cost = float(oi.product.return_cost or 0)
-            oth_cost = float(oi.product.other_costs or 0)
             cost_price = float(oi.product.cost_price or 0)
+
+            d['ad_spend'] += ad_cost * qty
 
             if st in confirmed_statuses:
                 d['confirmed'] += 1
-                d['ad_spend'] += ad_cost * qty
-                d['confirmation_spend'] += conf_cost * qty
-                d['other_spend'] += oth_cost * qty
-
-            if st in shipped_statuses:
-                d['packaging_spend'] += pack_cost * qty
-
             if st == 'delivered':
                 d['delivered'] += 1
                 d['revenue'] += float(oi.total)
                 d['sourcing_cost'] += cost_price * qty
             elif st == 'returned':
                 d['returned'] += 1
-                d['return_spend'] += ret_cost * qty
                 d['delivery_loss'] += float(oi.order.delivery_price)
             elif st == 'cancelled':
                 d['cancelled'] += 1
@@ -666,9 +624,7 @@ class ProductsSummaryView(APIView):
             d = product_data.get(pid, {
                 'total_orders': 0, 'total_qty': 0, 'confirmed': 0,
                 'delivered': 0, 'returned': 0, 'cancelled': 0,
-                'revenue': 0.0, 'ad_spend': 0.0, 'confirmation_spend': 0.0,
-                'packaging_spend': 0.0, 'return_spend': 0.0, 'other_spend': 0.0,
-                'sourcing_cost': 0.0, 'delivery_loss': 0.0,
+                'revenue': 0.0, 'ad_spend': 0.0, 'sourcing_cost': 0.0, 'delivery_loss': 0.0,
             })
 
             total_orders = d['total_orders']
@@ -676,16 +632,12 @@ class ProductsSummaryView(APIView):
             returned = d['returned']
             revenue = d['revenue']
             ad_spend = d['ad_spend']
-            confirmation_spend = d['confirmation_spend']
-            packaging_spend = d['packaging_spend']
-            return_spend = d['return_spend']
-            other_spend = d['other_spend']
             sourcing_cost = d['sourcing_cost']
             delivery_loss = d['delivery_loss']
 
             confirmation_rate = (d['confirmed'] / total_orders * 100) if total_orders > 0 else 0
             delivery_rate = (delivered / (delivered + returned) * 100) if (delivered + returned) > 0 else 0
-            net_profit = revenue - sourcing_cost - ad_spend - confirmation_spend - packaging_spend - return_spend - other_spend - delivery_loss
+            net_profit = revenue - sourcing_cost - ad_spend - delivery_loss
 
             result.append({
                 'product_id': pid,
@@ -702,10 +654,6 @@ class ProductsSummaryView(APIView):
                 'delivery_rate': round(delivery_rate, 1),
                 'revenue': round(revenue, 2),
                 'ad_spend': round(ad_spend, 2),
-                'confirmation_spend': round(confirmation_spend, 2),
-                'packaging_spend': round(packaging_spend, 2),
-                'return_spend': round(return_spend, 2),
-                'other_spend': round(other_spend, 2),
                 'sourcing_cost': round(sourcing_cost, 2),
                 'delivery_loss': round(delivery_loss, 2),
                 'net_profit': round(net_profit, 2),
