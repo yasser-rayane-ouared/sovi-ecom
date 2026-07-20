@@ -25,10 +25,9 @@ def get_store_or_404(subdomain):
     raw_subdomain = clean_subdomain.split('.')[0] if '.' in clean_subdomain else clean_subdomain
 
     cache_key = f"storefront_store_{clean_subdomain}"
-    cached = cache.get(cache_key)
-    if cached is not None:
-        if cached is False:
-            return None
+    raw_cache_key = f"storefront_store_{raw_subdomain}"
+    cached = cache.get(cache_key) or cache.get(raw_cache_key)
+    if cached is not None and cached is not False:
         return cached
 
     try:

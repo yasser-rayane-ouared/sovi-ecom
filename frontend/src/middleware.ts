@@ -22,6 +22,14 @@ export default function middleware(req: NextRequest) {
   // Extract subdomain
   let subdomain = hostname.replace(`.${rootDomain}`, '').replace(`:${url.port}`, '');
 
+  // Fallback extraction for production domains (e.g. mc.sovi-dz.com or mc.railway.app)
+  if (subdomain === hostname && hostname.includes('.')) {
+    const parts = hostname.split('.');
+    if (parts.length >= 2 && parts[0] !== 'www' && parts[0] !== 'api') {
+      subdomain = parts[0];
+    }
+  }
+
   // Redirect authentication/platform pages accessed on subdomains back to the root domain
   const authPaths = ['login', 'register', 'forgot-password', 'reset-password', 'verify', 'create-store'];
   const firstPathPart = url.pathname.split('/').filter(Boolean)[0];
