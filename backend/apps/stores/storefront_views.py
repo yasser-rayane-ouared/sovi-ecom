@@ -17,14 +17,16 @@ def get_store_or_404(subdomain):
     from django.core.cache import cache
     from django.db.models import Q
 
-    clean_subdomain = subdomain.lower() if subdomain else ""
+    clean_subdomain = subdomain.lower().strip() if subdomain else ""
     if clean_subdomain.startswith('www.'):
         clean_subdomain = clean_subdomain[4:]
+
+    # Extract raw subdomain prefix (e.g. 'mc' from 'mc.railway.app' or 'mc.sovi-dz.com')
+    raw_subdomain = clean_subdomain.split('.')[0] if '.' in clean_subdomain else clean_subdomain
 
     cache_key = f"storefront_store_{clean_subdomain}"
     cached = cache.get(cache_key)
     if cached is not None:
-        # None is stored as sentinel to indicate "no store" — use False as sentinel
         if cached is False:
             return None
         return cached
@@ -32,6 +34,8 @@ def get_store_or_404(subdomain):
     try:
         store = Store.objects.select_related('settings', 'active_theme').get(
             Q(subdomain=subdomain) |
+            Q(subdomain=clean_subdomain) |
+            Q(subdomain=raw_subdomain) |
             Q(custom_domain=subdomain) |
             Q(custom_domain=clean_subdomain) |
             Q(custom_domain=f"www.{clean_subdomain}"),
@@ -43,12 +47,28 @@ def get_store_or_404(subdomain):
         from apps.subscriptions.models import get_active_limits
         limits = get_active_limits(store)
         if not limits['has_active_subscription']:
-            cache.set(cache_key, False, 60)  # Cache negative result for 1 minute
-            return None
+            # Auto-grant starter plan trial/subscription so active stores are never 404
+            from apps.subscriptions.models import Plan, StoreSubscription, seed_default_plans_if_empty
+            seed_default_plans_if_empty()
+            starter = Plan.objects.filter(name='starter').first() or Plan.objects.first()
+            if starter:
+                from django.utils import timezone
+                from datetime import timedelta
+                now = timezone.now()
+                StoreSubscription.objects.create(
+                    store=store,
+                    plan=starter,
+                    is_trial=True,
+                    status='active',
+                    start_date=now - timedelta(days=1),
+                    end_date=now + timedelta(days=365)
+                )
+                limits = get_active_limits(store)
             
-        # Verify custom domain limits (allowed for all stores by default)
-        pass
-
+            if not limits['has_active_subscription']:
+                cache.set(cache_key, False, 60)
+                return None
+            
         # Cache the store object for 5 minutes
         cache.set(cache_key, store, 300)
         return store

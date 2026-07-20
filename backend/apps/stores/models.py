@@ -125,6 +125,17 @@ class StoreSettings(TimeStampedModel):
     class Meta:
         db_table = 'store_settings'
 
+    def save(self, *args, **kwargs):
+        """Invalidate storefront cache on store settings update."""
+        super().save(*args, **kwargs)
+        try:
+            from django.core.cache import cache
+            cache.delete(f"storefront_store_{self.store.subdomain.lower()}")
+            if self.store.custom_domain:
+                cache.delete(f"storefront_store_{self.store.custom_domain.lower()}")
+        except Exception:
+            pass
+
     def __str__(self):
         return f'Settings for {self.store.name}'
 
