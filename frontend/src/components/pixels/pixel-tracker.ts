@@ -4,6 +4,26 @@ export function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
+function getEffectiveTestEventCode(providedCode?: string): string {
+  if (providedCode && providedCode.trim()) {
+    return providedCode.trim();
+  }
+  if (typeof window === "undefined") return "";
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCode = urlParams.get("test_event_code") || urlParams.get("test_code") || urlParams.get("test_event");
+    if (urlCode && urlCode.trim()) {
+      sessionStorage.setItem("meta_test_event_code", urlCode.trim());
+      return urlCode.trim();
+    }
+    const sessionCode = sessionStorage.getItem("meta_test_event_code");
+    if (sessionCode && sessionCode.trim()) {
+      return sessionCode.trim();
+    }
+  } catch (e) {}
+  return "";
+}
+
 const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
   if (typeof window === "undefined" || !pixelId) return;
   const w = window as any;
@@ -27,10 +47,17 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
     }
   }
 
-  w.fbq('init', pixelId);
+  const effectiveCode = getEffectiveTestEventCode(testEventCode);
+  const initOptions: Record<string, any> = {};
+  if (effectiveCode) {
+    initOptions.testEventCode = effectiveCode;
+  }
+
+  w.fbq('init', pixelId, {}, initOptions);
   w.fbq('set', 'autoConfig', true, pixelId);
-  if (testEventCode) {
-    w.fbq('set', 'testEventCode', testEventCode);
+  if (effectiveCode) {
+    w.fbq('set', 'testEventCode', effectiveCode, pixelId);
+    w.fbq('set', 'testEventCode', effectiveCode);
   }
   w.fbq('trackSingle', pixelId, 'PageView');
 };
@@ -119,7 +146,13 @@ export const trackPixelEvent = (
     if (!pixel.pixel_id) return;
     try {
       if (pixel.platform === 'meta' && w.fbq) {
+        const effectiveCode = getEffectiveTestEventCode(pixel.test_event_code);
+        if (effectiveCode) {
+          w.fbq('set', 'testEventCode', effectiveCode, pixel.pixel_id);
+          w.fbq('set', 'testEventCode', effectiveCode);
+        }
         w.fbq('trackSingle', pixel.pixel_id, eventName, eventData, { eventID: eid });
+        w.fbq('track', eventName, eventData, { eventID: eid });
       } else if (pixel.platform === 'tiktok' && w.ttq) {
         w.ttq.track(eventName, eventData);
       } else if (pixel.platform === 'snapchat' && w.snaptr) {

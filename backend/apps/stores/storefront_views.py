@@ -79,17 +79,25 @@ def send_capi_event_thread(pixel_id, access_token, event_name, event_id, user_da
         ],
         "access_token": access_token
     }
-    if test_event_code:
-        payload["test_event_code"] = test_event_code.strip()
+    if test_event_code and str(test_event_code).strip():
+        payload["test_event_code"] = str(test_event_code).strip()
     try:
-        requests.post(url, json=payload, timeout=8)
-    except Exception:
-        pass
+        res = requests.post(url, json=payload, timeout=8)
+        import logging
+        logging.getLogger(__name__).info(f"[Meta CAPI] Sent {event_name} -> {res.status_code}: {res.text}")
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"[Meta CAPI] Error sending {event_name}: {e}")
 
 def trigger_capi_events(pixels, event_name, event_id, user_data, custom_data, source_url, request_test_code=None):
     for pixel in pixels:
-        if pixel.access_token:
-            test_code = request_test_code or getattr(pixel, 'test_event_code', None)
+        if getattr(pixel, 'access_token', None):
+            test_code = request_test_code
+            if not test_code:
+                try:
+                    test_code = getattr(pixel, 'test_event_code', None)
+                except Exception:
+                    test_code = None
             threading.Thread(
                 target=send_capi_event_thread,
                 args=(
