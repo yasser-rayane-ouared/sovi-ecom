@@ -43,7 +43,7 @@ def get_store_or_404(subdomain):
             pass
 
     try:
-        store = Store.objects.select_related('settings', 'active_theme').get(
+        store = Store.objects.select_related('settings', 'active_theme').filter(
             Q(subdomain=subdomain) |
             Q(subdomain=clean_subdomain) |
             Q(subdomain=raw_subdomain) |
@@ -52,7 +52,12 @@ def get_store_or_404(subdomain):
             Q(custom_domain=f"www.{clean_subdomain}"),
             is_active=True,
             is_suspended=False
-        )
+        ).first()
+
+        if not store:
+            cache.set(cache_key, False, 60)
+            cache.set(raw_cache_key, False, 60)
+            return None
         
         # Verify active subscription
         from apps.subscriptions.models import get_active_limits
@@ -66,7 +71,7 @@ def get_store_or_404(subdomain):
         cache.set(cache_key, str(store.id), 300)
         cache.set(raw_cache_key, str(store.id), 300)
         return store
-    except Store.DoesNotExist:
+    except Exception:
         cache.set(cache_key, False, 60)
         cache.set(raw_cache_key, False, 60)
         return None
