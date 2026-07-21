@@ -38,13 +38,17 @@ export default function PixelsDashboard() {
     try {
       const [pixelsRes, productsRes] = await Promise.all([
         api.get(`/pixels/${currentStoreId}/`),
-        api.get(`/products/${currentStoreId}/`)
+        api.get(`/products/${currentStoreId}/?page_size=200`)
       ]);
       const pixelList = Array.isArray(pixelsRes.data)
         ? pixelsRes.data
         : (pixelsRes.data?.results || []);
       setPixels(pixelList);
-      setProducts(productsRes.data?.results || productsRes.data || []);
+
+      const productList = Array.isArray(productsRes.data)
+        ? productsRes.data
+        : (productsRes.data?.results || []);
+      setProducts(productList);
     } catch (err) {
       setError(t("pixelsGenericError"));
     } finally {
