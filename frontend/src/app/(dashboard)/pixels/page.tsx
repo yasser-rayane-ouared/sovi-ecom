@@ -35,25 +35,32 @@ export default function PixelsDashboard() {
   const fetchPixelsAndProducts = async () => {
     if (!currentStoreId) return;
     setLoading(true);
-    try {
-      const [pixelsRes, productsRes] = await Promise.all([
-        api.get(`/pixels/${currentStoreId}/`),
-        api.get(`/products/${currentStoreId}/?page_size=200`)
-      ]);
-      const pixelList = Array.isArray(pixelsRes.data)
-        ? pixelsRes.data
-        : (pixelsRes.data?.results || []);
-      setPixels(pixelList);
+    setError("");
 
-      const productList = Array.isArray(productsRes.data)
-        ? productsRes.data
-        : (productsRes.data?.results || []);
-      setProducts(productList);
-    } catch (err) {
-      setError(t("pixelsGenericError"));
-    } finally {
-      setLoading(false);
-    }
+    // 1. Fetch Pixels
+    api.get(`/pixels/${currentStoreId}/`)
+      .then((pixelsRes) => {
+        const pixelList = Array.isArray(pixelsRes.data)
+          ? pixelsRes.data
+          : (pixelsRes.data?.results || []);
+        setPixels(pixelList);
+      })
+      .catch((err) => {
+        console.error("Pixels fetch error:", err);
+      })
+      .finally(() => setLoading(false));
+
+    // 2. Fetch Products for select dropdown
+    api.get(`/products/${currentStoreId}/`)
+      .then((productsRes) => {
+        const productList = Array.isArray(productsRes.data)
+          ? productsRes.data
+          : (productsRes.data?.results || []);
+        setProducts(productList);
+      })
+      .catch((err) => {
+        console.error("Products fetch error:", err);
+      });
   };
 
   useEffect(() => {

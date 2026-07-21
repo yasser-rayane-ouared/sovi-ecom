@@ -39,6 +39,13 @@ class PixelConfigListCreateView(generics.ListCreateAPIView):
 class PixelConfigDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PixelConfigSerializer
 
+    def get_store(self):
+        return get_store_for_user(self.kwargs['store_id'], self.request.user, 'pixels')
+
     def get_queryset(self):
-        store = get_store_for_user(self.kwargs['store_id'], self.request.user, 'pixels')
-        return PixelConfig.objects.filter(store=store)
+        return PixelConfig.objects.filter(store=self.get_store())
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx['store'] = self.get_store()
+        return ctx
