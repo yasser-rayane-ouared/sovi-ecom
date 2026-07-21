@@ -21,14 +21,16 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
     const s = document.createElement("script");
     s.async = true;
     s.src = "https://connect.facebook.net/en_US/fbevents.js";
-    const first = document.getElementsByTagName("script")[0];
-    first.parentNode?.insertBefore(s, first);
+    const head = document.head || document.getElementsByTagName("head")[0];
+    if (head) {
+      head.appendChild(s);
+    }
   }
 
   w.fbq('init', pixelId);
   w.fbq('set', 'autoConfig', true, pixelId);
   if (testEventCode) {
-    w.fbq('set', 'testEventCode', testEventCode, pixelId);
+    w.fbq('set', 'testEventCode', testEventCode);
   }
   w.fbq('trackSingle', pixelId, 'PageView');
 };
@@ -53,8 +55,10 @@ const loadTikTokPixel = (pixelId: string) => {
   const s = document.createElement("script");
   s.async = true;
   s.src = "https://analytics.tiktok.com/i18n/pixel/events.js";
-  const first = document.getElementsByTagName("script")[0];
-  first.parentNode?.insertBefore(s, first);
+  const head = document.head || document.getElementsByTagName("head")[0];
+  if (head) {
+    head.appendChild(s);
+  }
 };
 
 const loadSnapchatPixel = (pixelId: string) => {
@@ -70,8 +74,10 @@ const loadSnapchatPixel = (pixelId: string) => {
   const s = document.createElement("script");
   s.async = true;
   s.src = "https://sc-static.net/scevent.min.js";
-  const first = document.getElementsByTagName("script")[0];
-  first.parentNode?.insertBefore(s, first);
+  const head = document.head || document.getElementsByTagName("head")[0];
+  if (head) {
+    head.appendChild(s);
+  }
   w.snaptr('init', pixelId);
   w.snaptr('track', 'PAGE_VIEW');
 };
