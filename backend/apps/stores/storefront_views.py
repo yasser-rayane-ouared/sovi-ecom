@@ -142,6 +142,7 @@ def trigger_capi_events(pixels, event_name, event_id, user_data, custom_data, so
 
 class StorefrontInfoView(APIView):
     """Public store info."""
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain):
@@ -162,6 +163,7 @@ class StorefrontInfoView(APIView):
 class StorefrontProductsView(generics.ListAPIView):
     """Public product listing."""
     serializer_class = ProductSerializer
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
     pagination_class = None
 
@@ -199,6 +201,7 @@ class StorefrontCategoriesView(generics.ListAPIView):
 
 class StorefrontCategoryDetailView(APIView):
     """Public category detail with products in it."""
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain, slug):
@@ -313,6 +316,7 @@ class StorefrontLeadCreateView(APIView):
     Creates or updates an abandoned lead (Order with is_abandoned=True)
     when the customer inputs their phone number in the checkout form.
     """
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, subdomain):
@@ -506,6 +510,7 @@ class StorefrontLeadCreateView(APIView):
 
 class StorefrontCheckoutView(APIView):
     """Public COD checkout — place an order."""
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, subdomain):
@@ -796,6 +801,7 @@ class StorefrontCheckoutView(APIView):
 
 class StorefrontWilayasView(APIView):
     """List all wilayas with store delivery prices."""
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain):
@@ -852,6 +858,7 @@ class StorefrontWilayasView(APIView):
 class StorefrontCommunesView(generics.ListAPIView):
     """List communes for a wilaya (lookup by wilaya code)."""
     serializer_class = CommuneSerializer
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
     pagination_class = None
 
