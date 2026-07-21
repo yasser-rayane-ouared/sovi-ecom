@@ -8,6 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { ShoppingCart, Phone, Truck, ShieldCheck, Star, AlertCircle, Layers, ChevronDown, Clock } from "lucide-react";
 import { formatCurrency, getStorefrontLink, getFullImageUrl } from "../../lib/utils";
+import { initializePixels } from "../../components/pixels/pixel-tracker";
 
 export default function StorefrontHome() {
   const params = useParams();
@@ -29,10 +30,13 @@ export default function StorefrontHome() {
           if (res.data?.settings?.primary_color) {
             document.documentElement.style.setProperty('--primary', res.data.settings.primary_color);
           }
-          // Initialize active pixels
-          if (res.data?.pixels) {
-            const { initializePixels } = require("../../components/pixels");
-            initializePixels(res.data.pixels);
+          // Initialize active pixels safely
+          if (res.data?.pixels && Array.isArray(res.data.pixels)) {
+            try {
+              initializePixels(res.data.pixels);
+            } catch (e) {
+              console.error("Pixel init error:", e);
+            }
           }
           
           // Fetch categories
