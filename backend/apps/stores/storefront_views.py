@@ -152,11 +152,14 @@ class StorefrontInfoView(APIView):
         from .serializers import StoreSerializer
         data = StoreSerializer(store).data
         
-        # Include active global pixels
-        from apps.pixels.models import PixelConfig
-        from apps.pixels.serializers import PixelConfigSerializer
-        pixels = PixelConfig.objects.filter(store=store, is_active=True, product__isnull=True)
-        data['pixels'] = PixelConfigSerializer(pixels, many=True).data
+        # Include active global pixels safely
+        try:
+            from apps.pixels.models import PixelConfig
+            from apps.pixels.serializers import PixelConfigSerializer
+            pixels = PixelConfig.objects.filter(store=store, is_active=True, product__isnull=True)
+            data['pixels'] = PixelConfigSerializer(pixels, many=True).data
+        except Exception:
+            data['pixels'] = []
         return Response(data)
 
 
@@ -253,58 +256,61 @@ class StorefrontProductDetailView(APIView):
             )
             data = ProductSerializer(product).data
             
-            # Include active pixels (both product-specific and global)
-            from apps.pixels.models import PixelConfig
-            from apps.pixels.serializers import PixelConfigSerializer
-            from django.db.models import Q
-            pixels = PixelConfig.objects.filter(
-                Q(product=product) | Q(product__isnull=True),
-                store=store,
-                is_active=True
-            )
-            data['pixels'] = PixelConfigSerializer(pixels, many=True).data
-
-            # Generate deduplication event ID for ViewContent
-            view_content_event_id = f"vc-{uuid.uuid4()}"
-            data['view_content_event_id'] = view_content_event_id
-
-            # Trigger Conversions API (CAPI) ViewContent event
-            capi_pixels = pixels.filter(platform='meta', access_token__isnull=False).exclude(access_token='')
-            if capi_pixels.exists():
-                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-                ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
-                user_agent = request.META.get('HTTP_USER_AGENT', '')
-                fbp = request.COOKIES.get('_fbp')
-                fbc = request.COOKIES.get('_fbc')
-
-                user_data = {
-                    "client_ip_address": ip,
-                    "client_user_agent": user_agent,
-                }
-                if fbp:
-                    user_data["fbp"] = fbp
-                if fbc:
-                    user_data["fbc"] = fbc
-
-                custom_data = {
-                    "content_name": product.title,
-                    "content_ids": [str(product.id)],
-                    "content_type": "product",
-                    "value": float(product.price or 0.0),
-                    "currency": "DZD"
-                }
-
-                scheme = 'https' if request.is_secure() else 'http'
-                source_url = f"{scheme}://{request.get_host()}"
-
-                trigger_capi_events(
-                    pixels=capi_pixels,
-                    event_name="ViewContent",
-                    event_id=view_content_event_id,
-                    user_data=user_data,
-                    custom_data=custom_data,
-                    source_url=source_url
+            # Include active pixels (both product-specific and global) safely
+            try:
+                from apps.pixels.models import PixelConfig
+                from apps.pixels.serializers import PixelConfigSerializer
+                from django.db.models import Q
+                pixels = PixelConfig.objects.filter(
+                    Q(product=product) | Q(product__isnull=True),
+                    store=store,
+                    is_active=True
                 )
+                data['pixels'] = PixelConfigSerializer(pixels, many=True).data
+
+                # Generate deduplication event ID for ViewContent
+                view_content_event_id = f"vc-{uuid.uuid4()}"
+                data['view_content_event_id'] = view_content_event_id
+
+                # Trigger Conversions API (CAPI) ViewContent event
+                capi_pixels = pixels.filter(platform='meta', access_token__isnull=False).exclude(access_token='')
+                if capi_pixels.exists():
+                    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                    ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
+                    user_agent = request.META.get('HTTP_USER_AGENT', '')
+                    fbp = request.COOKIES.get('_fbp')
+                    fbc = request.COOKIES.get('_fbc')
+
+                    user_data = {
+                        "client_ip_address": ip,
+                        "client_user_agent": user_agent,
+                    }
+                    if fbp:
+                        user_data["fbp"] = fbp
+                    if fbc:
+                        user_data["fbc"] = fbc
+
+                    custom_data = {
+                        "content_name": product.title,
+                        "content_ids": [str(product.id)],
+                        "content_type": "product",
+                        "value": float(product.price or 0.0),
+                        "currency": "DZD"
+                    }
+
+                    scheme = 'https' if request.is_secure() else 'http'
+                    source_url = f"{scheme}://{request.get_host()}"
+
+                    trigger_capi_events(
+                        pixels=capi_pixels,
+                        event_name="ViewContent",
+                        event_id=view_content_event_id,
+                        user_data=user_data,
+                        custom_data=custom_data,
+                        source_url=source_url
+                    )
+            except Exception:
+                data['pixels'] = []
 
             return Response(data)
         except Product.DoesNotExist:

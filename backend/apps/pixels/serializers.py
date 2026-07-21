@@ -4,11 +4,15 @@ from .models import PixelConfig
 
 class PixelConfigSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
+    test_event_code = serializers.SerializerMethodField()
 
     class Meta:
         model = PixelConfig
         fields = ['id', 'name', 'platform', 'pixel_id', 'access_token', 'test_event_code', 'product', 'product_title', 'is_active']
         read_only_fields = ['id']
+
+    def get_test_event_code(self, obj):
+        return getattr(obj, 'test_event_code', '') or ''
 
     def create(self, validated_data):
         validated_data['store'] = self.context['store']
