@@ -118,7 +118,7 @@ class StoreSettingsSerializer(serializers.ModelSerializer):
 
 class StoreSerializer(serializers.ModelSerializer):
     settings = StoreSettingsSerializer(read_only=True)
-    owner_name = serializers.CharField(source='owner.full_name', read_only=True)
+    owner_name = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
     user_permissions = serializers.SerializerMethodField()
 
@@ -128,6 +128,14 @@ class StoreSerializer(serializers.ModelSerializer):
                   'language', 'currency', 'is_active', 'active_theme', 'owner_name',
                   'settings', 'user_role', 'user_permissions', 'created_at', 'updated_at']
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
+
+    def get_owner_name(self, obj):
+        try:
+            if obj.owner:
+                return getattr(obj.owner, 'full_name', None) or getattr(obj.owner, 'username', '') or ''
+        except Exception:
+            pass
+        return ''
 
     def get_user_role(self, obj):
         request = self.context.get('request')

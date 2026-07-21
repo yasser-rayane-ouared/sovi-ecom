@@ -142,21 +142,24 @@ class StorefrontInfoView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain):
-        store = get_store_or_404(subdomain)
-        if not store:
-            return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
-        from .serializers import StoreSerializer
-        data = StoreSerializer(store).data
-        
-        # Include active global pixels safely
         try:
-            from apps.pixels.models import PixelConfig
-            from apps.pixels.serializers import PixelConfigSerializer
-            pixels = PixelConfig.objects.filter(store=store, is_active=True, product__isnull=True)
-            data['pixels'] = PixelConfigSerializer(pixels, many=True).data
-        except Exception:
-            data['pixels'] = []
-        return Response(data)
+            store = get_store_or_404(subdomain)
+            if not store:
+                return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
+            from .serializers import StoreSerializer
+            data = StoreSerializer(store, context={'request': request}).data
+            
+            # Include active global pixels safely
+            try:
+                from apps.pixels.models import PixelConfig
+                from apps.pixels.serializers import PixelConfigSerializer
+                pixels = PixelConfig.objects.filter(store=store, is_active=True, product__isnull=True)
+                data['pixels'] = PixelConfigSerializer(pixels, many=True).data
+            except Exception:
+                data['pixels'] = []
+            return Response(data)
+        except Exception as e:
+            return Response({'error': 'Error loading store info.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class StorefrontProductsView(generics.ListAPIView):
