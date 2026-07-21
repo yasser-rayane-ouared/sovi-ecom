@@ -160,7 +160,7 @@ class ProductABVariantSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'title', 'slug', 'description', 'price', 'compare_price',
-            'cost_price', 'ad_cost_per_order', 'sku', 'category', 'category_name', 'status', 'is_featured', 'track_inventory',
+            'sku', 'category', 'category_name', 'status', 'is_featured', 'track_inventory',
             'stock_quantity', 'low_stock_threshold', 'stock', 'seo_title', 'seo_description',
             'enable_quantity_offers', 'enable_bundle_offers',
             'images', 'videos', 'variants', 'quantity_offers', 'bundle_offers',
@@ -197,7 +197,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'title', 'slug', 'description', 'price', 'compare_price',
-            'cost_price', 'ad_cost_per_order', 'sku', 'category', 'category_name', 'status', 'is_featured', 'track_inventory',
+            'sku', 'category', 'category_name', 'status', 'is_featured', 'track_inventory',
             'stock_quantity', 'low_stock_threshold', 'stock', 'seo_title', 'seo_description',
             'enable_quantity_offers', 'enable_bundle_offers',
             'images', 'videos', 'variants', 'quantity_offers', 'bundle_offers',
