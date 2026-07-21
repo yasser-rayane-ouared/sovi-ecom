@@ -14,36 +14,19 @@ from apps.pages.serializers import LandingPagePublicSerializer
 
 
 def get_store_or_404(subdomain):
-    from django.core.cache import cache
     from django.db.models import Q
 
-    clean_subdomain = subdomain.lower().strip() if subdomain else ""
+    if not subdomain:
+        return None
+
+    clean_subdomain = str(subdomain).lower().strip()
     if clean_subdomain.startswith('www.'):
         clean_subdomain = clean_subdomain[4:]
 
-    # Extract raw subdomain prefix (e.g. 'mc' from 'mc.railway.app' or 'mc.sovi-dz.com')
     raw_subdomain = clean_subdomain.split('.')[0] if '.' in clean_subdomain else clean_subdomain
 
-    cache_key = f"storefront_store_{clean_subdomain}"
-    raw_cache_key = f"storefront_store_{raw_subdomain}"
-
-    cached_val = cache.get(cache_key)
-    if cached_val is None:
-        cached_val = cache.get(raw_cache_key)
-
-    if cached_val is False:
-        # Don't permanently block: re-verify if DB has it
-        pass
-    elif isinstance(cached_val, (str, type(Store.id))):
-        try:
-            return Store.objects.select_related('settings', 'active_theme').get(
-                id=str(cached_val), is_active=True, is_suspended=False
-            )
-        except Store.DoesNotExist:
-            pass
-
     try:
-        store = Store.objects.select_related('settings', 'active_theme').filter(
+        store = Store.objects.filter(
             Q(subdomain=subdomain) |
             Q(subdomain=clean_subdomain) |
             Q(subdomain=raw_subdomain) |
@@ -54,26 +37,8 @@ def get_store_or_404(subdomain):
             is_suspended=False
         ).first()
 
-        if not store:
-            cache.set(cache_key, False, 60)
-            cache.set(raw_cache_key, False, 60)
-            return None
-        
-        # Verify active subscription
-        from apps.subscriptions.models import get_active_limits
-        limits = get_active_limits(store)
-        if not limits['has_active_subscription']:
-            cache.set(cache_key, False, 60)
-            cache.set(raw_cache_key, False, 60)
-            return None
-            
-        # Cache the store ID string for 5 minutes (prevents unpickling 500 errors)
-        cache.set(cache_key, str(store.id), 300)
-        cache.set(raw_cache_key, str(store.id), 300)
         return store
     except Exception:
-        cache.set(cache_key, False, 60)
-        cache.set(raw_cache_key, False, 60)
         return None
 
 
