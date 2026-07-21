@@ -25,12 +25,12 @@ class TenantMiddleware:
         if host != 'localhost' and '.' in host:
             try:
                 from django.db.models import Q
-                store = Store.objects.select_related('owner', 'settings', 'active_theme').get(
+                store = Store.objects.filter(
                     Q(custom_domain=host) | Q(custom_domain=clean_host) | Q(custom_domain=f"www.{clean_host}"),
                     is_active=True,
                     is_suspended=False,
-                )
-            except Store.DoesNotExist:
+                ).first()
+            except Exception:
                 store = None
 
         # Fall back to subdomain resolution if not resolved by custom domain
@@ -43,12 +43,12 @@ class TenantMiddleware:
 
             if subdomain and subdomain != 'localhost':
                 try:
-                    store = Store.objects.select_related('owner', 'settings', 'active_theme').get(
+                    store = Store.objects.filter(
                         subdomain=subdomain,
                         is_active=True,
                         is_suspended=False,
-                    )
-                except Store.DoesNotExist:
+                    ).first()
+                except Exception:
                     store = None
 
         if store:
