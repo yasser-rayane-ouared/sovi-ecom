@@ -151,8 +151,25 @@ class StorefrontInfoView(APIView):
             store = get_store_or_404(subdomain)
             if not store:
                 return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
-            from .serializers import StoreSerializer
-            data = StoreSerializer(store, context={'request': request}).data
+            
+            try:
+                from .serializers import StoreSerializer
+                data = StoreSerializer(store, context={'request': request}).data
+            except Exception:
+                data = {
+                    'id': str(store.id),
+                    'name': store.name,
+                    'category': store.category,
+                    'slug': store.slug,
+                    'subdomain': store.subdomain,
+                    'custom_domain': store.custom_domain,
+                    'description': store.description or '',
+                    'logo': store.logo or '',
+                    'favicon': store.favicon or '',
+                    'language': store.language or 'ar',
+                    'currency': store.currency or 'DZD',
+                    'is_active': store.is_active,
+                }
             
             # Include active global pixels safely
             try:
@@ -167,43 +184,46 @@ class StorefrontInfoView(APIView):
             return Response({'error': 'Error loading store info.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class StorefrontProductsView(generics.ListAPIView):
+class StorefrontProductsView(APIView):
     """Public product listing."""
-    serializer_class = ProductSerializer
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
-    pagination_class = None
 
-    def get_queryset(self):
-        store = get_store_or_404(self.kwargs['subdomain'])
-        if not store:
-            return Product.objects.none()
-        
-        # Exclude A/B testing B variants from public listings
-        active_variant_ids = Product.objects.filter(
-            store=store, 
-            enable_ab_test=True, 
-            ab_test_product_b__isnull=False
-        ).values_list('ab_test_product_b_id', flat=True)
-
-        return Product.objects.filter(store=store, status='active').exclude(
-            id__in=active_variant_ids
-        ).select_related('store').prefetch_related(
-            'images', 'videos', 'variants__options', 'quantity_offers', 'bundle_offers__items', 'sections'
-        )
+    def get(self, request, subdomain):
+        try:
+            store = get_store_or_404(subdomain)
+            if not store:
+                return Response([], status=status.HTTP_200_OK)
+            
+            from apps.products.models import Product
+            from apps.products.serializers import ProductSerializer
+            
+            products = Product.objects.filter(store=store, status='active').prefetch_related(
+                'images', 'videos', 'variants__options', 'quantity_offers', 'bundle_offers__items', 'sections'
+            )
+            return Response(ProductSerializer(products, many=True).data)
+        except Exception:
+            return Response([], status=status.HTTP_200_OK)
 
 
-class StorefrontCategoriesView(generics.ListAPIView):
+class StorefrontCategoriesView(APIView):
     """Public categories listing."""
-    serializer_class = CategorySerializer
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
-    pagination_class = None
 
-    def get_queryset(self):
-        store = get_store_or_404(self.kwargs['subdomain'])
-        if not store:
-            return Category.objects.none()
-        return Category.objects.filter(store=store, is_active=True)
+    def get(self, request, subdomain):
+        try:
+            store = get_store_or_404(subdomain)
+            if not store:
+                return Response([], status=status.HTTP_200_OK)
+            
+            from apps.products.models import Category
+            from apps.products.serializers import CategorySerializer
+            
+            categories = Category.objects.filter(store=store, is_active=True)
+            return Response(CategorySerializer(categories, many=True).data)
+        except Exception:
+            return Response([], status=status.HTTP_200_OK)
 
 
 class StorefrontCategoryDetailView(APIView):
