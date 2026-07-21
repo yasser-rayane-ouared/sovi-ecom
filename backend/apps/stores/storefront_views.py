@@ -949,12 +949,16 @@ class StorefrontCommunesView(generics.ListAPIView):
 
 class StorefrontLandingPageView(APIView):
     """Public landing page."""
+    """Public custom landing page by slug."""
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain, slug):
         store = get_store_or_404(subdomain)
         if not store:
             return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
+        from apps.pages.models import LandingPage
+        from apps.pages.serializers import LandingPagePublicSerializer
         try:
             page = LandingPage.objects.prefetch_related('sections').get(
                 store=store, slug=slug, is_active=True
@@ -966,6 +970,7 @@ class StorefrontLandingPageView(APIView):
 
 class StorefrontProductReviewsView(APIView):
     """Public product reviews — GET approved reviews, POST submit a new review."""
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain, slug):
@@ -1011,6 +1016,7 @@ class StorefrontProductReviewsView(APIView):
 
 class StorefrontStopdesksView(APIView):
     """List stopdesk centers/agencies for a wilaya from the store's active courier API."""
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, subdomain, wilaya_id):
