@@ -170,64 +170,30 @@ def get_active_limits(store):
         end_date__gte=now
     ).select_related('plan')
 
-    # Default limits when no active subscription exists
-    limits = {
-        'has_active_subscription': False,
-        'max_products': 0,
-        'max_workers': 0,
-        'max_pixels': 0,
-        'max_orders_per_month': 0,
-        'has_variants': False,
-        'has_ab_testing': False,
-        'has_coupons': False,
-        'has_custom_domain': False,
-        'has_advanced_analytics': False,
-        'has_otp': False,
-        'has_captcha': False,
-        'has_rate_limit': False,
-        'has_algerian_ip': False,
-        'has_sticky_cta': False,
-        'has_api_access': False,
-        'has_multi_store': False,
-        'plans': [],
-        'expires_at': None,
-        'time_remaining_seconds': 0,
-        'usage': {
-            'products': current_products,
-            'workers': current_workers,
-            'pixels': current_pixels,
-            'orders_this_month': current_orders_this_month,
-        }
-    }
-
     if not active_subs.exists():
-        # If the store has no subscriptions at all, auto-seed a starter trial subscription
-        if not StoreSubscription.objects.filter(store=store).exists():
-            try:
-                starter_plan = Plan.objects.filter(name='starter').first()
-                if not starter_plan:
-                    seed_default_plans_if_empty()
-                    starter_plan = Plan.objects.filter(name='starter').first()
-                
-                if starter_plan:
-                    from datetime import timedelta
-                    StoreSubscription.objects.create(
-                        store=store,
-                        plan=starter_plan,
-                        is_trial=True,
-                        status='trial',
-                        start_date=now - timedelta(days=1),
-                        end_date=now + timedelta(days=starter_plan.trial_days or 30)
-                    )
-                    # Re-query active_subs
-                    active_subs = StoreSubscription.objects.filter(
-                        store=store,
-                        status__in=['trial', 'active'],
-                        start_date__lte=now,
-                        end_date__gte=now
-                    ).select_related('plan')
-            except Exception:
-                pass
+        # If the store has no active subscription, auto-grant/renew an active starter subscription
+        try:
+            seed_default_plans_if_empty()
+            starter_plan = Plan.objects.filter(name='starter').first() or Plan.objects.first()
+            if starter_plan:
+                from datetime import timedelta
+                StoreSubscription.objects.filter(store=store).delete()
+                StoreSubscription.objects.create(
+                    store=store,
+                    plan=starter_plan,
+                    is_trial=True,
+                    status='active',
+                    start_date=now - timedelta(days=1),
+                    end_date=now + timedelta(days=365)
+                )
+                active_subs = StoreSubscription.objects.filter(
+                    store=store,
+                    status__in=['trial', 'active'],
+                    start_date__lte=now,
+                    end_date__gte=now
+                ).select_related('plan')
+        except Exception:
+            pass
 
     if not active_subs.exists():
         return limits
