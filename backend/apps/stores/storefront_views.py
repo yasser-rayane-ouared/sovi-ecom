@@ -26,9 +26,21 @@ def get_store_or_404(subdomain):
 
     cache_key = f"storefront_store_{clean_subdomain}"
     raw_cache_key = f"storefront_store_{raw_subdomain}"
-    cached = cache.get(cache_key) or cache.get(raw_cache_key)
-    if cached is not None and cached is not False:
-        return cached
+
+    cached_val = cache.get(cache_key)
+    if cached_val is None:
+        cached_val = cache.get(raw_cache_key)
+
+    if cached_val is False:
+        # Don't permanently block: re-verify if DB has it
+        pass
+    elif isinstance(cached_val, (str, type(Store.id))):
+        try:
+            return Store.objects.select_related('settings', 'active_theme').get(
+                id=str(cached_val), is_active=True, is_suspended=False
+            )
+        except Store.DoesNotExist:
+            pass
 
     try:
         store = Store.objects.select_related('settings', 'active_theme').get(
@@ -46,33 +58,17 @@ def get_store_or_404(subdomain):
         from apps.subscriptions.models import get_active_limits
         limits = get_active_limits(store)
         if not limits['has_active_subscription']:
-            # Auto-grant starter plan trial/subscription so active stores are never 404
-            from apps.subscriptions.models import Plan, StoreSubscription, seed_default_plans_if_empty
-            seed_default_plans_if_empty()
-            starter = Plan.objects.filter(name='starter').first() or Plan.objects.first()
-            if starter:
-                from django.utils import timezone
-                from datetime import timedelta
-                now = timezone.now()
-                StoreSubscription.objects.create(
-                    store=store,
-                    plan=starter,
-                    is_trial=True,
-                    status='active',
-                    start_date=now - timedelta(days=1),
-                    end_date=now + timedelta(days=365)
-                )
-                limits = get_active_limits(store)
+            cache.set(cache_key, False, 60)
+            cache.set(raw_cache_key, False, 60)
+            return None
             
-            if not limits['has_active_subscription']:
-                cache.set(cache_key, False, 60)
-                return None
-            
-        # Cache the store object for 5 minutes
-        cache.set(cache_key, store, 300)
+        # Cache the store ID string for 5 minutes (prevents unpickling 500 errors)
+        cache.set(cache_key, str(store.id), 300)
+        cache.set(raw_cache_key, str(store.id), 300)
         return store
     except Store.DoesNotExist:
         cache.set(cache_key, False, 60)
+        cache.set(raw_cache_key, False, 60)
         return None
 
 
