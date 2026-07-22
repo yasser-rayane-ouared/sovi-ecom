@@ -106,8 +106,12 @@ export function PixelForm({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold">{t("pixelsFormPixelIdLabel")}</label>
+                <label className="text-sm font-semibold flex items-center gap-1">
+                  <span>{t("pixelsFormPixelIdLabel")}</span>
+                  <span className="text-red-500">*</span>
+                </label>
                 <Input
+                  required
                   placeholder={t("pixelsFormPixelIdPlaceholder")}
                   value={pixelIdValue}
                   onChange={(e) => setPixelIdValue(e.target.value)}

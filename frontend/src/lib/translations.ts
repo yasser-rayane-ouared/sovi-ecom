@@ -222,7 +222,7 @@ export const translations = {
     pixelsDeleteError: "فشل حذف البكسل. يرجى المحاولة لاحقاً.",
     pixelsAddSuccess: "تم إضافة بكسل التتبع بنجاح!",
     pixelsUpdateSuccess: "تم تحديث بكسل التتبع بنجاح!",
-    pixelsRequiredError: "معرف البكسل مطلوب.",
+    pixelsRequiredError: "يرجى إدخال معرف البكسل (Pixel ID) أولاً قبل الحفظ.",
     pixelsGenericError: "فشل حفظ البكسل. يرجى التحقق من صحة المدخلات.",
     pixelsLoading: "جاري التحميل...",
     pixelsFormEditTitle: "تعديل بكسل التتبع",
