@@ -2,6 +2,19 @@
 from rest_framework import serializers
 from .models import PixelConfig
 
+def ensure_pixel_config_table_schema():
+    try:
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS name varchar(100) DEFAULT '';
+                ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS access_token text DEFAULT '';
+                ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS test_event_code varchar(100) DEFAULT '';
+                ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS product_id uuid NULL;
+            """)
+    except Exception:
+        pass
+
 class PixelConfigSerializer(serializers.ModelSerializer):
     product_title = serializers.CharField(source='product.title', read_only=True)
     test_event_code = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -12,6 +25,7 @@ class PixelConfigSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def to_internal_value(self, data):
+        ensure_pixel_config_table_schema()
         if isinstance(data, dict):
             data = data.copy()
             if data.get('product') == '' or data.get('product') == 'null':
@@ -21,5 +35,10 @@ class PixelConfigSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def create(self, validated_data):
+        ensure_pixel_config_table_schema()
         validated_data['store'] = self.context['store']
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        ensure_pixel_config_table_schema()
+        return super().update(instance, validated_data)

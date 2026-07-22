@@ -2,8 +2,7 @@
 from rest_framework import generics
 from apps.stores.models import Store
 from apps.stores.utils import get_store_for_user
-from .models import PixelConfig
-from .serializers import PixelConfigSerializer
+from .serializers import PixelConfigSerializer, ensure_pixel_config_table_schema
 
 class PixelConfigListCreateView(generics.ListCreateAPIView):
     serializer_class = PixelConfigSerializer
@@ -13,6 +12,7 @@ class PixelConfigListCreateView(generics.ListCreateAPIView):
         return get_store_for_user(self.kwargs['store_id'], self.request.user, 'pixels')
 
     def get_queryset(self):
+        ensure_pixel_config_table_schema()
         return PixelConfig.objects.filter(store=self.get_store())
 
     def get_serializer_context(self):
