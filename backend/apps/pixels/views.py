@@ -26,13 +26,16 @@ class PixelConfigListCreateView(generics.ListCreateAPIView):
         from rest_framework.exceptions import PermissionDenied
         
         limits = get_active_limits(store)
-        max_pixels = limits.get('max_pixels', 0)
+        max_pixels = limits.get('max_pixels', -1)
+        if max_pixels == 0:
+            max_pixels = -1
         
-        current_count = PixelConfig.objects.filter(store=store).count()
-        if max_pixels != -1 and current_count >= max_pixels:
-            raise PermissionDenied(
-                detail=f'لقد وصلت إلى الحد الأقصى للبكسلات المسموح بها في خطتك الحالية ({max_pixels} بكسل). يرجى ترقية اشتراكك لإضافة المزيد من البكسلات.'
-            )
+        if max_pixels != -1:
+            current_count = PixelConfig.objects.filter(store=store).count()
+            if current_count >= max_pixels:
+                raise PermissionDenied(
+                    detail=f'لقد وصلت إلى الحد الأقصى للبكسلات المسموح بها في خطتك الحالية ({max_pixels} بكسل). يرجى ترقية اشتراكك لإضافة المزيد من البكسلات.'
+                )
         serializer.save()
 
 
