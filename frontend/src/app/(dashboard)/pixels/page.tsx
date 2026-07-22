@@ -145,8 +145,8 @@ export default function PixelsDashboard() {
   };
 
   return (
-    <div 
-      className={`space-y-8 text-foreground ${isRtl ? "font-cairo text-right" : "font-sans text-left"}`} 
+    <div
+      className={`space-y-8 text-foreground ${isRtl ? "font-cairo text-right" : "font-sans text-left"}`}
       dir={isRtl ? "rtl" : "ltr"}
     >
       <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
