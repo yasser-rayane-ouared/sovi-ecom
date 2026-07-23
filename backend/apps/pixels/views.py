@@ -2,6 +2,7 @@
 from rest_framework import generics
 from apps.stores.models import Store
 from apps.stores.utils import get_store_for_user
+from .models import PixelConfig
 from .serializers import PixelConfigSerializer, ensure_pixel_config_table_schema
 
 class PixelConfigListCreateView(generics.ListCreateAPIView):
