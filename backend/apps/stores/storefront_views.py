@@ -146,11 +146,14 @@ class StorefrontInfoView(APIView):
             
             # Include active global pixels safely
             try:
+                from apps.pixels.serializers import ensure_pixel_config_table_schema, PixelConfigSerializer
+                ensure_pixel_config_table_schema()
                 from apps.pixels.models import PixelConfig
-                from apps.pixels.serializers import PixelConfigSerializer
                 pixels = PixelConfig.objects.filter(store=store, is_active=True, product__isnull=True)
                 data['pixels'] = PixelConfigSerializer(pixels, many=True).data
-            except Exception:
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"[StorefrontInfoView] Pixel fetch error: {e}")
                 data['pixels'] = []
             return Response(data)
         except Exception as e:
@@ -255,8 +258,9 @@ class StorefrontProductDetailView(APIView):
             
             # Include active pixels (both product-specific and global) safely
             try:
+                from apps.pixels.serializers import ensure_pixel_config_table_schema, PixelConfigSerializer
+                ensure_pixel_config_table_schema()
                 from apps.pixels.models import PixelConfig
-                from apps.pixels.serializers import PixelConfigSerializer
                 from django.db.models import Q
                 pixels = PixelConfig.objects.filter(
                     Q(product=product) | Q(product__isnull=True),

@@ -11,6 +11,7 @@ def ensure_pixel_config_table_schema():
                 ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS access_token text DEFAULT '';
                 ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS test_event_code varchar(100) DEFAULT '';
                 ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS product_id uuid NULL;
+                ALTER TABLE pixel_configs ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
             """)
     except Exception:
         pass
