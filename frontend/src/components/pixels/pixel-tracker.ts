@@ -4,38 +4,7 @@ export function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function getEffectiveTestEventCode(providedCode?: string): string {
-  if (typeof window === "undefined") return (providedCode || "").trim();
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlCode =
-      urlParams.get("test_event_code") ||
-      urlParams.get("test_code") ||
-      urlParams.get("test_event") ||
-      urlParams.get("testEventCode");
-
-    if (urlCode && urlCode.trim()) {
-      const cleanUrlCode = urlCode.trim();
-      sessionStorage.setItem("meta_test_event_code", cleanUrlCode);
-      return cleanUrlCode;
-    }
-
-    if (providedCode && providedCode.trim()) {
-      const cleanProvided = providedCode.trim();
-      sessionStorage.setItem("meta_test_event_code", cleanProvided);
-      return cleanProvided;
-    }
-
-    const sessionCode = sessionStorage.getItem("meta_test_event_code");
-    if (sessionCode && sessionCode.trim()) {
-      return sessionCode.trim();
-    }
-  } catch (e) {}
-
-  return (providedCode || "").trim();
-}
-
-const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
+const loadMetaPixel = (pixelId: string) => {
   if (typeof window === "undefined" || !pixelId) return;
   const cleanPixelId = pixelId.trim();
   if (!cleanPixelId) return;
@@ -55,28 +24,16 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
     const s = document.createElement("script");
     s.async = true;
     s.src = "https://connect.facebook.net/en_US/fbevents.js";
-    const head = document.head || document.getElementsByTagName("head")[0];
-    if (head) {
-      head.appendChild(s);
+    const first = document.getElementsByTagName("script")[0];
+    if (first && first.parentNode) {
+      first.parentNode.insertBefore(s, first);
+    } else {
+      document.head.appendChild(s);
     }
   }
 
-  const effectiveCode = getEffectiveTestEventCode(testEventCode);
-  const initOptions: Record<string, any> = {};
-  if (effectiveCode) {
-    initOptions.testEventCode = effectiveCode;
-    w.fbq('set', 'testEventCode', effectiveCode);
-  }
-
-  w.fbq('init', cleanPixelId, {}, initOptions);
-  w.fbq('set', 'autoConfig', true, cleanPixelId);
-
-  if (effectiveCode) {
-    w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
-    w.fbq('set', 'testEventCode', effectiveCode);
-  }
-
-  w.fbq('trackSingle', cleanPixelId, 'PageView');
+  w.fbq('init', cleanPixelId);
+  w.fbq('track', 'PageView');
 };
 
 const loadTikTokPixel = (pixelId: string) => {
@@ -102,9 +59,11 @@ const loadTikTokPixel = (pixelId: string) => {
   const s = document.createElement("script");
   s.async = true;
   s.src = "https://analytics.tiktok.com/i18n/pixel/events.js";
-  const head = document.head || document.getElementsByTagName("head")[0];
-  if (head) {
-    head.appendChild(s);
+  const first = document.getElementsByTagName("script")[0];
+  if (first && first.parentNode) {
+    first.parentNode.insertBefore(s, first);
+  } else {
+    document.head.appendChild(s);
   }
 };
 
@@ -124,9 +83,11 @@ const loadSnapchatPixel = (pixelId: string) => {
   const s = document.createElement("script");
   s.async = true;
   s.src = "https://sc-static.net/scevent.min.js";
-  const head = document.head || document.getElementsByTagName("head")[0];
-  if (head) {
-    head.appendChild(s);
+  const first = document.getElementsByTagName("script")[0];
+  if (first && first.parentNode) {
+    first.parentNode.insertBefore(s, first);
+  } else {
+    document.head.appendChild(s);
   }
   w.snaptr('init', cleanPixelId);
   w.snaptr('track', 'PAGE_VIEW');
@@ -137,7 +98,7 @@ export const initializePixels = (pixels: Pixel[]) => {
   pixels.forEach((pixel) => {
     if (!pixel.pixel_id) return;
     try {
-      if (pixel.platform === 'meta') loadMetaPixel(pixel.pixel_id, pixel.test_event_code);
+      if (pixel.platform === 'meta') loadMetaPixel(pixel.pixel_id);
       else if (pixel.platform === 'tiktok') loadTikTokPixel(pixel.pixel_id);
       else if (pixel.platform === 'snapchat') loadSnapchatPixel(pixel.pixel_id);
     } catch (e) {
@@ -175,12 +136,7 @@ export const trackPixelEvent = (
 
     try {
       if (pixel.platform === 'meta') {
-        loadMetaPixel(cleanPixelId, pixel.test_event_code);
-        const effectiveCode = getEffectiveTestEventCode(pixel.test_event_code);
-        if (effectiveCode && w.fbq) {
-          w.fbq('set', 'testEventCode', effectiveCode);
-          w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
-        }
+        loadMetaPixel(cleanPixelId);
         if (w.fbq) {
           w.fbq('trackSingle', cleanPixelId, eventName, eventData, { eventID: eid });
         }
@@ -206,7 +162,7 @@ export const trackPixelEvent = (
 export const validateMetaPixel = async (pixelId: string): Promise<{ valid: boolean; name?: string; error?: string }> => {
   try {
     const res = await fetch(
-      `https://graph.facebook.com/v19.0/${pixelId}?fields=name,id`,
+      `https://graph.facebook.com/v19.0/${pixelId.trim()}?fields=name,id`,
       { method: 'GET' }
     );
     const data = await res.json();
