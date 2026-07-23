@@ -10,6 +10,11 @@ const loadMetaPixel = (pixelId: string) => {
   if (!cleanPixelId) return;
 
   const w = window as any;
+  w._meta_initialized_pixels = w._meta_initialized_pixels || new Set<string>();
+  if (w._meta_initialized_pixels.has(cleanPixelId)) {
+    return;
+  }
+  w._meta_initialized_pixels.add(cleanPixelId);
 
   if (!w.fbq) {
     w.fbq = function () {
