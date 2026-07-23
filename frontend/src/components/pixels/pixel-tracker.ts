@@ -5,27 +5,41 @@ export function generateEventId(): string {
 }
 
 function getEffectiveTestEventCode(providedCode?: string): string {
-  if (providedCode && providedCode.trim()) {
-    return providedCode.trim();
-  }
-  if (typeof window === "undefined") return "";
+  if (typeof window === "undefined") return (providedCode || "").trim();
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlCode = urlParams.get("test_event_code") || urlParams.get("test_code") || urlParams.get("test_event");
+    const urlCode =
+      urlParams.get("test_event_code") ||
+      urlParams.get("test_code") ||
+      urlParams.get("test_event") ||
+      urlParams.get("testEventCode");
+
     if (urlCode && urlCode.trim()) {
-      sessionStorage.setItem("meta_test_event_code", urlCode.trim());
-      return urlCode.trim();
+      const cleanUrlCode = urlCode.trim();
+      sessionStorage.setItem("meta_test_event_code", cleanUrlCode);
+      return cleanUrlCode;
     }
+
+    if (providedCode && providedCode.trim()) {
+      const cleanProvided = providedCode.trim();
+      sessionStorage.setItem("meta_test_event_code", cleanProvided);
+      return cleanProvided;
+    }
+
     const sessionCode = sessionStorage.getItem("meta_test_event_code");
     if (sessionCode && sessionCode.trim()) {
       return sessionCode.trim();
     }
   } catch (e) {}
-  return "";
+
+  return (providedCode || "").trim();
 }
 
 const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
   if (typeof window === "undefined" || !pixelId) return;
+  const cleanPixelId = pixelId.trim();
+  if (!cleanPixelId) return;
+
   const w = window as any;
 
   if (!w.fbq) {
@@ -51,21 +65,27 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
   const initOptions: Record<string, any> = {};
   if (effectiveCode) {
     initOptions.testEventCode = effectiveCode;
-  }
-
-  w.fbq('init', pixelId, {}, initOptions);
-  w.fbq('set', 'autoConfig', true, pixelId);
-  if (effectiveCode) {
-    w.fbq('set', 'testEventCode', effectiveCode, pixelId);
     w.fbq('set', 'testEventCode', effectiveCode);
   }
-  w.fbq('trackSingle', pixelId, 'PageView');
+
+  w.fbq('init', cleanPixelId, {}, initOptions);
+  w.fbq('set', 'autoConfig', true, cleanPixelId);
+
+  if (effectiveCode) {
+    w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
+    w.fbq('set', 'testEventCode', effectiveCode);
+  }
+
+  w.fbq('trackSingle', cleanPixelId, 'PageView');
 };
 
 const loadTikTokPixel = (pixelId: string) => {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !pixelId) return;
+  const cleanPixelId = pixelId.trim();
+  if (!cleanPixelId) return;
+
   const w = window as any;
-  if (w.ttq) { w.ttq.load(pixelId); w.ttq.page(); return; }
+  if (w.ttq) { w.ttq.load(cleanPixelId); w.ttq.page(); return; }
   w.ttq = w.ttq || [];
   w.ttq.methods = ["track", "once", "screen", "em", "ee", "user", "load"];
   w.ttq.factory = function (t: string) {
@@ -77,7 +97,7 @@ const loadTikTokPixel = (pixelId: string) => {
   for (let i = 0; i < w.ttq.methods.length; i++) {
     w.ttq[w.ttq.methods[i]] = w.ttq.factory(w.ttq.methods[i]);
   }
-  w.ttq.load(pixelId);
+  w.ttq.load(cleanPixelId);
   w.ttq.page();
   const s = document.createElement("script");
   s.async = true;
@@ -89,9 +109,12 @@ const loadTikTokPixel = (pixelId: string) => {
 };
 
 const loadSnapchatPixel = (pixelId: string) => {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !pixelId) return;
+  const cleanPixelId = pixelId.trim();
+  if (!cleanPixelId) return;
+
   const w = window as any;
-  if (w.snaptr) { w.snaptr('init', pixelId); w.snaptr('track', 'PAGE_VIEW'); return; }
+  if (w.snaptr) { w.snaptr('init', cleanPixelId); w.snaptr('track', 'PAGE_VIEW'); return; }
   w.snaptr = function () {
     w.snaptr.handleRequest
       ? w.snaptr.handleRequest.apply(w.snaptr, arguments)
@@ -105,12 +128,12 @@ const loadSnapchatPixel = (pixelId: string) => {
   if (head) {
     head.appendChild(s);
   }
-  w.snaptr('init', pixelId);
+  w.snaptr('init', cleanPixelId);
   w.snaptr('track', 'PAGE_VIEW');
 };
 
 export const initializePixels = (pixels: Pixel[]) => {
-  if (typeof window === "undefined" || !pixels) return;
+  if (typeof window === "undefined" || !pixels || !Array.isArray(pixels)) return;
   pixels.forEach((pixel) => {
     if (!pixel.pixel_id) return;
     try {
@@ -124,10 +147,13 @@ export const initializePixels = (pixels: Pixel[]) => {
 };
 
 export const deduplicatePixels = (pixels: Pixel[]): Pixel[] => {
+  if (!Array.isArray(pixels)) return [];
   const seen = new Set<string>();
   return pixels.filter((p) => {
-    if (!p.pixel_id || seen.has(p.pixel_id)) return false;
-    seen.add(p.pixel_id);
+    if (!p || !p.pixel_id) return false;
+    const cleanId = p.pixel_id.trim();
+    if (!cleanId || seen.has(cleanId)) return false;
+    seen.add(cleanId);
     return true;
   });
 };
@@ -138,21 +164,26 @@ export const trackPixelEvent = (
   eventData: PixelEventData = {},
   eventId?: string
 ) => {
-  if (typeof window === "undefined" || !pixels) return;
+  if (typeof window === "undefined" || !pixels || !Array.isArray(pixels)) return;
   const w = window as any;
   const eid = eventId || generateEventId();
 
   pixels.forEach((pixel) => {
     if (!pixel.pixel_id) return;
+    const cleanPixelId = pixel.pixel_id.trim();
+    if (!cleanPixelId) return;
+
     try {
-      if (pixel.platform === 'meta' && w.fbq) {
+      if (pixel.platform === 'meta') {
+        loadMetaPixel(cleanPixelId, pixel.test_event_code);
         const effectiveCode = getEffectiveTestEventCode(pixel.test_event_code);
-        if (effectiveCode) {
-          w.fbq('set', 'testEventCode', effectiveCode, pixel.pixel_id);
+        if (effectiveCode && w.fbq) {
           w.fbq('set', 'testEventCode', effectiveCode);
+          w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
         }
-        w.fbq('trackSingle', pixel.pixel_id, eventName, eventData, { eventID: eid });
-        w.fbq('track', eventName, eventData, { eventID: eid });
+        if (w.fbq) {
+          w.fbq('trackSingle', cleanPixelId, eventName, eventData, { eventID: eid });
+        }
       } else if (pixel.platform === 'tiktok' && w.ttq) {
         w.ttq.track(eventName, eventData);
       } else if (pixel.platform === 'snapchat' && w.snaptr) {

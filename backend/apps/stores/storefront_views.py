@@ -693,16 +693,21 @@ class StorefrontCheckoutView(APIView):
 
                 frontend_event_id = request.data.get('event_id', str(order.id))
 
+                fbp = request.COOKIES.get('_fbp')
+                fbc = request.COOKIES.get('_fbc')
+
                 user_data = {
-                    "ph": [h_ph] if h_ph else [],
-                    "fn": [h_fn] if h_fn else [],
-                    "ln": [h_ln] if h_ln else [],
-                    "ct": [h_ct] if h_ct else [],
-                    "st": [h_st] if h_st else [],
-                    "country": [h_country],
                     "client_ip_address": ip,
                     "client_user_agent": user_agent
                 }
+                if h_ph: user_data["ph"] = [h_ph]
+                if h_fn: user_data["fn"] = [h_fn]
+                if h_ln: user_data["ln"] = [h_ln]
+                if h_ct: user_data["ct"] = [h_ct]
+                if h_st: user_data["st"] = [h_st]
+                if h_country: user_data["country"] = [h_country]
+                if fbp: user_data["fbp"] = fbp
+                if fbc: user_data["fbc"] = fbc
 
                 contents = []
                 for item in order.items.all():
