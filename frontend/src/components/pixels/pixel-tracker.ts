@@ -47,7 +47,7 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
   if (w._meta_initialized_pixels.has(cleanPixelId)) {
     // Pixel already initialized — just re-apply testEventCode if present
     if (effectiveCode && w.fbq) {
-      w.fbq('set', 'testEventCode', effectiveCode);
+      w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
     }
     return;
   }
@@ -78,9 +78,9 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
   // Step 1: INIT the pixel FIRST (no testEventCode in metadata — Meta rejects it)
   w.fbq('init', cleanPixelId);
 
-  // Step 2: Set testEventCode AFTER init so Meta knows which pixel to associate it with
+  // Step 2: Set testEventCode AFTER init with target cleanPixelId as 4th argument
   if (effectiveCode) {
-    w.fbq('set', 'testEventCode', effectiveCode);
+    w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
   }
 
   // Step 3: Fire PageView
