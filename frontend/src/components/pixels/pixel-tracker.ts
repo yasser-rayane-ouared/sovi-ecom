@@ -41,8 +41,14 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
   if (!cleanPixelId) return;
 
   const w = window as any;
+  const effectiveCode = getEffectiveTestEventCode(testEventCode);
+
   w._meta_initialized_pixels = w._meta_initialized_pixels || new Set<string>();
   if (w._meta_initialized_pixels.has(cleanPixelId)) {
+    if (effectiveCode && w.fbq) {
+      w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
+      w.fbq('set', 'testEventCode', effectiveCode);
+    }
     return;
   }
   w._meta_initialized_pixels.add(cleanPixelId);
@@ -68,17 +74,23 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
     }
   }
 
-  const effectiveCode = getEffectiveTestEventCode(testEventCode);
   const initOptions: Record<string, any> = {};
   if (effectiveCode) {
     initOptions.testEventCode = effectiveCode;
   }
 
-  w.fbq('init', cleanPixelId, {}, initOptions);
   if (effectiveCode) {
     w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
     w.fbq('set', 'testEventCode', effectiveCode);
   }
+
+  w.fbq('init', cleanPixelId, {}, initOptions);
+
+  if (effectiveCode) {
+    w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
+    w.fbq('set', 'testEventCode', effectiveCode);
+  }
+
   w.fbq('track', 'PageView');
 };
 
