@@ -144,12 +144,16 @@ class StorefrontInfoView(APIView):
                     'is_active': store.is_active,
                 }
             
-            # Include active global pixels safely
+            # Include active store pixels safely
             try:
                 from apps.pixels.serializers import ensure_pixel_config_table_schema, PixelConfigSerializer
                 ensure_pixel_config_table_schema()
                 from apps.pixels.models import PixelConfig
-                pixels = PixelConfig.objects.filter(store=store, is_active=True, product__isnull=True)
+                from django.db.models import Q
+                pixels = PixelConfig.objects.filter(
+                    Q(is_active=True) | Q(is_active__isnull=True),
+                    store=store
+                )
                 data['pixels'] = PixelConfigSerializer(pixels, many=True).data
             except Exception as e:
                 import logging
@@ -256,16 +260,15 @@ class StorefrontProductDetailView(APIView):
             )
             data = ProductSerializer(product).data
             
-            # Include active pixels (both product-specific and global) safely
+            # Include active store pixels safely
             try:
                 from apps.pixels.serializers import ensure_pixel_config_table_schema, PixelConfigSerializer
                 ensure_pixel_config_table_schema()
                 from apps.pixels.models import PixelConfig
                 from django.db.models import Q
                 pixels = PixelConfig.objects.filter(
-                    Q(product=product) | Q(product__isnull=True),
-                    store=store,
-                    is_active=True
+                    Q(is_active=True) | Q(is_active__isnull=True),
+                    store=store
                 )
                 data['pixels'] = PixelConfigSerializer(pixels, many=True).data
 
