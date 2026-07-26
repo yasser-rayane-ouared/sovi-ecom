@@ -121,13 +121,28 @@ class StoreSerializer(serializers.ModelSerializer):
     owner_name = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
     user_permissions = serializers.SerializerMethodField()
+    pixels = serializers.SerializerMethodField()
 
     class Meta:
         model = Store
         fields = ['id', 'name', 'category', 'slug', 'subdomain', 'custom_domain', 'description', 'logo', 'favicon',
                   'language', 'currency', 'is_active', 'active_theme', 'owner_name',
-                  'settings', 'user_role', 'user_permissions', 'created_at', 'updated_at']
+                  'settings', 'pixels', 'user_role', 'user_permissions', 'created_at', 'updated_at']
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
+
+    def get_pixels(self, obj):
+        try:
+            from apps.pixels.serializers import ensure_pixel_config_table_schema, PixelConfigSerializer
+            ensure_pixel_config_table_schema()
+            from apps.pixels.models import PixelConfig
+            from django.db.models import Q
+            pixel_qs = PixelConfig.objects.filter(
+                Q(is_active=True) | Q(is_active__isnull=True),
+                store=obj
+            )
+            return PixelConfigSerializer(pixel_qs, many=True).data
+        except Exception:
+            return []
 
     def get_owner_name(self, obj):
         try:
