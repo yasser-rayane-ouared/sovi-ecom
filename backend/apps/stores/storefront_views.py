@@ -154,10 +154,15 @@ class StorefrontInfoView(APIView):
                     Q(is_active=True) | Q(is_active__isnull=True),
                     store=store
                 )
-                data['pixels'] = PixelConfigSerializer(pixels, many=True).data
-            except Exception as e:
                 import logging
-                logging.getLogger(__name__).error(f"[StorefrontInfoView] Pixel fetch error: {e}")
+                logger = logging.getLogger(__name__)
+                logger.info(f"[StorefrontInfoView] Store={store.subdomain}, pixel count={pixels.count()}")
+                serialized = PixelConfigSerializer(pixels, many=True).data
+                logger.info(f"[StorefrontInfoView] Serialized pixels: {serialized}")
+                data['pixels'] = serialized
+            except Exception as e:
+                import logging, traceback
+                logging.getLogger(__name__).error(f"[StorefrontInfoView] Pixel fetch error: {e}\n{traceback.format_exc()}")
                 data['pixels'] = []
             return Response(data)
         except Exception as e:
