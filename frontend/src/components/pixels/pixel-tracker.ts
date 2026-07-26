@@ -45,14 +45,15 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
 
   w._meta_initialized_pixels = w._meta_initialized_pixels || new Set<string>();
   if (w._meta_initialized_pixels.has(cleanPixelId)) {
+    // Pixel already initialized — just re-apply testEventCode if present
     if (effectiveCode && w.fbq) {
-      w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
       w.fbq('set', 'testEventCode', effectiveCode);
     }
     return;
   }
   w._meta_initialized_pixels.add(cleanPixelId);
 
+  // Bootstrap fbq stub if this is the first Meta pixel on the page
   if (!w.fbq) {
     w.fbq = function () {
       w.fbq.callMethod ? w.fbq.callMethod.apply(w.fbq, arguments) : w.fbq.queue.push(arguments);
@@ -74,23 +75,15 @@ const loadMetaPixel = (pixelId: string, testEventCode?: string) => {
     }
   }
 
-  const initOptions: Record<string, any> = {};
-  if (effectiveCode) {
-    initOptions.testEventCode = effectiveCode;
-  }
+  // Step 1: INIT the pixel FIRST (no testEventCode in metadata — Meta rejects it)
+  w.fbq('init', cleanPixelId);
 
+  // Step 2: Set testEventCode AFTER init so Meta knows which pixel to associate it with
   if (effectiveCode) {
-    w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
     w.fbq('set', 'testEventCode', effectiveCode);
   }
 
-  w.fbq('init', cleanPixelId, {}, initOptions);
-
-  if (effectiveCode) {
-    w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
-    w.fbq('set', 'testEventCode', effectiveCode);
-  }
-
+  // Step 3: Fire PageView
   w.fbq('track', 'PageView');
 };
 
@@ -194,12 +187,8 @@ export const trackPixelEvent = (
 
     try {
       if (pixel.platform === 'meta') {
+        // Ensure pixel is loaded (no-op if already initialized)
         loadMetaPixel(cleanPixelId, pixel.test_event_code);
-        const effectiveCode = getEffectiveTestEventCode(pixel.test_event_code);
-        if (effectiveCode && w.fbq) {
-          w.fbq('set', 'testEventCode', effectiveCode, cleanPixelId);
-          w.fbq('set', 'testEventCode', effectiveCode);
-        }
         if (w.fbq) {
           w.fbq('trackSingle', cleanPixelId, eventName, eventData, { eventID: eid });
         }
