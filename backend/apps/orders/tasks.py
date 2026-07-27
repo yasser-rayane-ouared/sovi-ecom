@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.delivery.models import Shipment, StoreDeliveryConfig
 from apps.orders.models import Order, OrderStatusHistory
 from apps.integrations.tasks import sync_order_to_google_sheet
-from apps.orders.views import ECOTRACK_COMPANIES
+from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
 
 logger = logging.getLogger(__name__)
 
@@ -41,107 +41,127 @@ def sync_all_stores_tracking():
         configs = StoreDeliveryConfig.objects.filter(store_id=store_id, is_active=True).select_related('company')
         config_map = {cfg.company.name: cfg for cfg in configs}
 
-        # Process Yalidine shipments
-        yalidine_config = config_map.get('yalidine')
-        yalidine_shipments = [s for s in shipments if s.company.name == 'yalidine']
+        # Process Yalidine family shipments (Yalidine, Gupex, Yalitec)
+        yalidine_shipments = [s for s in shipments if s.company.name in YALIDINE_COMPANIES]
+        yalidine_shipments_by_company = {}
+        for s in yalidine_shipments:
+            c_name = s.company.name
+            if c_name not in yalidine_shipments_by_company:
+                yalidine_shipments_by_company[c_name] = []
+            yalidine_shipments_by_company[c_name].append(s)
 
-        if yalidine_shipments and yalidine_config and yalidine_config.api_id and yalidine_config.api_key:
-            tracking_numbers = [s.tracking_number for s in yalidine_shipments if s.tracking_number]
-            if tracking_numbers:
-                # Fetch in batches of 20 tracking numbers
-                batch_size = 20
-                for i in range(0, len(tracking_numbers), batch_size):
-                    batch_numbers = tracking_numbers[i:i+batch_size]
-                    tracking_str = ','.join(batch_numbers)
-                    
-                    try:
-                        headers = {
-                            'X-API-ID': yalidine_config.api_id,
-                            'X-API-Token': yalidine_config.api_key,
-                            'Content-Type': 'application/json',
-                        }
-                        resp = requests.get(
-                            f'https://api.yalidine.app/v1/tracking/{tracking_str}',
-                            headers=headers,
-                            timeout=15
-                        )
+        for c_name, comp_shipments in yalidine_shipments_by_company.items():
+            y_config = config_map.get(c_name)
+            if not y_config:
+                y_config = StoreDeliveryConfig.objects.filter(store_id=store_id, company__name=c_name, is_active=True).first()
+            if comp_shipments and y_config and y_config.api_id and (y_config.api_key or y_config.api_secret):
+                tracking_numbers = [s.tracking_number for s in comp_shipments if s.tracking_number]
+                if tracking_numbers:
+                    # Fetch in batches of 20 tracking numbers
+                    batch_size = 20
+                    for i in range(0, len(tracking_numbers), batch_size):
+                        batch_numbers = tracking_numbers[i:i+batch_size]
+                        tracking_str = ','.join(batch_numbers)
                         
-                        if resp.status_code == 200:
-                            tracking_data = resp.json()
-                            data = tracking_data.get('data', {})
+                        try:
+                            api_token = y_config.api_key or y_config.api_secret
+                            headers = {
+                                'X-API-ID': y_config.api_id,
+                                'X-API-TOKEN': api_token,
+                                'X-API-Token': api_token,
+                                'Content-Type': 'application/json',
+                            }
+                            company_obj = comp_shipments[0].company
+                            api_base = (company_obj.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
                             
-                            info_map = {}
-                            if isinstance(data, dict):
-                                info_map = data
-                            elif isinstance(data, list):
-                                for item in data:
-                                    if isinstance(item, dict) and item.get('tracking'):
-                                        info_map[str(item['tracking'])] = item
+                            resp = requests.get(
+                                f'{api_base}/parcels/?tracking={tracking_str}',
+                                headers=headers,
+                                timeout=15
+                            )
+                            if resp.status_code != 200:
+                                resp = requests.get(
+                                    f'{api_base}/tracking/{tracking_str}',
+                                    headers=headers,
+                                    timeout=15
+                                )
+                            
+                            if resp.status_code == 200:
+                                tracking_data = resp.json()
+                                data = tracking_data.get('data', tracking_data)
+                                
+                                info_map = {}
+                                if isinstance(data, dict):
+                                    info_map = data
+                                elif isinstance(data, list):
+                                    for item in data:
+                                        if isinstance(item, dict) and item.get('tracking'):
+                                            info_map[str(item['tracking'])] = item
 
-                            for shipment in yalidine_shipments:
-                                if shipment.tracking_number not in batch_numbers:
-                                    continue
-                                
-                                t_num = shipment.tracking_number
-                                shipment_info = info_map.get(t_num)
-                                if not shipment_info:
-                                    continue
-                                
-                                total_synced += 1
-                                ext_status = shipment_info.get('status', '').strip()
-                                
-                                new_shipment_status = shipment.status
-                                new_order_status = shipment.order.status
-                                
-                                ext_status_lower = ext_status.lower()
-                                if 'livr' in ext_status_lower:
-                                    new_shipment_status = 'delivered'
-                                    new_order_status = 'delivered'
-                                elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus']):
-                                    new_shipment_status = 'returned'
-                                    new_order_status = 'returned'
-                                elif 'livraison' in ext_status_lower:
-                                    new_shipment_status = 'out_for_delivery'
-                                    new_order_status = 'shipped'
-                                elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'en voyage']):
-                                    new_shipment_status = 'in_transit'
-                                    new_order_status = 'shipped'
-                                elif 'annul' in ext_status_lower:
-                                    new_shipment_status = 'failed'
-                                    new_order_status = 'cancelled'
+                                for shipment in comp_shipments:
+                                    if shipment.tracking_number not in batch_numbers:
+                                        continue
+                                    
+                                    t_num = shipment.tracking_number
+                                    shipment_info = info_map.get(t_num)
+                                    if not shipment_info:
+                                        continue
+                                    
+                                    total_synced += 1
+                                    ext_status = (shipment_info.get('last_status') or shipment_info.get('status') or '').strip()
+                                    
+                                    new_shipment_status = shipment.status
+                                    new_order_status = shipment.order.status
+                                    
+                                    ext_status_lower = ext_status.lower()
+                                    if 'livr' in ext_status_lower:
+                                        new_shipment_status = 'delivered'
+                                        new_order_status = 'delivered'
+                                    elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus']):
+                                        new_shipment_status = 'returned'
+                                        new_order_status = 'returned'
+                                    elif 'livraison' in ext_status_lower:
+                                        new_shipment_status = 'out_for_delivery'
+                                        new_order_status = 'shipped'
+                                    elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'en voyage']):
+                                        new_shipment_status = 'in_transit'
+                                        new_order_status = 'shipped'
+                                    elif 'annul' in ext_status_lower:
+                                        new_shipment_status = 'failed'
+                                        new_order_status = 'cancelled'
 
-                                changed = False
-                                if shipment.status != new_shipment_status:
-                                    shipment.status = new_shipment_status
-                                    changed = True
-                                
-                                if ext_status and shipment.status_message != ext_status:
-                                    shipment.status_message = ext_status
-                                    changed = True
+                                    changed = False
+                                    if shipment.status != new_shipment_status:
+                                        shipment.status = new_shipment_status
+                                        changed = True
                                     
-                                if changed:
-                                    shipment.save()
-                                    
-                                if shipment.order.status != new_order_status:
-                                    old_ord_status = shipment.order.status
-                                    shipment.order.status = new_order_status
-                                    shipment.order.save()
-                                    
-                                    OrderStatusHistory.objects.create(
-                                        order=shipment.order,
-                                        from_status=old_ord_status,
-                                        to_status=new_order_status,
-                                        note=f'تحديث تلقائي من Yalidine (الخلفية): {ext_status}'
-                                    )
-                                    
-                                    total_updated += 1
-                                    try:
-                                        sync_order_to_google_sheet.delay(shipment.order.id)
-                                    except Exception as sheets_err:
-                                        logger.error(f"Failed to queue Google Sheets sync for order {shipment.order.id}: {sheets_err}")
+                                    if ext_status and shipment.status_message != ext_status:
+                                        shipment.status_message = ext_status
+                                        changed = True
                                         
-                    except Exception as e:
-                        logger.error(f"Error fetching Yalidine batch tracking details: {e}")
+                                    if changed:
+                                        shipment.save()
+                                        
+                                    if shipment.order.status != new_order_status:
+                                        old_ord_status = shipment.order.status
+                                        shipment.order.status = new_order_status
+                                        shipment.order.save()
+                                        
+                                        OrderStatusHistory.objects.create(
+                                            order=shipment.order,
+                                            from_status=old_ord_status,
+                                            to_status=new_order_status,
+                                            note=f'تحديث تلقائي من {company_obj.display_name} (الخلفية): {ext_status}'
+                                        )
+                                        
+                                        total_updated += 1
+                                        try:
+                                            sync_order_to_google_sheet.delay(shipment.order.id)
+                                        except Exception as sheets_err:
+                                            logger.error(f"Failed to queue Google Sheets sync for order {shipment.order.id}: {sheets_err}")
+                                        
+                        except Exception as e:
+                            logger.error(f"Error fetching {company_obj.display_name} batch tracking details: {e}")
 
         # Process Ecotrack shipments
         ecotrack_shipments = [s for s in shipments if s.company.name in ECOTRACK_COMPANIES or 'ecotrack' in (s.company.api_base_url or '').lower()]

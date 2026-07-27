@@ -16,9 +16,13 @@ from .serializers import OrderSerializer, OrderStatusUpdateSerializer
 logger = logging.getLogger(__name__)
 
 
+YALIDINE_COMPANIES = {
+    'yalidine', 'gupex', 'guepex', 'yalitec', 'yaliteck'
+}
+
 ECOTRACK_COMPANIES = {
     # Legacy/aliases
-    'noest', 'ecolog', 'guepex', 'gupex', 'dhd', 'yaliteck',
+    'noest', 'ecolog', 'dhd',
     # 41 EcoTrack Partners
     '48hr_livraison', 'allo_livraison', 'anderson_delivery', 'areex', 'assil_delivery', 'baconsult',
     'colireli', 'colivraison_express', 'coyote_express', 'delivromail', 'dhd_express', 'distazero',
@@ -295,53 +299,71 @@ class OrderExportToDeliveryView(APIView):
 
         logger.info("[EXPORT] Exporting order %s to company=%s (config=%s) is_stopdesk=%s stopdesk_id=%s", order.order_number, company.name, config.id, is_stopdesk, stopdesk_id)
 
-        # --- Yalidine integration ---
-        if company.name == 'yalidine' and config.api_id and config.api_key:
+        # --- Yalidine family integration (Yalidine, Gupex, Yalitec) ---
+        if company.name in YALIDINE_COMPANIES and config.api_id and (config.api_key or config.api_secret):
             try:
                 name_parts = (order.full_name or "").strip().split(' ', 1)
                 firstname = name_parts[0] or "Client"
                 familyname = name_parts[1] if len(name_parts) > 1 else "Client"
 
+                api_base = (company.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
+
+                from_wilaya = 'Alger'
+                try:
+                    if hasattr(store, 'wilaya') and store.wilaya:
+                        from_wilaya = store.wilaya.name_fr or store.wilaya.name_ar or 'Alger'
+                except Exception:
+                    pass
+
+                to_wilaya_name = order.wilaya.name_fr if (order.wilaya and order.wilaya.name_fr) else (order.wilaya.name_ar if order.wilaya else '')
+                to_commune_name = order.commune.name_fr if (order.commune and order.commune.name_fr) else (order.commune.name_ar if order.commune else '')
+
+                product_list = ', '.join(
+                    [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                ) or order.order_number
+
+                phone = (order.phone or "").strip()
+
                 payload = [{
                     'order_id': order.order_number,
-                    'from_wilaya_name': 'Alger',
-                    'to_wilaya_name': order.wilaya.name_fr if order.wilaya else '',
-                    'from_commune_name': 'Alger Centre',
-                    'to_commune_name': order.commune.name_fr if order.commune else '',
+                    'from_wilaya_name': from_wilaya,
                     'firstname': firstname,
                     'familyname': familyname,
-                    'contact_phone': order.phone,
-                    'address': order.address or 'Address not specified',
-                    'product_list': ', '.join(
-                        [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
-                    ) or order.order_number,
+                    'contact_phone': phone,
+                    'address': order.address or 'Adresse non spécifiée',
+                    'to_commune_name': to_commune_name,
+                    'to_wilaya_name': to_wilaya_name,
+                    'product_list': product_list,
                     'price': float(order.total),
                     'do_insurance': False,
-                    'declared_value': 0,
-                    'height': 5,
+                    'declared_value': float(order.total),
+                    'height': 10,
                     'width': 20,
                     'length': 30,
                     'weight': 1,
                     'freeshipping': False,
-                    'is_stopdesk': is_stopdesk,
+                    'is_stopdesk': bool(is_stopdesk),
                     'stopdesk_id': int(stopdesk_id) if (is_stopdesk and stopdesk_id and str(stopdesk_id).isdigit()) else None,
                     'has_exchange': False,
+                    'product_to_collect': None,
                 }]
 
-                logger.info("[EXPORT] Yalidine payload: %s", payload)
+                logger.info("[EXPORT] %s payload: %s", company.display_name, payload)
 
+                api_token = config.api_key or config.api_secret
                 headers = {
                     'X-API-ID': config.api_id,
-                    'X-API-Token': config.api_key,
+                    'X-API-TOKEN': api_token,
+                    'X-API-Token': api_token,
                     'Content-Type': 'application/json',
                 }
                 resp = requests.post(
-                    'https://api.yalidine.app/v1/parcels/',
+                    f'{api_base}/parcels/',
                     json=payload,
                     headers=headers,
                     timeout=15,
                 )
-                logger.info("[EXPORT] Yalidine response status=%s body=%s", resp.status_code, resp.text[:1000])
+                logger.info("[EXPORT] %s response status=%s body=%s", company.display_name, resp.status_code, resp.text[:1000])
 
                 if resp.status_code in (200, 201):
                     data = resp.json()
@@ -357,33 +379,33 @@ class OrderExportToDeliveryView(APIView):
                     if parcel_info:
                         if parcel_info.get('success') is False:
                             err_msg = parcel_info.get('message') or 'Validation error'
-                            logger.error("[EXPORT] Yalidine returned success=false: %s", err_msg)
+                            logger.error("[EXPORT] %s returned success=false: %s", company.display_name, err_msg)
                             return Response(
-                                {'detail': f'Yalidine error: {err_msg}'},
+                                {'detail': f'{company.display_name} error: {err_msg}'},
                                 status=status.HTTP_400_BAD_REQUEST
                             )
                         external_id = str(parcel_info.get('parcel_id', parcel_info.get('id', '')))
                         tracking_number = str(parcel_info.get('tracking', external_id))
                         label_url = parcel_info.get('label', '')
-                        logger.info("[EXPORT] Yalidine success: tracking=%s external_id=%s", tracking_number, external_id)
+                        logger.info("[EXPORT] %s success: tracking=%s external_id=%s", company.display_name, tracking_number, external_id)
                     else:
-                        logger.warning("[EXPORT] Yalidine 200 but could not parse parcel_info from: %s", data)
+                        logger.warning("[EXPORT] %s 200 but could not parse parcel_info from: %s", company.display_name, data)
                         external_id = ''
                         tracking_number = ''
                         label_url = ''
                     
-                    status_message = 'Order sent to Yalidine successfully'
+                    status_message = f'Order sent to {company.display_name} successfully'
                 else:
                     err_text = resp.text[:500]
-                    logger.error("[EXPORT] Yalidine HTTP %s: %s", resp.status_code, err_text)
+                    logger.error("[EXPORT] %s HTTP %s: %s", company.display_name, resp.status_code, err_text)
                     return Response(
-                        {'detail': f'Yalidine error (HTTP {resp.status_code}): {err_text}'},
+                        {'detail': f'{company.display_name} error (HTTP {resp.status_code}): {err_text}'},
                         status=status.HTTP_502_BAD_GATEWAY,
                     )
             except requests.RequestException as e:
-                logger.exception("[EXPORT] Yalidine connection error")
+                logger.exception("[EXPORT] %s connection error", company.display_name)
                 return Response(
-                    {'detail': f'Failed to connect to Yalidine: {str(e)}'},
+                    {'detail': f'Failed to connect to {company.display_name}: {str(e)}'},
                     status=status.HTTP_502_BAD_GATEWAY,
                 )
 
@@ -640,97 +662,115 @@ class OrderSyncTrackingView(APIView):
         updated_count = 0
         updates_summary = []
 
-        # Process Yalidine shipments
-        yalidine_config = config_map.get('yalidine')
-        yalidine_shipments = [s for s in active_shipments if s.company.name == 'yalidine']
+        # Process Yalidine family shipments (Yalidine, Gupex, Yalitec)
+        yalidine_shipments = [s for s in active_shipments if s.company.name in YALIDINE_COMPANIES]
+        
+        # Group shipments by company to use each company's API config & base URL
+        yalidine_shipments_by_company = {}
+        for s in yalidine_shipments:
+            c_name = s.company.name
+            if c_name not in yalidine_shipments_by_company:
+                yalidine_shipments_by_company[c_name] = []
+            yalidine_shipments_by_company[c_name].append(s)
 
-        if yalidine_shipments and yalidine_config and yalidine_config.api_id and yalidine_config.api_key:
-            tracking_numbers = [s.tracking_number for s in yalidine_shipments if s.tracking_number]
-            if tracking_numbers:
-                try:
-                    headers = {
-                        'X-API-ID': yalidine_config.api_id,
-                        'X-API-Token': yalidine_config.api_key,
-                        'Content-Type': 'application/json',
-                    }
-                    tracking_str = ','.join(tracking_numbers)
-                    resp = requests.get(
-                        f'https://api.yalidine.app/v1/tracking/{tracking_str}',
-                        headers=headers,
-                        timeout=15
-                    )
-                    
-                    if resp.status_code == 200:
-                        tracking_data = resp.json()
-                        # Format is typically {"success": true, "data": {"tracking_number": {"status": "...", ...}}}
-                        # or {"success": true, "data": [{"tracking": "...", "status": "..."}]}
-                        data = tracking_data.get('data', {})
+        for c_name, comp_shipments in yalidine_shipments_by_company.items():
+            y_config = config_map.get(c_name)
+            if not y_config:
+                y_config = StoreDeliveryConfig.objects.filter(store=store, company__name=c_name, is_active=True).first()
+            if comp_shipments and y_config and y_config.api_id and (y_config.api_key or y_config.api_secret):
+                tracking_numbers = [s.tracking_number for s in comp_shipments if s.tracking_number]
+                if tracking_numbers:
+                    try:
+                        api_token = y_config.api_key or y_config.api_secret
+                        headers = {
+                            'X-API-ID': y_config.api_id,
+                            'X-API-TOKEN': api_token,
+                            'X-API-Token': api_token,
+                            'Content-Type': 'application/json',
+                        }
+                        company_obj = comp_shipments[0].company
+                        api_base = (company_obj.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
+                        tracking_str = ','.join(tracking_numbers)
                         
-                        # Normalize data into dict mapping tracking -> info
-                        info_map = {}
-                        if isinstance(data, dict):
-                            info_map = data
-                        elif isinstance(data, list):
-                            for item in data:
-                                if isinstance(item, dict) and item.get('tracking'):
-                                    info_map[str(item['tracking'])] = item
+                        resp = requests.get(
+                            f'{api_base}/parcels/?tracking={tracking_str}',
+                            headers=headers,
+                            timeout=15
+                        )
+                        if resp.status_code != 200:
+                            resp = requests.get(
+                                f'{api_base}/tracking/{tracking_str}',
+                                headers=headers,
+                                timeout=15
+                            )
 
-                        for shipment in yalidine_shipments:
-                            t_num = shipment.tracking_number
-                            shipment_info = info_map.get(t_num)
-                            if not shipment_info:
-                                continue
+                        if resp.status_code == 200:
+                            tracking_data = resp.json()
+                            data = tracking_data.get('data', tracking_data)
                             
-                            synced_count += 1
-                            ext_status = shipment_info.get('status', '').strip()
-                            
-                            new_shipment_status = shipment.status
-                            new_order_status = shipment.order.status
-                            
-                            ext_status_lower = ext_status.lower()
-                            if 'livr' in ext_status_lower:  # Livré
-                                new_shipment_status = 'delivered'
-                                new_order_status = 'delivered'
-                            elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus']):  # Retourné / Echoué / Refusé
-                                new_shipment_status = 'returned'
-                                new_order_status = 'returned'
-                            elif 'livraison' in ext_status_lower:  # Sorti en livraison
-                                new_shipment_status = 'out_for_delivery'
-                                new_order_status = 'shipped'
-                            elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'en voyage']):  # Expédié/Transit
-                                new_shipment_status = 'in_transit'
-                                new_order_status = 'shipped'
-                            elif 'annul' in ext_status_lower:  # Annulé
-                                new_shipment_status = 'failed'
-                                new_order_status = 'cancelled'
+                            info_map = {}
+                            if isinstance(data, dict):
+                                info_map = data
+                            elif isinstance(data, list):
+                                for item in data:
+                                    if isinstance(item, dict) and item.get('tracking'):
+                                        info_map[str(item['tracking'])] = item
 
-                            # Update if changed
-                            changed = False
-                            if shipment.status != new_shipment_status:
-                                shipment.status = new_shipment_status
-                                changed = True
-                            
-                            if ext_status and shipment.status_message != ext_status:
-                                shipment.status_message = ext_status
-                                changed = True
+                            for shipment in comp_shipments:
+                                t_num = shipment.tracking_number
+                                shipment_info = info_map.get(t_num)
+                                if not shipment_info:
+                                    continue
                                 
-                            if changed:
-                                shipment.save()
+                                synced_count += 1
+                                ext_status = (shipment_info.get('last_status') or shipment_info.get('status') or '').strip()
                                 
-                            if shipment.order.status != new_order_status:
-                                old_ord_status = shipment.order.status
-                                shipment.order.status = new_order_status
-                                shipment.order.save()
-                                OrderStatusHistory.objects.create(
-                                    order=shipment.order,
-                                    from_status=old_ord_status,
-                                    to_status=new_order_status,
-                                    note=f'تحديث تلقائي من Yalidine: {ext_status}'
-                                )
-                                updated_count += 1
-                                updates_summary.append(f'{shipment.order.order_number}: {old_ord_status} -> {new_order_status} ({ext_status})')
-                except Exception as e:
-                    updates_summary.append(f'خطأ أثناء الاتصال بـ Yalidine: {str(e)}')
+                                new_shipment_status = shipment.status
+                                new_order_status = shipment.order.status
+                                
+                                ext_status_lower = ext_status.lower()
+                                if 'livr' in ext_status_lower:  # Livré
+                                    new_shipment_status = 'delivered'
+                                    new_order_status = 'delivered'
+                                elif any(x in ext_status_lower for x in ['retour', 'echou', 'refus']):  # Retourné / Echoué / Refusé
+                                    new_shipment_status = 'returned'
+                                    new_order_status = 'returned'
+                                elif 'livraison' in ext_status_lower:  # Sorti en livraison
+                                    new_shipment_status = 'out_for_delivery'
+                                    new_order_status = 'shipped'
+                                elif any(x in ext_status_lower for x in ['expédi', 'reçu', 'centre', 'transfert', 'en voyage']):  # Expédié/Transit
+                                    new_shipment_status = 'in_transit'
+                                    new_order_status = 'shipped'
+                                elif 'annul' in ext_status_lower:  # Annulé
+                                    new_shipment_status = 'failed'
+                                    new_order_status = 'cancelled'
+
+                                changed = False
+                                if shipment.status != new_shipment_status:
+                                    shipment.status = new_shipment_status
+                                    changed = True
+                                
+                                if ext_status and shipment.status_message != ext_status:
+                                    shipment.status_message = ext_status
+                                    changed = True
+                                    
+                                if changed:
+                                    shipment.save()
+                                    
+                                if shipment.order.status != new_order_status:
+                                    old_ord_status = shipment.order.status
+                                    shipment.order.status = new_order_status
+                                    shipment.order.save()
+                                    OrderStatusHistory.objects.create(
+                                        order=shipment.order,
+                                        from_status=old_ord_status,
+                                        to_status=new_order_status,
+                                        note=f'تحديث تلقائي من {company_obj.display_name}: {ext_status}'
+                                    )
+                                    updated_count += 1
+                                    updates_summary.append(f'{shipment.order.order_number}: {old_ord_status} -> {new_order_status} ({ext_status})')
+                    except Exception as e:
+                        updates_summary.append(f'خطأ أثناء الاتصال بـ {company_obj.display_name}: {str(e)}')
         # Process EcoTrack-based shipments (41 Ecotrack partners + legacy aliases)
         ecotrack_shipments = [s for s in active_shipments if s.company.name in ECOTRACK_COMPANIES or 'ecotrack' in (s.company.api_base_url or '').lower()]
 
@@ -1015,10 +1055,10 @@ class OrderDownloadPDFView(APIView):
         if not tracking_number:
             return HttpResponse('Tracking number is missing.', status=400)
 
-        # Yalidine Handling
-        if company.name == 'yalidine':
+        # Yalidine family handling (Yalidine, Gupex, Yalitec)
+        if company.name in YALIDINE_COMPANIES:
             # Check if we already have a valid cached PDF label URL
-            if shipment.label_url and 'yalidine.app/print' not in shipment.label_url:
+            if shipment.label_url and 'yalidine.app/print' not in shipment.label_url and 'bordereau' not in shipment.label_url:
                 try:
                     resp = requests.get(shipment.label_url, timeout=15)
                     if resp.status_code == 200:
@@ -1028,14 +1068,17 @@ class OrderDownloadPDFView(APIView):
 
             # Fetch details dynamically
             label_url = None
-            if config.api_id and config.api_key:
+            api_token = config.api_key or config.api_secret
+            if config.api_id and api_token:
                 try:
                     headers = {
                         'X-API-ID': config.api_id,
-                        'X-API-Token': config.api_key,
+                        'X-API-TOKEN': api_token,
+                        'X-API-Token': api_token,
                     }
+                    api_base = (company.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
                     resp = requests.get(
-                        f'https://api.yalidine.app/v1/parcels/{tracking_number}',
+                        f'{api_base}/parcels/{tracking_number}',
                         headers=headers,
                         timeout=10
                     )
@@ -1044,8 +1087,10 @@ class OrderDownloadPDFView(APIView):
                         parcel_info = data.get('data', [])
                         if parcel_info and isinstance(parcel_info, list):
                             label_url = parcel_info[0].get('label')
+                        elif isinstance(data, dict) and data.get('label'):
+                            label_url = data.get('label')
                 except Exception as e:
-                    logger.warning("[DOWNLOAD PDF] Yalidine fetch failed: %s", str(e))
+                    logger.warning("[DOWNLOAD PDF] %s fetch failed: %s", company.display_name, str(e))
 
             if label_url:
                 try:
@@ -1057,8 +1102,7 @@ class OrderDownloadPDFView(APIView):
                 except Exception:
                     pass
 
-            # Fallback direct print link redirection
-            fallback_url = f"https://yalidine.app/print/parcels?tracking={tracking_number}"
+            fallback_url = label_url or f"https://yalidine.app/print/parcels?tracking={tracking_number}"
             return HttpResponseRedirect(fallback_url)
 
         # EcoTrack Partners Handling

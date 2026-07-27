@@ -1038,23 +1038,27 @@ class StorefrontStopdesksView(APIView):
         if not store:
             return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
             
-        from apps.delivery.models import StoreDeliveryConfig, ECOTRACK_COMPANIES
+        from apps.delivery.models import StoreDeliveryConfig
+        from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
         config = StoreDeliveryConfig.objects.filter(store=store, is_active=True).first()
         if not config or not getattr(config, 'company', None):
             return Response({'stopdesks': []})
 
         company = config.company
         
-        # 1. Yalidine Stopdesks
-        if company.name == 'yalidine' and config.api_id and config.api_key:
+        # 1. Yalidine family Stopdesks (Yalidine, Gupex, Yalitec)
+        api_token = config.api_key or config.api_secret
+        if company.name in YALIDINE_COMPANIES and config.api_id and api_token:
             headers = {
                 'X-API-ID': config.api_id,
-                'X-API-Token': config.api_key,
+                'X-API-TOKEN': api_token,
+                'X-API-Token': api_token,
                 'Content-Type': 'application/json',
             }
+            api_base = (company.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
             try:
                 resp = requests.get(
-                    f'https://api.yalidine.app/v1/centers/?wilaya_id={wilaya_id}',
+                    f'{api_base}/centers/?wilaya_id={wilaya_id}',
                     headers=headers,
                     timeout=10
                 )
@@ -1072,7 +1076,7 @@ class StorefrontStopdesksView(APIView):
                             })
                     return Response({'stopdesks': stopdesks})
             except Exception as e:
-                logger.warning("[STOPDESK] Yalidine centers fetch failed: %s", str(e))
+                logger.warning("[STOPDESK] %s centers fetch failed: %s", company.display_name, str(e))
 
         # 2. EcoTrack Stopdesks
         elif company.name in ECOTRACK_COMPANIES or 'ecotrack' in (company.api_base_url or '').lower():

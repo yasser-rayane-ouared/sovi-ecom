@@ -3,6 +3,7 @@ import io
 import base64
 from django.utils.dateparse import parse_date
 from apps.orders.models import Order, OrderStatusHistory
+from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
 from .registry import register_tool, ToolError
 
 @register_tool(
@@ -342,44 +343,62 @@ def ship_order(store, arguments):
     label_url = ''
     status_message = ''
 
-    if company.name == 'yalidine' and config.api_id and config.api_key:
+    if company.name in YALIDINE_COMPANIES and config.api_id and (config.api_key or config.api_secret):
         try:
             name_parts = (order.full_name or "").strip().split(' ', 1)
             firstname = name_parts[0] or "Client"
             familyname = name_parts[1] if len(name_parts) > 1 else "Client"
 
+            api_base = (company.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
+
+            from_wilaya = 'Alger'
+            try:
+                if hasattr(store, 'wilaya') and store.wilaya:
+                    from_wilaya = store.wilaya.name_fr or store.wilaya.name_ar or 'Alger'
+            except Exception:
+                pass
+
+            to_wilaya_name = order.wilaya.name_fr if (order.wilaya and order.wilaya.name_fr) else (order.wilaya.name_ar if order.wilaya else '')
+            to_commune_name = order.commune.name_fr if (order.commune and order.commune.name_fr) else (order.commune.name_ar if order.commune else '')
+
+            product_list = ', '.join(
+                [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+            ) or order.order_number
+
+            phone = (order.phone or "").strip()
+
             payload = [{
                 'order_id': order.order_number,
-                'from_wilaya_name': 'Alger',
-                'to_wilaya_name': order.wilaya.name_fr if order.wilaya else '',
-                'from_commune_name': 'Alger Centre',
-                'to_commune_name': order.commune.name_fr if order.commune else '',
+                'from_wilaya_name': from_wilaya,
                 'firstname': firstname,
                 'familyname': familyname,
-                'contact_phone': order.phone,
-                'address': order.address or 'Address not specified',
-                'product_list': ', '.join(
-                    [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
-                ) or order.order_number,
+                'contact_phone': phone,
+                'address': order.address or 'Adresse non spécifiée',
+                'to_commune_name': to_commune_name,
+                'to_wilaya_name': to_wilaya_name,
+                'product_list': product_list,
                 'price': float(order.total),
                 'do_insurance': False,
-                'declared_value': 0,
-                'height': 5,
+                'declared_value': float(order.total),
+                'height': 10,
                 'width': 20,
                 'length': 30,
                 'weight': 1,
                 'freeshipping': False,
                 'is_stopdesk': False,
                 'has_exchange': False,
+                'product_to_collect': None,
             }]
 
+            api_token = config.api_key or config.api_secret
             headers = {
                 'X-API-ID': config.api_id,
-                'X-API-Token': config.api_key,
+                'X-API-TOKEN': api_token,
+                'X-API-Token': api_token,
                 'Content-Type': 'application/json',
             }
             resp = requests.post(
-                'https://api.yalidine.app/v1/parcels/',
+                f'{api_base}/parcels/',
                 json=payload,
                 headers=headers,
                 timeout=15,

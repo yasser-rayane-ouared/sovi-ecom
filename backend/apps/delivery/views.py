@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.stores.models import Store
 from apps.stores.utils import get_store_for_user
-from apps.orders.views import ECOTRACK_COMPANIES
+from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
 from .models import DeliveryCompany, StoreDeliveryConfig, DeliveryPricing, Shipment
 from .serializers import (
     DeliveryCompanySerializer, StoreDeliveryConfigSerializer,
@@ -253,27 +253,30 @@ class FetchCompanyFeesView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 1. Yalidine Live API call
-        if company.name == 'yalidine':
-            if not config.api_id or not config.api_key:
+        # 1. Yalidine family Live API call (Yalidine, Gupex, Yalitec)
+        if company.name in YALIDINE_COMPANIES:
+            api_token = config.api_key or config.api_secret
+            if not config.api_id or not api_token:
                 return Response(
-                    {"detail": "Yalidine API ID and API Token are required to fetch rates."},
+                    {"detail": f"{company.display_name} API ID and API Token are required to fetch rates."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             headers = {
                 'X-API-ID': config.api_id,
-                'X-API-Token': config.api_key,
+                'X-API-TOKEN': api_token,
+                'X-API-Token': api_token,
                 'Content-Type': 'application/json',
             }
+            api_base = (company.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
             try:
                 resp = requests.get(
-                    'https://api.yalidine.app/v1/shippingfees/',
+                    f'{api_base}/shippingfees/',
                     headers=headers,
                     timeout=10
                 )
                 if resp.status_code not in (200, 201):
                     return Response(
-                        {"detail": f"Failed to fetch rates from Yalidine API. Status: {resp.status_code}. Please check your API Token and API ID."},
+                        {"detail": f"Failed to fetch rates from {company.display_name} API. Status: {resp.status_code}. Please check your API Token and API ID."},
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
@@ -529,36 +532,30 @@ class TestConnectionView(APIView):
 
         company = get_object_or_404(DeliveryCompany, id=company_id)
 
-        if company.name == 'yalidine':
-            if not api_id or not api_key:
-                return Response({"success": False, "error": "API ID and API Token are required for Yalidine."}, status=400)
+        if company.name in YALIDINE_COMPANIES:
+            api_token = api_key or api_secret
+            if not api_id or not api_token:
+                return Response({"success": False, "error": f"API ID and API Token are required for {company.display_name}."}, status=400)
             headers = {
                 'X-API-ID': api_id,
-                'X-API-Token': api_key,
+                'X-API-TOKEN': api_token,
+                'X-API-Token': api_token,
                 'Content-Type': 'application/json',
             }
+            api_base = (company.api_base_url or 'https://api.yalidine.app/v1').strip().rstrip('/')
             try:
-                resp = requests.get('https://api.yalidine.app/v1/shippingfees/', headers=headers, timeout=10)
+                resp = requests.get(f'{api_base}/shippingfees/', headers=headers, timeout=10)
                 if resp.status_code in (200, 201):
-                    return Response({"success": True, "message": "Connected to Yalidine successfully!"})
+                    return Response({"success": True, "message": f"Connected to {company.display_name} successfully!"})
                 elif resp.status_code == 401:
                     return Response({"success": False, "error": "Invalid API credentials. Check your API ID and Token."})
                 else:
-                    return Response({"success": False, "error": f"Yalidine returned HTTP {resp.status_code}: {resp.text[:200]}"})
+                    return Response({"success": False, "error": f"{company.display_name} returned HTTP {resp.status_code}: {resp.text[:200]}"})
             except requests.RequestException as e:
                 return Response({"success": False, "error": f"Connection failed: {str(e)}"})
 
         # EcoTrack Partner Companies and legacy aliases
-        elif company.name in (
-            'noest', 'ecolog', 'guepex', 'gupex', 'dhd', 'yaliteck',
-            '48hr_livraison', 'allo_livraison', 'anderson_delivery', 'areex', 'assil_delivery', 'baconsult',
-            'colireli', 'colivraison_express', 'coyote_express', 'delivromail', 'dhd_express', 'distazero',
-            'expedia_chrono', 'fretdirect', 'fz_delivery', 'golivri', 'hhd_express', 'imir', 'medexpress',
-            'monohub', 'msm_go', 'navex_delivery', 'negmar_express', 'noest_express', 'om_express',
-            'ontime_ecotrack', 'packers', 'pdex', 'prest', 'rb_livraison', 'rex_livraison', 'rocket_delivery',
-            'salva_delivery', 'samex_delivery', 'speed_delivery', 'swift_express', 'tsl_express',
-            'ultra_express', 'univer_delivery', 'worldexpress', 'zvit_express'
-        ) or 'ecotrack' in (company.api_base_url or '').lower():
+        elif company.name in ECOTRACK_COMPANIES or 'ecotrack' in (company.api_base_url or '').lower():
             if not api_key:
                 return Response({"success": False, "error": f"API Token is required for {company.display_name}."}, status=400)
             if not api_id:
