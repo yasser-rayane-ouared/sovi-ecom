@@ -1330,7 +1330,7 @@ export default function StorefrontProductDetail() {
                         {product.description}
                       </p>
                     )}
-                    {product?.variants && product.variants.filter((v: any) => v.is_active).length > 0 && (
+                    {product && Array.isArray(product.variants) && product.variants.filter((v: any) => v && v.is_active).length > 0 && (
                       <div className="space-y-3 pt-2 border-t border-dashed border-slate-100 relative z-10">
                         {Object.keys(optionGroups).length > 0 ? (
                           Object.entries(optionGroups).map(([label, values]) => (
@@ -1338,36 +1338,49 @@ export default function StorefrontProductDetail() {
                               <span className="text-xs font-bold text-slate-500 block" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>{label}:</span>
                               <div className="flex flex-wrap gap-2 justify-start relative z-10">
                                 {values.map((val) => {
-                                  const isSelected = selectedOptions[label] === val;
+                                  const trimmedLabel = label.trim();
+                                  const trimmedVal = val.trim();
+                                  const isSelected = selectedOptions[trimmedLabel] === trimmedVal || 
+                                    (selectedVariant && Array.isArray(selectedVariant.options) && 
+                                     selectedVariant.options.some((opt: any) => opt && (opt.label || '').trim() === trimmedLabel && (opt.value || '').trim() === trimmedVal));
+
                                   return (
                                     <button
                                       key={val}
                                       type="button"
                                       onClick={(e) => {
+                                        e.preventDefault();
                                         e.stopPropagation();
-                                        const newOpts = { ...selectedOptions, [label]: val };
+                                        const newOpts = { ...selectedOptions, [trimmedLabel]: trimmedVal };
                                         setSelectedOptions(newOpts);
 
-                                        if (product?.variants) {
+                                        if (product && Array.isArray(product.variants)) {
                                           let matched = product.variants.find((v: any) => {
-                                            if (!v.is_active) return false;
-                                            if (!v.options || v.options.length === 0) return false;
-                                            return (v.options || []).every((opt: any) => newOpts[opt.label] === opt.value);
+                                            if (!v || !v.is_active) return false;
+                                            if (!Array.isArray(v.options) || v.options.length === 0) return false;
+                                            return v.options.every((opt: any) => opt && newOpts[(opt.label || '').trim()] === (opt.value || '').trim());
                                           });
 
                                           if (!matched) {
                                             const vals = Object.values(newOpts).filter(Boolean);
                                             matched = product.variants.find((v: any) => {
-                                              if (!v.is_active || !v.name) return false;
+                                              if (!v || !v.is_active || !v.name) return false;
                                               return vals.every((vVal) => v.name.toLowerCase().includes(vVal.toLowerCase()));
+                                            });
+                                          }
+
+                                          if (!matched) {
+                                            matched = product.variants.find((v: any) => {
+                                              if (!v || !v.is_active) return false;
+                                              return (v.options || []).some((opt: any) => opt && (opt.value || '').trim() === trimmedVal);
                                             });
                                           }
 
                                           if (matched) {
                                             setSelectedVariant(matched);
                                             const targetImgUrl = matched.image_url || matched.image?.image_url;
-                                            if (targetImgUrl && product.images) {
-                                              const idx = product.images.findIndex((img: any) => img.image_url === targetImgUrl);
+                                            if (targetImgUrl && Array.isArray(product.images)) {
+                                              const idx = product.images.findIndex((img: any) => img && img.image_url === targetImgUrl);
                                               if (idx !== -1) {
                                                 setActiveImageIndex(idx);
                                               }
@@ -1406,11 +1419,12 @@ export default function StorefrontProductDetail() {
                                     key={variant.id || variant.name}
                                     type="button"
                                     onClick={(e) => {
+                                      e.preventDefault();
                                       e.stopPropagation();
                                       setSelectedVariant(variant);
                                       const targetImgUrl = variant.image_url || variant.image?.image_url;
-                                      if (targetImgUrl && product.images) {
-                                        const idx = product.images.findIndex((img: any) => img.image_url === targetImgUrl);
+                                      if (targetImgUrl && Array.isArray(product.images)) {
+                                        const idx = product.images.findIndex((img: any) => img && img.image_url === targetImgUrl);
                                         if (idx !== -1) {
                                           setActiveImageIndex(idx);
                                         }
