@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.delivery.models import Shipment, StoreDeliveryConfig
 from apps.orders.models import Order, OrderStatusHistory
 from apps.integrations.tasks import sync_order_to_google_sheet
-from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
+from apps.orders.constants import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
 
 logger = logging.getLogger(__name__)
 

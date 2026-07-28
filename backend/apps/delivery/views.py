@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.stores.models import Store
 from apps.stores.utils import get_store_for_user
-from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
+from apps.orders.constants import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
 from .models import DeliveryCompany, StoreDeliveryConfig, DeliveryPricing, Shipment
 from .serializers import (
     DeliveryCompanySerializer, StoreDeliveryConfigSerializer,

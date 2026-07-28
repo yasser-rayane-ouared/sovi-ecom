@@ -3,7 +3,7 @@ import io
 import base64
 from django.utils.dateparse import parse_date
 from apps.orders.models import Order, OrderStatusHistory
-from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
+from apps.orders.constants import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
 from .registry import register_tool, ToolError
 
 @register_tool(

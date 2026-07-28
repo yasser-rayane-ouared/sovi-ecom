@@ -1039,7 +1039,7 @@ class StorefrontStopdesksView(APIView):
             return Response({'error': 'Store not found.'}, status=status.HTTP_404_NOT_FOUND)
             
         from apps.delivery.models import StoreDeliveryConfig
-        from apps.orders.views import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
+        from apps.orders.constants import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
         config = StoreDeliveryConfig.objects.filter(store=store, is_active=True).first()
         if not config or not getattr(config, 'company', None):
             return Response({'stopdesks': []})
