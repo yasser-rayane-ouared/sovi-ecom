@@ -1348,9 +1348,7 @@ export default function StorefrontProductDetail() {
                                     <button
                                       key={val}
                                       type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
+                                      onClick={() => {
                                         const newOpts = { ...selectedOptions, [trimmedLabel]: trimmedVal };
                                         setSelectedOptions(newOpts);
 
@@ -1388,7 +1386,7 @@ export default function StorefrontProductDetail() {
                                           }
                                         }
                                       }}
-                                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer select-none relative z-10 ${
+                                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer select-none pointer-events-auto relative z-20 ${
                                         isSelected
                                           ? "bg-primary border-primary text-white shadow-md scale-102"
                                           : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
@@ -1411,16 +1409,14 @@ export default function StorefrontProductDetail() {
                             <span className="text-xs font-bold text-slate-500 block" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>
                               {t("الخيارات المتاحة:", "Options disponibles :", "Available Options:")}
                             </span>
-                            <div className="flex flex-wrap gap-2 justify-start relative z-10">
+                            <div className="flex flex-wrap gap-2 justify-start relative z-20">
                               {(product?.variants || []).filter((v: any) => v && v.is_active).map((variant: any) => {
                                 const isSelected = selectedVariant?.id === variant.id || selectedVariant?.name === variant.name;
                                 return (
                                   <button
                                     key={variant.id || variant.name}
                                     type="button"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
+                                    onClick={() => {
                                       setSelectedVariant(variant);
                                       const targetImgUrl = variant.image_url || variant.image?.image_url;
                                       if (targetImgUrl && Array.isArray(product.images)) {
@@ -1430,7 +1426,7 @@ export default function StorefrontProductDetail() {
                                         }
                                       }
                                     }}
-                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer select-none relative z-10 ${
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer select-none pointer-events-auto relative z-20 ${
                                       isSelected
                                         ? "bg-primary border-primary text-white shadow-md scale-102"
                                         : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
