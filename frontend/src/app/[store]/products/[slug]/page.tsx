@@ -563,17 +563,17 @@ export default function StorefrontProductDetail() {
 
   // Variant initial selection
   useEffect(() => {
-    if (!product || !product.variants || product.variants.length === 0) return;
+    if (!product || !Array.isArray(product.variants) || product.variants.length === 0) return;
     
-    // Find the first active variant
-    const firstActive = product.variants.find((v: any) => v.is_active);
+    // Find the first active variant safely
+    const firstActive = product.variants.find((v: any) => v && v.is_active);
     if (firstActive) {
       setSelectedVariant(firstActive);
-      if (firstActive.options && firstActive.options.length > 0) {
+      if (Array.isArray(firstActive.options) && firstActive.options.length > 0) {
         const initialOpts: Record<string, string> = {};
         firstActive.options.forEach((opt: any) => {
-          if (opt.label && opt.value) {
-            initialOpts[opt.label] = opt.value;
+          if (opt && opt.label && opt.value) {
+            initialOpts[opt.label.trim()] = opt.value.trim();
           }
         });
         setSelectedOptions(initialOpts);
@@ -583,7 +583,7 @@ export default function StorefrontProductDetail() {
 
   // Variant matching lookups
   useEffect(() => {
-    if (!product || !product.variants || product.variants.length === 0) {
+    if (!product || !Array.isArray(product.variants) || product.variants.length === 0) {
       setSelectedVariant(null);
       return;
     }
@@ -592,9 +592,9 @@ export default function StorefrontProductDetail() {
 
     // 1. Match by options
     let matching = product.variants.find((v: any) => {
-      if (!v.is_active) return false;
-      if (!v.options || v.options.length === 0) return false;
-      return (v.options || []).every((opt: any) => selectedOptions[opt.label] === opt.value);
+      if (!v || !v.is_active) return false;
+      if (!Array.isArray(v.options) || v.options.length === 0) return false;
+      return v.options.every((opt: any) => opt && selectedOptions[opt.label?.trim()] === opt.value?.trim());
     });
 
     // 2. Fallback match by variant name containing selected option values
@@ -602,7 +602,7 @@ export default function StorefrontProductDetail() {
       const selectedVals = Object.values(selectedOptions).filter(Boolean);
       if (selectedVals.length > 0) {
         matching = product.variants.find((v: any) => {
-          if (!v.is_active || !v.name) return false;
+          if (!v || !v.is_active || !v.name) return false;
           return selectedVals.every((val) => v.name.toLowerCase().includes(val.toLowerCase()));
         });
       }
@@ -611,8 +611,8 @@ export default function StorefrontProductDetail() {
     if (matching) {
       setSelectedVariant(matching);
       const targetImgUrl = matching.image_url || matching.image?.image_url;
-      if (targetImgUrl && product.images) {
-        const idx = product.images.findIndex((img: any) => img.image_url === targetImgUrl);
+      if (targetImgUrl && Array.isArray(product.images)) {
+        const idx = product.images.findIndex((img: any) => img && img.image_url === targetImgUrl);
         if (idx !== -1) {
           setActiveImageIndex(idx);
         }

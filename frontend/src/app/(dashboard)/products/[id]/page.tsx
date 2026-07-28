@@ -1358,11 +1358,15 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
         setHasVariants(true);
         const attrsMap: Record<string, Set<string>> = {};
         p.variants.forEach((v: any) => {
+          if (!v) return;
           (v.options || []).forEach((opt: any) => {
-            if (!attrsMap[opt.label]) {
-              attrsMap[opt.label] = new Set();
+            if (!opt || !opt.label || !opt.value) return;
+            const name = opt.label.trim();
+            const val = opt.value.trim();
+            if (!attrsMap[name]) {
+              attrsMap[name] = new Set();
             }
-            attrsMap[opt.label].add(opt.value);
+            attrsMap[name].add(val);
           });
         });
         const attrs = Object.entries(attrsMap).map(([name, vals]) => ({
