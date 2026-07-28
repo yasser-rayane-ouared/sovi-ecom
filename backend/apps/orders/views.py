@@ -318,8 +318,14 @@ class OrderExportToDeliveryView(APIView):
                 to_wilaya_name = order.wilaya.name_fr if (order.wilaya and order.wilaya.name_fr) else (order.wilaya.name_ar if order.wilaya else '')
                 to_commune_name = order.commune.name_fr if (order.commune and order.commune.name_fr) else (order.commune.name_ar if order.commune else '')
 
+                def _fmt_item(i):
+                    v_name = (i.variant_name or getattr(i.variant, 'name', '') or '').strip()
+                    if v_name:
+                        return f"{i.product_title} ({v_name}) x{i.quantity}"
+                    return f"{i.product_title} x{i.quantity}"
+
                 product_list = ', '.join(
-                    [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                    [_fmt_item(i) for i in order.items.all()]
                 ) or order.order_number
 
                 phone = (order.phone or "").strip()
@@ -436,9 +442,9 @@ class OrderExportToDeliveryView(APIView):
                     
                     # Pricing & Products
                     'montant': float(order.total),
-                    'produit': ', '.join(
-                        [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
-                    ) or order.order_number,
+                    'produit': product_list if 'product_list' in locals() else (', '.join(
+                        [f"{i.product_title} ({i.variant_name}) x{i.quantity}" if i.variant_name else f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                    ) or order.order_number),
                     
                     # Type variations
                     'type_id': 1, # 1 = Delivery

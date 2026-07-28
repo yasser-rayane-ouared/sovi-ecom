@@ -835,7 +835,9 @@ export default function StorefrontCheckout() {
                       <div className="flex items-center gap-3">
                         <img src={item.image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200"} alt={item.title} className="h-12 w-12 rounded-lg object-cover bg-slate-50 border border-slate-100 shadow-xs" />
                         <div>
-                          <h4 className="font-extrabold text-slate-800 text-xs line-clamp-1">{item.title}</h4>
+                          <h4 className="font-extrabold text-slate-800 text-xs line-clamp-1">
+                            {item.title} {item.variant?.name ? `(${item.variant.name})` : ''}
+                          </h4>
                           <span className="text-[10px] text-slate-500 font-bold font-outfit">{item.quantity} × {formatCurrency(item.variant?.price || item.price)}</span>
                         </div>
                       </div>

@@ -362,7 +362,7 @@ def ship_order(store, arguments):
             to_commune_name = order.commune.name_fr if (order.commune and order.commune.name_fr) else (order.commune.name_ar if order.commune else '')
 
             product_list = ', '.join(
-                [f"{i.product_title} x{i.quantity}" for i in order.items.all()]
+                [f"{i.product_title} ({i.variant_name}) x{i.quantity}" if i.variant_name else f"{i.product_title} x{i.quantity}" for i in order.items.all()]
             ) or order.order_number
 
             phone = (order.phone or "").strip()

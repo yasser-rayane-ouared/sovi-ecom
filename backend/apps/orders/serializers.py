@@ -351,15 +351,22 @@ class OrderCreateSerializer(serializers.Serializer):
             product = Product.objects.get(id=item['product_id'], store=store)
             variant = None
             if item.get('variant_id'):
-                variant = ProductVariant.objects.get(id=item['variant_id'])
-            price = variant.price if variant and variant.price else product.price
+                variant = ProductVariant.objects.filter(id=item['variant_id']).first()
+            price = variant.price if (variant and variant.price) else product.price
             qty = item.get('quantity', 1)
             subtotal += price * qty
+
+            variant_name = ''
+            if variant and variant.name:
+                variant_name = variant.name
+            elif item.get('variant_name'):
+                variant_name = str(item.get('variant_name')).strip()
+
             order_items.append({
                 'product': product,
                 'variant': variant,
                 'product_title': product.title,
-                'variant_name': variant.name if variant else '',
+                'variant_name': variant_name,
                 'quantity': qty,
                 'price': price,
             })

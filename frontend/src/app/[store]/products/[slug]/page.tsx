@@ -568,11 +568,16 @@ export default function StorefrontProductDetail() {
     // Find the first active variant
     const firstActive = product.variants.find((v: any) => v.is_active);
     if (firstActive) {
-      const initialOpts: Record<string, string> = {};
-      (firstActive.options || []).forEach((opt: any) => {
-        initialOpts[opt.label] = opt.value;
-      });
-      setSelectedOptions(initialOpts);
+      setSelectedVariant(firstActive);
+      if (firstActive.options && firstActive.options.length > 0) {
+        const initialOpts: Record<string, string> = {};
+        firstActive.options.forEach((opt: any) => {
+          if (opt.label && opt.value) {
+            initialOpts[opt.label] = opt.value;
+          }
+        });
+        setSelectedOptions(initialOpts);
+      }
     }
   }, [product]);
 
@@ -583,22 +588,35 @@ export default function StorefrontProductDetail() {
       return;
     }
 
-    const matching = product.variants.find((v: any) => {
+    if (Object.keys(selectedOptions).length === 0) return;
+
+    // 1. Match by options
+    let matching = product.variants.find((v: any) => {
       if (!v.is_active) return false;
+      if (!v.options || v.options.length === 0) return false;
       return (v.options || []).every((opt: any) => selectedOptions[opt.label] === opt.value);
     });
 
+    // 2. Fallback match by variant name containing selected option values
+    if (!matching) {
+      const selectedVals = Object.values(selectedOptions).filter(Boolean);
+      if (selectedVals.length > 0) {
+        matching = product.variants.find((v: any) => {
+          if (!v.is_active || !v.name) return false;
+          return selectedVals.every((val) => v.name.toLowerCase().includes(val.toLowerCase()));
+        });
+      }
+    }
+
     if (matching) {
       setSelectedVariant(matching);
-      // Auto-slide carousel to linked image URL if matches
-      if (matching.image_url && product.images) {
-        const idx = product.images.findIndex((img: any) => img.image_url === matching.image_url);
+      const targetImgUrl = matching.image_url || matching.image?.image_url;
+      if (targetImgUrl && product.images) {
+        const idx = product.images.findIndex((img: any) => img.image_url === targetImgUrl);
         if (idx !== -1) {
           setActiveImageIndex(idx);
         }
       }
-    } else {
-      setSelectedVariant(null);
     }
   }, [selectedOptions, product]);
 
@@ -911,7 +929,12 @@ export default function StorefrontProductDetail() {
       wilaya: parseInt(selectedWilaya),
       commune: selectedCommune ? parseInt(selectedCommune) : null,
       address,
-      items: [{ product_id: product.id, quantity, variant_id: selectedVariant ? selectedVariant.id : null }],
+      items: [{
+        product_id: product.id,
+        quantity,
+        variant_id: selectedVariant ? selectedVariant.id : null,
+        variant_name: selectedVariant ? (selectedVariant.name || '') : ''
+      }],
       source: "product_page",
       delivery_method: deliveryMethod, // Send delivery method details
       recaptcha_token: recaptchaToken,
@@ -1304,20 +1327,61 @@ export default function StorefrontProductDetail() {
                         {product.description}
                       </p>
                     )}
-                    {Object.keys(optionGroups).length > 0 && (
+                    {product?.variants && product.variants.filter((v: any) => v.is_active).length > 0 && (
                       <div className="space-y-3 pt-2 border-t border-dashed border-slate-100">
-                        {Object.entries(optionGroups).map(([label, values]) => (
-                          <div key={label} className={`space-y-1 ${isArabic ? 'text-right' : 'text-left'}`}>
-                            <span className="text-xs font-bold text-slate-500" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.6 }}>{label}:</span>
+                        {Object.keys(optionGroups).length > 0 ? (
+                          Object.entries(optionGroups).map(([label, values]) => (
+                            <div key={label} className={`space-y-1 ${isArabic ? 'text-right' : 'text-left'}`}>
+                              <span className="text-xs font-bold text-slate-500" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>{label}:</span>
+                              <div className="flex flex-wrap gap-2 justify-start">
+                                {values.map((val) => {
+                                  const isSelected = selectedOptions[label] === val;
+                                  return (
+                                    <button
+                                      key={val}
+                                      type="button"
+                                      onClick={() => setSelectedOptions(prev => ({ ...prev, [label]: val }))}
+                                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                        isSelected
+                                          ? "bg-primary border-primary text-white shadow-md scale-102"
+                                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                      }`}
+                                      style={isSelected && hasTheme ? {
+                                        backgroundColor: themed.accent,
+                                        borderColor: themed.accent,
+                                        color: themed.btnText || '#ffffff',
+                                      } : {}}
+                                    >
+                                      {val}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className={`space-y-1 ${isArabic ? 'text-right' : 'text-left'}`}>
+                            <span className="text-xs font-bold text-slate-500" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>
+                              {t("الخيارات المتاحة:", "Options disponibles :", "Available Options:")}
+                            </span>
                             <div className="flex flex-wrap gap-2 justify-start">
-                              {values.map((val) => {
-                                const isSelected = selectedOptions[label] === val;
+                              {product.variants.filter((v: any) => v.is_active).map((variant: any) => {
+                                const isSelected = selectedVariant?.id === variant.id || selectedVariant?.name === variant.name;
                                 return (
                                   <button
-                                    key={val}
+                                    key={variant.id || variant.name}
                                     type="button"
-                                    onClick={() => setSelectedOptions(prev => ({ ...prev, [label]: val }))}
-                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                    onClick={() => {
+                                      setSelectedVariant(variant);
+                                      const targetImgUrl = variant.image_url || variant.image?.image_url;
+                                      if (targetImgUrl && product.images) {
+                                        const idx = product.images.findIndex((img: any) => img.image_url === targetImgUrl);
+                                        if (idx !== -1) {
+                                          setActiveImageIndex(idx);
+                                        }
+                                      }
+                                    }}
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
                                       isSelected
                                         ? "bg-primary border-primary text-white shadow-md scale-102"
                                         : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
@@ -1328,13 +1392,16 @@ export default function StorefrontProductDetail() {
                                       color: themed.btnText || '#ffffff',
                                     } : {}}
                                   >
-                                    {val}
+                                    <span>{variant.name}</span>
+                                    {variant.price && parseFloat(variant.price) !== parseFloat(product.price) && (
+                                      <span className="opacity-80 text-[10px]">({formatCurrency(variant.price)})</span>
+                                    )}
                                   </button>
                                 );
                               })}
                             </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
