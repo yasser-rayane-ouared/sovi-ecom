@@ -1393,10 +1393,10 @@ export default function StorefrontProductDetail() {
                                           ? "bg-primary border-primary text-white shadow-md scale-102"
                                           : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
                                       }`}
-                                      style={isSelected && hasTheme ? {
-                                        backgroundColor: themed.accent,
-                                        borderColor: themed.accent,
-                                        color: themed.btnText || '#ffffff',
+                                      style={isSelected ? {
+                                        backgroundColor: hasTheme ? themed.accent : '#4f46e5',
+                                        borderColor: hasTheme ? themed.accent : '#4f46e5',
+                                        color: (hasTheme ? themed.btnText : '#ffffff') || '#ffffff',
                                       } : {}}
                                     >
                                       {val}
@@ -1435,10 +1435,10 @@ export default function StorefrontProductDetail() {
                                         ? "bg-primary border-primary text-white shadow-md scale-102"
                                         : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
                                     }`}
-                                    style={isSelected && hasTheme ? {
-                                      backgroundColor: themed.accent,
-                                      borderColor: themed.accent,
-                                      color: themed.btnText || '#ffffff',
+                                    style={isSelected ? {
+                                      backgroundColor: hasTheme ? themed.accent : '#4f46e5',
+                                      borderColor: hasTheme ? themed.accent : '#4f46e5',
+                                      color: (hasTheme ? themed.btnText : '#ffffff') || '#ffffff',
                                     } : {}}
                                   >
                                     <span>{variant.name}</span>
