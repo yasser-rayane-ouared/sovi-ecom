@@ -1179,11 +1179,14 @@ export default function StorefrontProductDetail() {
     product.variants.forEach((v: any) => {
       if (!v.is_active) return;
       (v.options || []).forEach((opt: any) => {
-        if (!groups[opt.label]) {
-          groups[opt.label] = [];
+        const label = (opt.label || '').trim();
+        const value = (opt.value || '').trim();
+        if (!label || !value) return;
+        if (!groups[label]) {
+          groups[label] = [];
         }
-        if (!groups[opt.label].includes(opt.value)) {
-          groups[opt.label].push(opt.value);
+        if (!groups[label].includes(value)) {
+          groups[label].push(value);
         }
       });
     });
@@ -1328,20 +1331,51 @@ export default function StorefrontProductDetail() {
                       </p>
                     )}
                     {product?.variants && product.variants.filter((v: any) => v.is_active).length > 0 && (
-                      <div className="space-y-3 pt-2 border-t border-dashed border-slate-100">
+                      <div className="space-y-3 pt-2 border-t border-dashed border-slate-100 relative z-10">
                         {Object.keys(optionGroups).length > 0 ? (
                           Object.entries(optionGroups).map(([label, values]) => (
                             <div key={label} className={`space-y-1 ${isArabic ? 'text-right' : 'text-left'}`}>
-                              <span className="text-xs font-bold text-slate-500" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>{label}:</span>
-                              <div className="flex flex-wrap gap-2 justify-start">
+                              <span className="text-xs font-bold text-slate-500 block" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>{label}:</span>
+                              <div className="flex flex-wrap gap-2 justify-start relative z-10">
                                 {values.map((val) => {
                                   const isSelected = selectedOptions[label] === val;
                                   return (
                                     <button
                                       key={val}
                                       type="button"
-                                      onClick={() => setSelectedOptions(prev => ({ ...prev, [label]: val }))}
-                                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const newOpts = { ...selectedOptions, [label]: val };
+                                        setSelectedOptions(newOpts);
+
+                                        if (product?.variants) {
+                                          let matched = product.variants.find((v: any) => {
+                                            if (!v.is_active) return false;
+                                            if (!v.options || v.options.length === 0) return false;
+                                            return (v.options || []).every((opt: any) => newOpts[opt.label] === opt.value);
+                                          });
+
+                                          if (!matched) {
+                                            const vals = Object.values(newOpts).filter(Boolean);
+                                            matched = product.variants.find((v: any) => {
+                                              if (!v.is_active || !v.name) return false;
+                                              return vals.every((vVal) => v.name.toLowerCase().includes(vVal.toLowerCase()));
+                                            });
+                                          }
+
+                                          if (matched) {
+                                            setSelectedVariant(matched);
+                                            const targetImgUrl = matched.image_url || matched.image?.image_url;
+                                            if (targetImgUrl && product.images) {
+                                              const idx = product.images.findIndex((img: any) => img.image_url === targetImgUrl);
+                                              if (idx !== -1) {
+                                                setActiveImageIndex(idx);
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }}
+                                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer select-none relative z-10 ${
                                         isSelected
                                           ? "bg-primary border-primary text-white shadow-md scale-102"
                                           : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
@@ -1361,17 +1395,18 @@ export default function StorefrontProductDetail() {
                           ))
                         ) : (
                           <div className={`space-y-1 ${isArabic ? 'text-right' : 'text-left'}`}>
-                            <span className="text-xs font-bold text-slate-500" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>
+                            <span className="text-xs font-bold text-slate-500 block" style={{ color: config.color || (hasTheme ? themed.text : undefined), opacity: 0.7 }}>
                               {t("الخيارات المتاحة:", "Options disponibles :", "Available Options:")}
                             </span>
-                            <div className="flex flex-wrap gap-2 justify-start">
+                            <div className="flex flex-wrap gap-2 justify-start relative z-10">
                               {product.variants.filter((v: any) => v.is_active).map((variant: any) => {
                                 const isSelected = selectedVariant?.id === variant.id || selectedVariant?.name === variant.name;
                                 return (
                                   <button
                                     key={variant.id || variant.name}
                                     type="button"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       setSelectedVariant(variant);
                                       const targetImgUrl = variant.image_url || variant.image?.image_url;
                                       if (targetImgUrl && product.images) {
@@ -1381,7 +1416,7 @@ export default function StorefrontProductDetail() {
                                         }
                                       }
                                     }}
-                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer select-none relative z-10 ${
                                       isSelected
                                         ? "bg-primary border-primary text-white shadow-md scale-102"
                                         : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
