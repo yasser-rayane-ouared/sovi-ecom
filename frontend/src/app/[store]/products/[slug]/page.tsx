@@ -1399,7 +1399,7 @@ export default function StorefrontProductDetail() {
                               {t("الخيارات المتاحة:", "Options disponibles :", "Available Options:")}
                             </span>
                             <div className="flex flex-wrap gap-2 justify-start relative z-10">
-                              {product.variants.filter((v: any) => v.is_active).map((variant: any) => {
+                              {(product?.variants || []).filter((v: any) => v && v.is_active).map((variant: any) => {
                                 const isSelected = selectedVariant?.id === variant.id || selectedVariant?.name === variant.name;
                                 return (
                                   <button

@@ -71,11 +71,20 @@ class VariantOptionSerializer(serializers.ModelSerializer):
 class ProductVariantSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(required=False)
     options = VariantOptionSerializer(many=True, required=False)
-    image_url = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    image_url = serializers.CharField(required=False, allow_null=True, allow_blank=True, write_only=True)
 
     class Meta:
         model = ProductVariant
         fields = ['id', 'name', 'sku', 'price', 'stock_quantity', 'low_stock_threshold', 'is_active', 'image', 'image_url', 'options']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            img = getattr(instance, 'image', None)
+            data['image_url'] = img.image_url if img else None
+        except Exception:
+            data['image_url'] = None
+        return data
 
 
 
