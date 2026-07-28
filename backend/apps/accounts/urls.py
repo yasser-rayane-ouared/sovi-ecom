@@ -5,9 +5,9 @@ from . import views
 
 urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
-    path('login/', TokenObtainPairView.as_view(), name='login'),
+    path('login/', views.UnthrottledTokenObtainPairView.as_view(), name='login'),
     path('google/', views.GoogleLoginView.as_view(), name='google-login'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    path('token/refresh/', views.UnthrottledTokenRefreshView.as_view(), name='token-refresh'),
     path('verify-email/', views.VerifyEmailView.as_view(), name='verify-email'),
     path('resend-verification/', views.ResendVerificationView.as_view(), name='resend-verification'),
     path('send-otp/', views.SendOTPView.as_view(), name='send-otp'),
