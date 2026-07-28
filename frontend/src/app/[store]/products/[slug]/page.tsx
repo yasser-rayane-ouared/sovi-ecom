@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import api from "../../../../lib/api";
@@ -233,19 +233,21 @@ export default function StorefrontProductDetail() {
   const [rawProduct, setRawProduct] = useState<any>(null);
   const [abGroup, setAbGroup] = useState<'A' | 'B' | null>(null);
 
-  const rawProductObj = (rawProduct?.enable_ab_test && rawProduct.ab_test_product_b_detail && abGroup === 'B')
-    ? rawProduct.ab_test_product_b_detail
-    : rawProduct;
-
-  const product = rawProductObj ? {
-    ...rawProductObj,
-    title: rawProductObj.title
-      ? rawProductObj.title.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '')
-      : "",
-    name: rawProductObj.name
-      ? rawProductObj.name.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '')
-      : (rawProductObj.title ? rawProductObj.title.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '') : "")
-  } : null;
+  const product = useMemo(() => {
+    const rawProductObj = (rawProduct?.enable_ab_test && rawProduct.ab_test_product_b_detail && abGroup === 'B')
+      ? rawProduct.ab_test_product_b_detail
+      : rawProduct;
+    if (!rawProductObj) return null;
+    return {
+      ...rawProductObj,
+      title: rawProductObj.title
+        ? rawProductObj.title.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '')
+        : "",
+      name: rawProductObj.name
+        ? rawProductObj.name.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '')
+        : (rawProductObj.title ? rawProductObj.title.replace(/\s*-\s*النسخة\s*B\s*$/i, '').replace(/\s*-\s*Version\s*B\s*$/i, '') : "")
+    };
+  }, [rawProduct, abGroup]);
   const [wilayas, setWilayas] = useState<WilayaOption[]>([]);
   const [communes, setCommunes] = useState<CommuneOption[]>([]);
   const [loading, setLoading] = useState(true);
