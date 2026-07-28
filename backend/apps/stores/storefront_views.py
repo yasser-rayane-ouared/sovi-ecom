@@ -15,6 +15,7 @@ from apps.pages.serializers import LandingPagePublicSerializer
 
 def get_store_or_404(subdomain):
     from django.db.models import Q
+    from django.core.cache import cache
 
     if not subdomain:
         return None
@@ -22,6 +23,13 @@ def get_store_or_404(subdomain):
     clean_subdomain = str(subdomain).lower().strip()
     if clean_subdomain.startswith('www.'):
         clean_subdomain = clean_subdomain[4:]
+
+    cache_key = f"storefront_store_{clean_subdomain}"
+    cached_result = cache.get(cache_key)
+    if cached_result is False:
+        return None
+    if cached_result is not None:
+        return cached_result
 
     raw_subdomain = clean_subdomain.split('.')[0] if '.' in clean_subdomain else clean_subdomain
 
@@ -37,7 +45,12 @@ def get_store_or_404(subdomain):
             is_suspended=False
         ).first()
 
-        return store
+        if store:
+            cache.set(cache_key, store, 300)
+            return store
+        else:
+            cache.set(cache_key, False, 60)
+            return None
     except Exception:
         return None
 

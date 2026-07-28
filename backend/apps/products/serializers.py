@@ -383,7 +383,7 @@ class ProductSerializer(serializers.ModelSerializer):
                     linked_image = var_data.get('image')
 
                 if var_id:
-                    ProductVariant.objects.filter(id=var_id, product=product).update(
+                    updated_count = ProductVariant.objects.filter(id=var_id, product=product).update(
                         name=var_data.get('name'),
                         sku=var_data.get('sku', ''),
                         price=var_data.get('price'),
@@ -391,7 +391,17 @@ class ProductSerializer(serializers.ModelSerializer):
                         is_active=var_data.get('is_active', True),
                         image=linked_image
                     )
-                    variant = ProductVariant.objects.get(id=var_id)
+                    variant = ProductVariant.objects.filter(id=var_id, product=product).first()
+                    if not variant:
+                        variant = ProductVariant.objects.create(
+                            product=product,
+                            name=var_data.get('name'),
+                            sku=var_data.get('sku', ''),
+                            price=var_data.get('price'),
+                            stock_quantity=var_data.get('stock_quantity', 0),
+                            is_active=var_data.get('is_active', True),
+                            image=linked_image
+                        )
                     keep_var_ids.append(variant.id)
                 else:
                     variant = ProductVariant.objects.create(
