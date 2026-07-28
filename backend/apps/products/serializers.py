@@ -282,15 +282,36 @@ class ProductSerializer(serializers.ModelSerializer):
 
                 variant = ProductVariant.objects.create(
                     product=product,
-                    name=var_data.get('name'),
-                    sku=var_data.get('sku', ''),
+                    name=str(var_data.get('name') or 'Variant')[:100],
+                    sku=str(var_data.get('sku') or '')[:100],
                     price=var_data.get('price'),
                     stock_quantity=var_data.get('stock_quantity', 0),
                     is_active=var_data.get('is_active', True),
                     image=linked_image
                 )
                 for opt_data in options_data:
-                    VariantOption.objects.create(variant=variant, **opt_data)
+                    if isinstance(opt_data, dict):
+                        opt_type = opt_data.get('option_type', 'custom')
+                        if opt_type not in ('size', 'color', 'custom'):
+                            opt_type = 'custom'
+                        lbl = str(opt_data.get('label') or 'Option').strip()[:50]
+                        val = str(opt_data.get('value') or '').strip()[:100]
+                        if lbl and val:
+                            VariantOption.objects.create(
+                                variant=variant,
+                                option_type=opt_type,
+                                label=lbl,
+                                value=val
+                            )
+
+        try:
+            from django.core.cache import cache
+            store = product.store
+            cache.delete(f"storefront_store_{store.subdomain.lower()}")
+            if store.custom_domain:
+                cache.delete(f"storefront_store_{store.custom_domain.lower()}")
+        except Exception:
+            pass
 
         return product
 
@@ -335,9 +356,10 @@ class ProductSerializer(serializers.ModelSerializer):
                         position=idx,
                         is_primary=(idx == 0)
                     )
-                    img = ProductImage.objects.get(id=img_id)
-                    keep_ids.append(img.id)
-                    saved_images.append(img)
+                    img = ProductImage.objects.filter(id=img_id).first()
+                    if img:
+                        keep_ids.append(img.id)
+                        saved_images.append(img)
                 else:
                     new_img = ProductImage.objects.create(
                         product=product,
@@ -365,6 +387,17 @@ class ProductSerializer(serializers.ModelSerializer):
                         position=0
                     )
 
+        # Helper to check valid UUID
+        def _is_valid_uuid(val):
+            if not val:
+                return False
+            try:
+                import uuid
+                uuid.UUID(str(val))
+                return True
+            except Exception:
+                return False
+
         # Sync variants
         if variants_data is not None:
             keep_var_ids = []
@@ -382,46 +415,59 @@ class ProductSerializer(serializers.ModelSerializer):
                 elif var_data.get('image'):
                     linked_image = var_data.get('image')
 
-                if var_id:
-                    updated_count = ProductVariant.objects.filter(id=var_id, product=product).update(
-                        name=var_data.get('name'),
-                        sku=var_data.get('sku', ''),
+                variant = None
+                if var_id and _is_valid_uuid(var_id):
+                    ProductVariant.objects.filter(id=var_id, product=product).update(
+                        name=str(var_data.get('name') or 'Variant')[:100],
+                        sku=str(var_data.get('sku') or '')[:100],
                         price=var_data.get('price'),
                         stock_quantity=var_data.get('stock_quantity', 0),
                         is_active=var_data.get('is_active', True),
                         image=linked_image
                     )
                     variant = ProductVariant.objects.filter(id=var_id, product=product).first()
-                    if not variant:
-                        variant = ProductVariant.objects.create(
-                            product=product,
-                            name=var_data.get('name'),
-                            sku=var_data.get('sku', ''),
-                            price=var_data.get('price'),
-                            stock_quantity=var_data.get('stock_quantity', 0),
-                            is_active=var_data.get('is_active', True),
-                            image=linked_image
-                        )
-                    keep_var_ids.append(variant.id)
-                else:
+
+                if not variant:
                     variant = ProductVariant.objects.create(
                         product=product,
-                        name=var_data.get('name'),
-                        sku=var_data.get('sku', ''),
+                        name=str(var_data.get('name') or 'Variant')[:100],
+                        sku=str(var_data.get('sku') or '')[:100],
                         price=var_data.get('price'),
                         stock_quantity=var_data.get('stock_quantity', 0),
                         is_active=var_data.get('is_active', True),
                         image=linked_image
                     )
-                    keep_var_ids.append(variant.id)
 
-                # Sync options for this variant (delete all and recreate for simplicity)
+                keep_var_ids.append(variant.id)
+
+                # Sync options for this variant
                 variant.options.all().delete()
                 for opt_data in options_data:
-                    VariantOption.objects.create(variant=variant, **opt_data)
+                    if isinstance(opt_data, dict):
+                        opt_type = opt_data.get('option_type', 'custom')
+                        if opt_type not in ('size', 'color', 'custom'):
+                            opt_type = 'custom'
+                        lbl = str(opt_data.get('label') or 'Option').strip()[:50]
+                        val = str(opt_data.get('value') or '').strip()[:100]
+                        if lbl and val:
+                            VariantOption.objects.create(
+                                variant=variant,
+                                option_type=opt_type,
+                                label=lbl,
+                                value=val
+                            )
 
             # Delete removed variants
             product.variants.exclude(id__in=keep_var_ids).delete()
+
+        try:
+            from django.core.cache import cache
+            store = product.store
+            cache.delete(f"storefront_store_{store.subdomain.lower()}")
+            if store.custom_domain:
+                cache.delete(f"storefront_store_{store.custom_domain.lower()}")
+        except Exception:
+            pass
 
         return product
 
