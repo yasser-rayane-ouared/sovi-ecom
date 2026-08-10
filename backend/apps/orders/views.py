@@ -259,8 +259,8 @@ class OrderExportToDeliveryView(APIView):
         label_url = ''
         status_message = ''
 
-        # Check if stopdesk/desk is requested by parsing notes
-        is_stopdesk = False
+        # Check if stopdesk/desk is requested via delivery_method or parsing notes
+        is_stopdesk = (getattr(order, 'delivery_method', 'home') in ('desk', 'stopdesk'))
         stopdesk_id = None
         
         notes_str = order.notes or ''
@@ -279,6 +279,11 @@ class OrderExportToDeliveryView(APIView):
                     parts = stopdesk_name.split(' - ', 1)
                     stopdesk_id = parts[0].strip()
                     stopdesk_name = parts[1].strip()
+                elif stopdesk_name.isdigit():
+                    stopdesk_id = stopdesk_name
+
+        if not is_stopdesk and any(k in notes_str.lower() for k in ['stopdesk', 'bureau', 'مكتب', 'desk']):
+            is_stopdesk = True
 
         logger.info("[EXPORT] Exporting order %s to company=%s (config=%s) is_stopdesk=%s stopdesk_id=%s", order.order_number, company.name, config.id, is_stopdesk, stopdesk_id)
 

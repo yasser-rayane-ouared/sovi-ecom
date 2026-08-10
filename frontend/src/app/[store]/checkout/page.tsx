@@ -279,8 +279,13 @@ export default function StorefrontCheckout() {
       setLoadingStopdesks(true);
       api.get(`/storefront/${subdomain}/wilayas/${selectedWilaya}/stopdesks/`)
         .then((res) => {
-          setStopdesks(res.data.stopdesks || []);
-          setSelectedStopdesk("");
+          const list = res.data.stopdesks || [];
+          setStopdesks(list);
+          if (list.length > 0) {
+            setSelectedStopdesk(list[0].id);
+          } else {
+            setSelectedStopdesk("");
+          }
         })
         .catch(() => {
           setStopdesks([]);

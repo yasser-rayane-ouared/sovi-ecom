@@ -635,10 +635,12 @@ class StorefrontCheckoutView(APIView):
 
             # Format stopdesk notes if applicable
             order_notes = validated_data.get('notes', '')
-            stopdesk_name = request.data.get('stopdesk_name')
-            if delivery_method == 'desk' and stopdesk_name:
-                desk_str = f"[StopDesk: {request.data.get('stopdesk_id') or ''} - {stopdesk_name}]"
-                order_notes = f"{order_notes}\n{desk_str}" if order_notes else desk_str
+            stopdesk_id_val = request.data.get('stopdesk_id') or ''
+            stopdesk_name = request.data.get('stopdesk_name') or ''
+            if delivery_method == 'desk':
+                desk_str = f"[StopDesk: {stopdesk_id_val} - {stopdesk_name or 'Bureau Stopdesk'}]"
+                if desk_str not in order_notes:
+                    order_notes = f"{order_notes}\n{desk_str}".strip()
 
             # Update order fields
             order.full_name = validated_data.get('full_name')
@@ -648,6 +650,7 @@ class StorefrontCheckoutView(APIView):
             order.commune = db_commune
             order.address = validated_data.get('address')
             order.notes = order_notes
+            order.delivery_method = delivery_method
             order.subtotal = subtotal
             order.delivery_price = delivery_price
             order.total = total
@@ -1192,4 +1195,10 @@ class StorefrontStopdesksView(APIView):
                     except Exception as e:
                         logger.warning("[STOPDESK] Ecotrack parse failed: %s", str(e))
 
-        return Response({'stopdesks': []})
+        # Fallback default stopdesk entry for the wilaya
+        fallback_stopdesks = [{
+            'id': f'desk_{wilaya_id}',
+            'name': f'Bureau Stopdesk (Wilaya {wilaya_id})',
+            'address': 'Bureau de retrait local'
+        }]
+        return Response({'stopdesks': fallback_stopdesks})

@@ -271,6 +271,9 @@ export default function StorefrontProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [deliveryPrice, setDeliveryPrice] = useState(0);
   const [deliveryMethod, setDeliveryMethod] = useState<'home' | 'desk'>('home');
+  const [stopdesks, setStopdesks] = useState<any[]>([]);
+  const [selectedStopdesk, setSelectedStopdesk] = useState<string>('');
+  const [loadingStopdesks, setLoadingStopdesks] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [orderDone, setOrderDone] = useState(false);
@@ -807,6 +810,31 @@ export default function StorefrontProductDetail() {
     }
   }, [selectedWilaya, deliveryMethod, wilayas]);
 
+  // Fetch stopdesks when wilaya or delivery method changes
+  useEffect(() => {
+    if (selectedWilaya && deliveryMethod === 'desk' && subdomain) {
+      setLoadingStopdesks(true);
+      api.get(`/storefront/${subdomain}/wilayas/${selectedWilaya}/stopdesks/`)
+        .then((res) => {
+          const list = res.data.stopdesks || [];
+          setStopdesks(list);
+          if (list.length > 0) {
+            setSelectedStopdesk(list[0].id);
+          } else {
+            setSelectedStopdesk('');
+          }
+        })
+        .catch(() => {
+          setStopdesks([]);
+          setSelectedStopdesk('');
+        })
+        .finally(() => setLoadingStopdesks(false));
+    } else {
+      setStopdesks([]);
+      setSelectedStopdesk('');
+    }
+  }, [selectedWilaya, deliveryMethod, subdomain]);
+
   // Social proof popup logic
   useEffect(() => {
     if (!product) return;
@@ -939,6 +967,8 @@ export default function StorefrontProductDetail() {
       }],
       source: "product_page",
       delivery_method: deliveryMethod, // Send delivery method details
+      stopdesk_id: selectedStopdesk,
+      stopdesk_name: stopdesks.find(s => s.id === selectedStopdesk)?.name || '',
       recaptcha_token: recaptchaToken,
       firebase_token: firebaseToken,
       commitment_checked: commitmentChecked,
@@ -1894,6 +1924,42 @@ export default function StorefrontProductDetail() {
                               )}
                             </button>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Stopdesk Agency Selector */}
+                      {selectedWilaya && deliveryMethod === 'desk' && (
+                        <div className="space-y-1.5 pt-1">
+                          <label className="block text-xs font-extrabold flex items-center gap-1" style={{ color: labels_text_color }}>
+                            <MapPin className="h-3.5 w-3.5" style={{ color: labels_text_color }} />
+                            {tf("مكتب استلام الطرود", "Bureau de retrait", "StopDesk Pickup Branch")}
+                          </label>
+                          {loadingStopdesks ? (
+                            <div className="text-xs text-slate-400 py-2 animate-pulse font-bold">
+                              {tf("جاري تحميل مكاتب الاستلام...", "Chargement des bureaux...", "Loading pickup branches...")}
+                            </div>
+                          ) : stopdesks.length > 0 ? (
+                            <select
+                              value={selectedStopdesk}
+                              onChange={(e) => setSelectedStopdesk(e.target.value)}
+                              className={`flex h-11 w-full rounded-xl border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all ${isFormArabic ? 'text-right' : 'text-left'} font-semibold`}
+                              style={{
+                                backgroundColor: fields_bg_color,
+                                color: fields_text_color,
+                                borderColor: fields_border_color
+                              }}
+                            >
+                              {stopdesks.map((s) => (
+                                <option key={s.id} value={s.id} style={{ backgroundColor: fields_bg_color, color: fields_text_color }}>
+                                  {s.name} {s.address ? `(${s.address})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className="text-xs text-slate-500 bg-slate-50 border p-2.5 rounded-xl">
+                              {tf("سيتم تحويل شحنتك لأقرب مكتب استلام بالولاية.", "Votre colis sera envoyé au bureau le plus proche.", "Your parcel will be routed to the nearest pickup office.")}
+                            </div>
+                          )}
                         </div>
                       )}
 

@@ -365,7 +365,23 @@ def ship_order(store, arguments):
                 [f"{i.product_title} ({i.variant_name}) x{i.quantity}" if i.variant_name else f"{i.product_title} x{i.quantity}" for i in order.items.all()]
             ) or order.order_number
 
-            phone = (order.phone or "").strip()
+            is_stopdesk = (getattr(order, 'delivery_method', 'home') in ('desk', 'stopdesk'))
+            stopdesk_id = None
+            notes_str = order.notes or ''
+            import re
+            match = re.search(r'\[StopDesk:\s*([^\]]*)\s*-\s*([^\]]*)\]', notes_str)
+            if match:
+                is_stopdesk = True
+                stopdesk_id = match.group(1).strip()
+            else:
+                match_simple = re.search(r'\[StopDesk:\s*([^\]]*)\]', notes_str)
+                if match_simple:
+                    is_stopdesk = True
+                    s_name = match_simple.group(1).strip()
+                    if ' - ' in s_name:
+                        stopdesk_id = s_name.split(' - ', 1)[0].strip()
+                    elif s_name.isdigit():
+                        stopdesk_id = s_name
 
             payload = [{
                 'order_id': order.order_number,
@@ -385,7 +401,8 @@ def ship_order(store, arguments):
                 'length': 30,
                 'weight': 1,
                 'freeshipping': False,
-                'is_stopdesk': False,
+                'is_stopdesk': bool(is_stopdesk),
+                'stopdesk_id': int(stopdesk_id) if (is_stopdesk and stopdesk_id and str(stopdesk_id).isdigit()) else None,
                 'has_exchange': False,
                 'product_to_collect': None,
             }]

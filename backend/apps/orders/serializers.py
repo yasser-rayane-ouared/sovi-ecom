@@ -387,10 +387,12 @@ class OrderCreateSerializer(serializers.Serializer):
 
         # Format stopdesk notes if applicable
         notes = validated_data.get('notes', '')
-        stopdesk_name = validated_data.get('stopdesk_name')
-        if delivery_method == 'desk' and stopdesk_name:
-            desk_str = f"[StopDesk: {validated_data.get('stopdesk_id') or ''} - {stopdesk_name}]"
-            notes = f"{notes}\n{desk_str}" if notes else desk_str
+        stopdesk_id_val = validated_data.get('stopdesk_id') or ''
+        stopdesk_name = validated_data.get('stopdesk_name') or ''
+        if delivery_method == 'desk':
+            desk_str = f"[StopDesk: {stopdesk_id_val} - {stopdesk_name or 'Bureau Stopdesk'}]"
+            if desk_str not in notes:
+                notes = f"{notes}\n{desk_str}".strip()
 
         order = Order.objects.create(
             store=store,
@@ -404,6 +406,7 @@ class OrderCreateSerializer(serializers.Serializer):
             subtotal=subtotal,
             delivery_price=delivery_price,
             total=total,
+            delivery_method=delivery_method,
             source=validated_data.get('source', ''),
             utm_source=validated_data.get('utm_source', ''),
             utm_medium=validated_data.get('utm_medium', ''),

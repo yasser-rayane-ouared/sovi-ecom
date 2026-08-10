@@ -32,6 +32,7 @@ class Order(TenantModel):
     commune = models.ForeignKey('delivery.Commune', on_delete=models.PROTECT, related_name='orders', null=True, blank=True)
     address = models.TextField(blank=True, default='')
     notes = models.TextField(blank=True)
+    delivery_method = models.CharField(max_length=20, default='home', help_text='home or desk delivery')
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     delivery_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2)
