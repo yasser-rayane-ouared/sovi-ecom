@@ -274,7 +274,10 @@ export default function OrdersDashboard() {
   };
 
   const fetchOrders = () => {
-    if (!currentStoreId) return;
+    if (!currentStoreId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const isAbandoned = activeTab === "abandoned";
     

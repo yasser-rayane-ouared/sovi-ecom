@@ -325,8 +325,32 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
           setData(dashRes.data);
           setProductsSummary(Array.isArray(prodRes.data) ? prodRes.data : []);
         })
-        .catch(() => {})
+        .catch(() => {
+          setData({
+            overview: {
+              total_orders: 0,
+              total_revenue: 0.0,
+              views: 0,
+              conversion_rate: 0,
+              confirmed: 0,
+              delivered: 0,
+              returned: 0,
+              cancelled: 0,
+              net_profit: 0.0,
+              total_sourcing_cost: 0.0,
+              total_ad_spend: 0.0,
+              total_delivery_loss: 0.0
+            },
+            top_wilayas: [],
+            top_products: [],
+            status_breakdown: [],
+            daily_orders: [],
+            recent_activities: []
+          });
+        })
         .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, [storeId, days, currentStoreId]);
 
@@ -357,7 +381,7 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
     return stats;
   }, [data]);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="space-y-6 font-cairo">
         <h1 className="text-3xl font-bold">{t('overviewTitle')}</h1>
@@ -371,7 +395,29 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
     );
   }
 
-  const { overview, top_wilayas, top_products, daily_orders, recent_activities } = data;
+  const activeData = data || {
+    overview: {
+      total_orders: 0,
+      total_revenue: 0.0,
+      views: 0,
+      conversion_rate: 0,
+      confirmed: 0,
+      delivered: 0,
+      returned: 0,
+      cancelled: 0,
+      net_profit: 0.0,
+      total_sourcing_cost: 0.0,
+      total_ad_spend: 0.0,
+      total_delivery_loss: 0.0
+    },
+    top_wilayas: [],
+    top_products: [],
+    status_breakdown: [],
+    daily_orders: [],
+    recent_activities: []
+  };
+
+  const { overview, top_wilayas, top_products, daily_orders, recent_activities } = activeData;
 
   const getStatusCount = (statusName: string) => {
     const item = data.status_breakdown?.find((s: any) => s.status === statusName);

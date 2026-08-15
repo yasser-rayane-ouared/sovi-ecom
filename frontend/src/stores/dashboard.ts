@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface Store {
   id: string;
@@ -36,7 +37,15 @@ interface DashboardState {
   setSelectedStore: (store: Store | null) => void;
 }
 
-export const useDashboardStore = create<DashboardState>((set) => ({
-  selectedStore: null,
-  setSelectedStore: (store) => set({ selectedStore: store }),
-}));
+export const useDashboardStore = create<DashboardState>()(
+  persist(
+    (set) => ({
+      selectedStore: null,
+      setSelectedStore: (store) => set({ selectedStore: store }),
+    }),
+    {
+      name: 'dashboard_store_storage',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
