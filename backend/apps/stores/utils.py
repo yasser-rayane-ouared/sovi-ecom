@@ -1,3 +1,4 @@
+import uuid
 from django.http import Http404
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied
@@ -6,6 +7,7 @@ from .models import Store, StoreWorker
 def get_store_for_user(store_id, user, permission_required=None):
     """
     Resolve a store for the given user.
+    Supports both Store ID (UUID) and Store Subdomain.
     If the user is the store owner, they have full access.
     If the user is a worker, checks if they have the specific permission.
     If they are neither or the store doesn't exist, raises 404 (Store not found)
@@ -15,10 +17,25 @@ def get_store_for_user(store_id, user, permission_required=None):
     if not user or not user.is_authenticated:
         raise PermissionDenied("Authentication credentials were not provided.")
 
+    is_valid_uuid = False
+    if isinstance(store_id, uuid.UUID):
+        is_valid_uuid = True
+    elif isinstance(store_id, str):
+        try:
+            uuid.UUID(store_id)
+            is_valid_uuid = True
+        except (ValueError, TypeError, AttributeError):
+            is_valid_uuid = False
+
     try:
-        store = Store.objects.get(
-            Q(id=store_id) & (Q(owner=user) | Q(workers__user=user))
-        )
+        if is_valid_uuid:
+            store = Store.objects.get(
+                Q(id=store_id) & (Q(owner=user) | Q(workers__user=user))
+            )
+        else:
+            store = Store.objects.get(
+                Q(subdomain=store_id) & (Q(owner=user) | Q(workers__user=user))
+            )
     except Store.DoesNotExist:
         raise Http404("Store not found.")
 

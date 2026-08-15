@@ -31,13 +31,26 @@ class OrderListView(generics.ListAPIView):
             'wilaya', 'commune'
         ).prefetch_related('items__product', 'status_history', 'shipments__company')
         
+        is_abandoned_param = self.request.query_params.get('is_abandoned')
+        if is_abandoned_param is not None:
+            is_ab = is_abandoned_param.lower() in ['true', '1']
+            queryset = queryset.filter(is_abandoned=is_ab)
+
         status_param = self.request.query_params.get('status')
         if status_param:
             if status_param == 'no_answer':
                 queryset = queryset.filter(status__in=['no_answer', 'no_answer_1', 'no_answer_2', 'no_answer_3'])
             else:
                 queryset = queryset.filter(status=status_param)
-                
+
+        search_param = self.request.query_params.get('search')
+        if search_param:
+            queryset = queryset.filter(
+                models.Q(order_number__icontains=search_param) |
+                models.Q(full_name__icontains=search_param) |
+                models.Q(phone__icontains=search_param)
+            )
+
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         if start_date:
