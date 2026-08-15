@@ -22,6 +22,8 @@ class StoreListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        if getattr(user, 'is_superadmin', False) or getattr(user, 'is_superuser', False):
+            return Store.objects.all().select_related('settings', 'active_theme', 'owner').prefetch_related('workers', 'workers__user').distinct()
         return Store.objects.filter(
             Q(owner=user) | Q(workers__user=user)
         ).select_related('settings', 'active_theme', 'owner').prefetch_related('workers', 'workers__user').distinct()

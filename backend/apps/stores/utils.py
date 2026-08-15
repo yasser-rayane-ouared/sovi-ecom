@@ -27,6 +27,16 @@ def get_store_for_user(store_id, user, permission_required=None):
         except (ValueError, TypeError, AttributeError):
             is_valid_uuid = False
 
+    # Superadmin bypass check: superadmins can access any store
+    if getattr(user, 'is_superadmin', False) or getattr(user, 'is_superuser', False):
+        try:
+            if is_valid_uuid:
+                return Store.objects.get(id=store_id)
+            else:
+                return Store.objects.get(subdomain=store_id)
+        except Store.DoesNotExist:
+            raise Http404("Store not found.")
+
     try:
         if is_valid_uuid:
             store = Store.objects.get(

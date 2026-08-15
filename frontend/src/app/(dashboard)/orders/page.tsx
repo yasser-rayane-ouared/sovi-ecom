@@ -10,7 +10,7 @@ import {
   Search, Download, Truck, Check, X, Package, AlertCircle, ExternalLink,
   RefreshCw, CheckSquare, Square, ShieldAlert, Trash2, ArrowUpRight, MessageSquare,
   Sparkles, Layers, Tag, Phone, Clock, MoreHorizontal, Printer, Edit, Save, Loader2,
-  Calendar, ChevronDown
+  Calendar, ChevronDown, ShoppingBag
 } from "lucide-react";
 import { formatCurrency } from "../../../lib/utils";
 
@@ -26,7 +26,7 @@ interface DeliveryConfig {
 export default function OrdersDashboard() {
   const { selectedStore } = useDashboardStore();
   const { t, isRtl, language } = useLanguageStore();
-  const currentStoreId = selectedStore?.id;
+  const currentStoreId = selectedStore?.id || selectedStore?.subdomain;
 
   const [orders, setOrders] = useState<any[]>([]);
   const [deliveryConfigs, setDeliveryConfigs] = useState<DeliveryConfig[]>([]);
