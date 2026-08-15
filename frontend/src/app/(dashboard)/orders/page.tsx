@@ -1424,7 +1424,25 @@ export default function OrdersDashboard() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={10} className="p-8 text-center text-muted-foreground">{t("ordersNoOrders")}</td>
+                    <td colSpan={10} className="p-12 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3 max-w-md mx-auto">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                          <ShoppingBag className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-foreground text-sm">
+                            {language === 'ar' 
+                              ? `لا توجد طلبات في متجر "${selectedStore?.name || currentStoreId || ''}"` 
+                              : `No orders found in "${selectedStore?.name || ''}"`}
+                          </h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {language === 'ar' 
+                              ? "قد تكون الطلبات التابعة لك في متجر آخر (مثل MC algeria). يمكنك التنقل بين جميع متاجر حسابك من أداة تبديل المتاجر في أعلى القائمة الجانبية." 
+                              : "Your orders may belong to another store under your account (such as MC algeria). You can switch between all your stores using the store dropdown at the top of the sidebar."}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
