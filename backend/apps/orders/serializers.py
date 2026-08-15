@@ -331,8 +331,8 @@ class OrderCreateSerializer(serializers.Serializer):
 
         store = self.context['store']
         items_data = validated_data.pop('items')
-        wilaya = validated_data.pop('wilaya')
-        commune = validated_data.pop('commune')
+        wilaya = validated_data.pop('wilaya', None)
+        commune = validated_data.pop('commune', None)
         delivery_method = validated_data.get('delivery_method', 'home')
 
         # Calculate delivery price
