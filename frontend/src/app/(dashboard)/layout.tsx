@@ -141,7 +141,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setStores(storeList);
         if (storeList.length > 0) {
           const currentSelected = useDashboardStore.getState().selectedStore;
-          const mainStoreWithOrders = storeList.find((s: any) => s.subdomain === 'fakhama' || s.subdomain === 'akrm' || s.subdomain === 'yassooo') || storeList[0];
+          const mainStoreWithOrders = storeList.find((s: any) => s.subdomain === 'privilegia-dz' || s.subdomain === 'fakhama' || s.subdomain === 'akrm' || s.subdomain === 'yassooo') || storeList[0];
           if (!currentSelected) {
             setSelectedStore(mainStoreWithOrders);
           } else {
