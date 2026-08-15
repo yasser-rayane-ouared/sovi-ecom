@@ -952,6 +952,15 @@ export default function StorefrontProductDetail() {
       }
     }
 
+    const selectedOptsText = Object.entries(selectedOptions)
+      .filter(([_, v]) => Boolean(v))
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' / ');
+
+    const computedVariantName = selectedVariant?.name
+      ? selectedVariant.name
+      : (selectedOptsText || (selectedVariant?.options ? selectedVariant.options.map((o: any) => `${o.label}: ${o.value}`).join(' / ') : ''));
+
     const payload: any = {
       full_name: fullName,
       phone,
@@ -963,7 +972,7 @@ export default function StorefrontProductDetail() {
         product_id: product.id,
         quantity,
         variant_id: selectedVariant ? selectedVariant.id : null,
-        variant_name: selectedVariant ? (selectedVariant.name || '') : ''
+        variant_name: computedVariantName
       }],
       source: "product_page",
       delivery_method: deliveryMethod, // Send delivery method details

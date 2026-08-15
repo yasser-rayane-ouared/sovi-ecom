@@ -1374,7 +1374,33 @@ export default function OrdersDashboard() {
                             {o.commune_name && <span className="text-[10px] text-muted-foreground">{o.commune_name}</span>}
                           </div>
                         </td>
-                        <td className="p-4 text-xs max-w-xs truncate" title={itemsSummary}>{itemsSummary}</td>
+                        <td className="p-4 text-xs">
+                          {(!o.items || o.items.length === 0) ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            <div className="flex flex-col gap-2 max-w-xs">
+                              {o.items.map((item: any, idx: number) => {
+                                const variantText = item.variant_name || item.variant?.name || '';
+                                return (
+                                  <div key={idx} className="flex flex-col gap-1 items-start">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-extrabold text-foreground leading-tight">{item.product_title}</span>
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-black bg-primary/10 text-primary border border-primary/20 shrink-0 font-outfit">
+                                        ({item.quantity}x)
+                                      </span>
+                                    </div>
+                                    {variantText && (
+                                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-gradient-to-r from-indigo-500/15 to-purple-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25 shadow-xs">
+                                        <Tag className="h-3 w-3 shrink-0 opacity-80 text-indigo-500" />
+                                        <span className="tracking-tight">{variantText}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </td>
                         <td className="p-4 font-extrabold font-outfit">{formatCurrency(parseFloat(o.total))}</td>
                         {activeTab === "active" && <td className="p-4">
                           <div className="flex flex-col gap-1.5 items-start">

@@ -490,11 +490,16 @@ export default function StorefrontCheckout() {
         delivery_method: deliveryMethod,
         stopdesk_id: selectedStopdesk,
         stopdesk_name: stopdesks.find(s => s.id === selectedStopdesk)?.name || "",
-        items: items.map((item) => ({
-          product_id: item.product_id,
-          variant_id: item.variant?.id || null,
-          quantity: item.quantity,
-        })),
+        items: items.map((item: any) => {
+          const optsText = item.options ? Object.entries(item.options).filter(([_, v]) => Boolean(v)).map(([k, v]) => `${k}: ${v}`).join(' / ') : '';
+          const varName = item.variant?.name || item.variant_name || optsText || '';
+          return {
+            product_id: item.product_id,
+            variant_id: item.variant?.id || item.variant_id || null,
+            variant_name: varName,
+            quantity: item.quantity,
+          };
+        }),
       };
 
       const response = await api.post(`/storefront/${subdomain}/checkout/`, payload, {
