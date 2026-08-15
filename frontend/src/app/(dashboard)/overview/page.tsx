@@ -282,7 +282,7 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
   const currentStoreId = storeId || selectedStore?.id;
   const [data, setData] = useState<any>(null);
   const [productsSummary, setProductsSummary] = useState<any[]>([]);
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState(365);
   const [loading, setLoading] = useState(true);
 
   // SVG states
@@ -748,6 +748,7 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
             { label: t('days7'), val: 7 },
             { label: t('days30'), val: 30 },
             { label: t('days90'), val: 90 },
+            { label: language === 'ar' ? 'كل الأوقات' : language === 'fr' ? 'Tout' : 'All Time', val: 365 },
           ].map((d) => (
             <button
               key={d.val}
