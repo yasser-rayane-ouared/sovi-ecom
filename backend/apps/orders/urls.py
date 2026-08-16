@@ -12,5 +12,6 @@ urlpatterns = [
     path('<uuid:store_id>/bulk/', views.OrderBulkActionView.as_view(), name='order-bulk'),
     path('<uuid:store_id>/export/', views.OrderExportView.as_view(), name='order-export'),
     path('<uuid:store_id>/sync-tracking/', views.OrderSyncTrackingView.as_view(), name='order-sync-tracking'),
+    path('<uuid:store_id>/debug/', views.OrderDebugView.as_view(), name='order-debug'),
 ]
 

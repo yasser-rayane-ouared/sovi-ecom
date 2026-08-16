@@ -1191,3 +1191,60 @@ class OrderDownloadPDFView(APIView):
             return HttpResponseRedirect(authenticated_print_url)
 
         return HttpResponse('Could not retrieve shipment label PDF from the courier API.', status=404)
+
+
+class OrderDebugView(APIView):
+    """Temporary diagnostic endpoint to debug order fetching on production."""
+
+    def get(self, request, store_id):
+        import traceback
+        result = {
+            'store_id_received': str(store_id),
+            'user': str(request.user),
+            'user_email': getattr(request.user, 'email', 'N/A'),
+            'is_superadmin': getattr(request.user, 'is_superadmin', False),
+            'is_superuser': getattr(request.user, 'is_superuser', False),
+        }
+
+        # Step 1: resolve store
+        try:
+            store = get_store_for_user(store_id, request.user, 'orders')
+            result['store_resolved'] = True
+            result['store_name'] = store.name
+            result['store_subdomain'] = store.subdomain
+            result['store_owner'] = str(store.owner)
+        except Exception as e:
+            result['store_resolved'] = False
+            result['store_error'] = str(e)
+            result['store_traceback'] = traceback.format_exc()
+            return Response(result)
+
+        # Step 2: count orders
+        try:
+            total = Order.objects.filter(store=store).count()
+            active = Order.objects.filter(store=store, is_abandoned=False).count()
+            abandoned = Order.objects.filter(store=store, is_abandoned=True).count()
+            result['order_total'] = total
+            result['order_active'] = active
+            result['order_abandoned'] = abandoned
+        except Exception as e:
+            result['order_count_error'] = str(e)
+            result['order_count_traceback'] = traceback.format_exc()
+            return Response(result)
+
+        # Step 3: try serializer
+        try:
+            orders = Order.objects.filter(store=store, is_abandoned=False).select_related(
+                'wilaya', 'commune'
+            ).prefetch_related('items__product', 'status_history', 'shipments__company')[:5]
+            data = OrderSerializer(orders, many=True).data
+            result['serializer_ok'] = True
+            result['serialized_count'] = len(data)
+            if data:
+                result['first_order_keys'] = list(data[0].keys())
+        except Exception as e:
+            result['serializer_ok'] = False
+            result['serializer_error'] = str(e)
+            result['serializer_traceback'] = traceback.format_exc()
+
+        return Response(result)
