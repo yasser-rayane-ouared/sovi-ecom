@@ -1582,7 +1582,9 @@ export default function StorefrontProductDetail() {
                               >
                                 {quantity === offer.quantity && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} />}
                               </div>
-                              <span className="text-sm font-bold" style={{ color: textColor }}>{offer.quantity} {t("قطع", "pièces", "pieces")}</span>
+                              <span className="text-sm font-bold" style={{ color: textColor }}>
+                                {offer.label ? offer.label : `${offer.quantity} ${t("قطع", "pièces", "pieces")}`}
+                              </span>
                               {savePct > 0 && (
                                 <span 
                                   className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
@@ -1623,7 +1625,7 @@ export default function StorefrontProductDetail() {
                           <div
                             key={offer.id || offer.quantity}
                             onClick={() => setQuantity(offer.quantity)}
-                            className="p-3 text-center cursor-pointer transition-all"
+                            className="p-3 text-center cursor-pointer transition-all flex flex-col justify-between"
                             style={{
                               borderWidth: '2px',
                               borderStyle: 'solid',
@@ -1633,7 +1635,9 @@ export default function StorefrontProductDetail() {
                             }}
                           >
                             <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(offer.price)}</div>
-                            <div className="text-xs opacity-80" style={{ color: textColor }}>{offer.quantity} {t("قطع", "pièces", "pieces")}</div>
+                            <div className="text-xs font-bold leading-tight my-0.5 line-clamp-2" style={{ color: textColor }}>
+                              {offer.label ? offer.label : `${offer.quantity} ${t("قطع", "pièces", "pieces")}`}
+                            </div>
                             {productPrice > 0 && (
                               <div 
                                 className="text-[10px] font-bold mt-0.5"

@@ -26,6 +26,7 @@ def auto_heal_schema():
                     "ALTER TABLE wilayas ADD COLUMN IF NOT EXISTS name_en VARCHAR(100) DEFAULT '';",
                     "ALTER TABLE communes ADD COLUMN IF NOT EXISTS name_en VARCHAR(100) DEFAULT '';",
                     "ALTER TABLE communes ADD COLUMN IF NOT EXISTS postal_code VARCHAR(10) DEFAULT '';",
+                    "ALTER TABLE quantity_offers ADD COLUMN IF NOT EXISTS label VARCHAR(255) DEFAULT '';",
                 ]
                 for stmt in statements:
                     try:

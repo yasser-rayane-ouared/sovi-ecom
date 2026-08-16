@@ -758,6 +758,7 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
   const [showAddOffer, setShowAddOffer] = useState(false);
   const [offerQty, setOfferQty] = useState("");
   const [offerPrice, setOfferPrice] = useState("");
+  const [offerLabel, setOfferLabel] = useState("");
 
   // Section builder
   const [sections, setSections] = useState<any[]>([]);
@@ -3316,46 +3317,73 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                     </div>
                     
                     {showAddOffer && (
-                      <div className="flex items-end gap-2 bg-muted/5 p-3 rounded-xl border border-border">
-                        <div className="flex-1 space-y-1">
-                          <label className="text-xs text-muted-foreground">{language === 'ar' ? "الكمية" : "Quantity"}</label>
-                          <Input type="number" min="1" placeholder="2" value={offerQty} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("add-offer-btn")?.click(); } }} onChange={(e) => setOfferQty(e.target.value)} className="font-outfit text-xs" />
+                      <div className="space-y-2.5 bg-muted/5 p-4 rounded-xl border border-border">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-muted-foreground">{language === 'ar' ? "الكمية" : "Quantity"}</label>
+                            <Input type="number" min="1" placeholder="2" value={offerQty} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("add-offer-btn")?.click(); } }} onChange={(e) => setOfferQty(e.target.value)} className="font-outfit text-xs h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-muted-foreground">{language === 'ar' ? "السعر الإجمالي (DZD)" : "Total Price (DZD)"}</label>
+                            <Input type="number" min="0" placeholder="3800" value={offerPrice} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("add-offer-btn")?.click(); } }} onChange={(e) => setOfferPrice(e.target.value)} className="font-outfit text-xs h-9" />
+                          </div>
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <label className="text-xs text-muted-foreground">{language === 'ar' ? "السعر الإجمالي (DZD)" : "Total Price (DZD)"}</label>
-                          <Input type="number" min="0" placeholder="3800" value={offerPrice} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("add-offer-btn")?.click(); } }} onChange={(e) => setOfferPrice(e.target.value)} className="font-outfit text-xs" />
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-muted-foreground">{language === 'ar' ? "اسم / وصف العرض (اختياري - مثلا: اشتري 2 واحصل على توصيل مجاني)" : "Offer Title / Description (optional)"}</label>
+                          <Input type="text" placeholder={language === 'ar' ? "مثلا: باقة التوفير، أو قطعتين + هدية مجانية" : "e.g. Saver Pack, or 2 Pieces + Free Delivery"} value={offerLabel} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("add-offer-btn")?.click(); } }} onChange={(e) => setOfferLabel(e.target.value)} className="text-xs h-9" />
                         </div>
-                        <div
-                          id="add-offer-btn"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const q = parseInt(offerQty);
-                            const p = parseFloat(offerPrice);
-                            if (q > 0 && p > 0) {
-                              setQuantityOffers((prev: any[]) => [...prev, { quantity: q, price: p, label: "" }].sort((a: any, b: any) => a.quantity - b.quantity));
-                              setOfferQty(""); setOfferPrice(""); setShowAddOffer(false);
-                            }
-                          }}
-                          className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium transition-all h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer active:scale-95 select-none"
-                        >إضافة</div>
-                        <button type="button" onClick={() => setShowAddOffer(false)} className="text-xs text-muted-foreground p-2">{language === 'ar' ? "إلغاء" : "Cancel"}</button>
+                        <div className="flex items-center gap-2 pt-1">
+                          <div
+                            id="add-offer-btn"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const q = parseInt(offerQty);
+                              const p = parseFloat(offerPrice);
+                              if (q > 0 && p > 0) {
+                                setQuantityOffers((prev: any[]) => [...prev, { quantity: q, price: p, label: offerLabel.trim() }].sort((a: any, b: any) => a.quantity - b.quantity));
+                                setOfferQty(""); setOfferPrice(""); setOfferLabel(""); setShowAddOffer(false);
+                              }
+                            }}
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-bold transition-all h-8 px-4 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer active:scale-95 select-none"
+                          >{language === 'ar' ? "حفظ العرض" : "Add Offer"}</div>
+                          <button type="button" onClick={() => { setShowAddOffer(false); setOfferLabel(""); }} className="text-xs text-muted-foreground p-2 hover:underline">{language === 'ar' ? "إلغاء" : "Cancel"}</button>
+                        </div>
                       </div>
                     )}
 
                     {quantityOffers.length > 0 ? (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {quantityOffers.map((offer, i) => {
                           const unitPrice = offer.price / offer.quantity;
                           const savingPct = parseFloat(price) > 0 ? Math.round(((parseFloat(price) - unitPrice) / parseFloat(price)) * 100) : 0;
                           return (
-                            <div key={i} className="flex items-center justify-between bg-muted/5 rounded-lg px-3 py-2 border border-border">
-                              <div>
-                                <span className="text-sm font-bold font-outfit">{offer.quantity}×</span>
-                                <span className="text-xs text-muted-foreground mr-2">{formatCurrency(offer.price)}</span>
-                                {savingPct > 0 && <span className="text-[10px] text-green-400 mr-2">{language === 'ar' ? "وفر" : "Save"} {savingPct}%</span>}
+                            <div key={i} className="flex flex-col gap-2 bg-muted/5 rounded-xl p-3 border border-border transition-all hover:border-primary/30">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-black font-outfit text-primary">{offer.quantity}×</span>
+                                  <span className="text-xs font-bold font-outfit text-foreground">{formatCurrency(offer.price)}</span>
+                                  {savingPct > 0 && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                      {language === 'ar' ? "وفر" : "Save"} {savingPct}%
+                                    </span>
+                                  )}
+                                </div>
+                                <button type="button" onClick={() => setQuantityOffers((prev: any[]) => prev.filter((_, j) => j !== i))} className="text-red-500 hover:text-red-400 text-xs font-semibold">{language === 'ar' ? "حذف" : "Delete"}</button>
                               </div>
-                              <button type="button" onClick={() => setQuantityOffers((prev: any[]) => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 text-xs">{language === 'ar' ? "حذف" : "Delete"}</button>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "وصف / اسم العرض المخصص:" : "Custom Offer Name / Description:"}</label>
+                                <Input
+                                  type="text"
+                                  placeholder={language === 'ar' ? `مثلا: ${offer.quantity} قطع + توصيل مجاني` : `e.g. ${offer.quantity} Pieces + Free Gift`}
+                                  value={offer.label || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setQuantityOffers((prev: any[]) => prev.map((o, idx) => idx === i ? { ...o, label: val } : o));
+                                  }}
+                                  className="text-xs h-8 bg-background/50"
+                                />
+                              </div>
                             </div>
                           );
                         })}
