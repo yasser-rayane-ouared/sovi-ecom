@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 from django.db.models import Q
 from django.http import HttpResponse
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.stores.models import Store
