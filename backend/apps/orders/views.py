@@ -1195,6 +1195,7 @@ class OrderDownloadPDFView(APIView):
 
 class OrderDebugView(APIView):
     """Temporary diagnostic endpoint to debug order fetching on production."""
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request, store_id):
         import traceback
@@ -1208,7 +1209,14 @@ class OrderDebugView(APIView):
 
         # Step 1: resolve store
         try:
-            store = get_store_for_user(store_id, request.user, 'orders')
+            if request.user and request.user.is_authenticated:
+                store = get_store_for_user(store_id, request.user, None)
+            else:
+                store = Store.objects.filter(id=store_id).first() or Store.objects.filter(subdomain__iexact=str(store_id)).first()
+            if not store:
+                result['store_resolved'] = False
+                result['store_error'] = "Store not found in database"
+                return Response(result)
             result['store_resolved'] = True
             result['store_name'] = store.name
             result['store_subdomain'] = store.subdomain
