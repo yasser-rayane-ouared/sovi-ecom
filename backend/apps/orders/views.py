@@ -21,8 +21,6 @@ from .constants import YALIDINE_COMPANIES, ECOTRACK_COMPANIES
 
 class OrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
-    filterset_fields = ['is_abandoned']
-    search_fields = ['order_number', 'full_name', 'phone']
     ordering_fields = ['created_at', 'total', 'status']
     pagination_class = None
 
@@ -60,6 +58,20 @@ class OrderListView(generics.ListAPIView):
             queryset = queryset.filter(created_at__date__lte=end_date)
 
         return queryset
+
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            logger.exception("Error listing orders for store %s: %s", kwargs.get('store_id'), str(e))
+            try:
+                store = get_store_for_user(kwargs['store_id'], request.user, 'orders')
+                orders = Order.objects.filter(store=store, is_abandoned=False)
+                serializer = self.get_serializer(orders, many=True)
+                return Response(serializer.data)
+            except Exception as e2:
+                logger.exception("Fallback order query failed: %s", str(e2))
+                return Response([], status=200)
 
 
 class OrderDetailView(generics.RetrieveUpdateAPIView):

@@ -33,19 +33,21 @@ def get_store_for_user(store_id, user, permission_required=None):
             if is_valid_uuid:
                 return Store.objects.get(id=store_id)
             else:
-                return Store.objects.get(subdomain=store_id)
+                return Store.objects.get(subdomain__iexact=store_id)
         except Store.DoesNotExist:
             raise Http404("Store not found.")
 
     try:
         if is_valid_uuid:
-            store = Store.objects.get(
+            store = Store.objects.filter(
                 Q(id=store_id) & (Q(owner=user) | Q(workers__user=user))
-            )
+            ).distinct().first()
         else:
-            store = Store.objects.get(
-                Q(subdomain=store_id) & (Q(owner=user) | Q(workers__user=user))
-            )
+            store = Store.objects.filter(
+                Q(subdomain__iexact=store_id) & (Q(owner=user) | Q(workers__user=user))
+            ).distinct().first()
+        if store is None:
+            raise Http404("Store not found.")
     except Store.DoesNotExist:
         raise Http404("Store not found.")
 
