@@ -357,12 +357,10 @@ class OrderCreateSerializer(serializers.Serializer):
             subtotal += price * qty
 
             variant_name = ''
-            if item.get('variant_name'):
-                variant_name = str(item.get('variant_name')).strip()
-            elif variant and variant.name:
+            if variant and variant.name:
                 variant_name = variant.name
-            elif item.get('options') and isinstance(item.get('options'), dict):
-                variant_name = ' / '.join([f"{k}: {v}" for k, v in item.get('options').items() if v])
+            elif item.get('variant_name'):
+                variant_name = item.get('variant_name')
 
             order_items.append({
                 'product': product,
