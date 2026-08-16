@@ -3315,6 +3315,63 @@ export default function ProductFormPage({ storeId }: ProductFormProps) {
                         </button>
                       </div>
                     </div>
+
+                    {/* Main Offer Customization (Base Tier) */}
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                          <h5 className="font-bold text-xs text-foreground">
+                            {language === 'ar' ? "العرض الأساسي (المستوى الأول)" : (language === 'fr' ? "Offre de base (Niveau 1)" : "Main / Base Offer (Tier 1)")}
+                          </h5>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {language === 'ar' ? "الخيار الأساسي" : "Base Option"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "الكمية" : "Quantity"}</label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={section.config?.main_offer_quantity !== undefined ? section.config.main_offer_quantity : "1"}
+                            onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, main_offer_quantity: e.target.value } })}
+                            placeholder="1"
+                            className="font-outfit text-xs h-8 bg-background"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-muted-foreground block">{language === 'ar' ? "السعر المخصص (اختياري - DZD)" : "Custom Price (optional - DZD)"}</label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={section.config?.main_offer_price !== undefined ? section.config.main_offer_price : ""}
+                            onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, main_offer_price: e.target.value } })}
+                            placeholder={price || (language === 'ar' ? "السعر الأساسي للمنتج" : "Product Base Price")}
+                            className="font-outfit text-xs h-8 bg-background"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground block">
+                          {language === 'ar' ? "اسم / وصف العرض الأساسي:" : "Main Offer Title / Description:"}
+                        </label>
+                        <Input
+                          type="text"
+                          value={section.config?.main_offer_label || ""}
+                          onChange={(e) => handleUpdateSection(section.id, { config: { ...section.config, main_offer_label: e.target.value } })}
+                          placeholder={language === 'ar' ? "مثلا: 1 قطعة، أو عرض الحبة الواحدة" : "e.g. 1 Piece, or Single Pack"}
+                          className="text-xs h-8 bg-background"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                      <h5 className="font-bold text-xs text-muted-foreground">
+                        {language === 'ar' ? "العروض الإضافية (تخفيضات الكمية)" : "Additional Quantity Offers"}
+                      </h5>
+                    </div>
                     
                     {showAddOffer && (
                       <div className="space-y-2.5 bg-muted/5 p-4 rounded-xl border border-border">

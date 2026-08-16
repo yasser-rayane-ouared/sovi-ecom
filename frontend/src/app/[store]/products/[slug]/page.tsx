@@ -881,9 +881,18 @@ export default function StorefrontProductDetail() {
   const productPrice = selectedVariant && selectedVariant.price
     ? parseFloat(selectedVariant.price)
     : (product ? parseFloat(product.price) : 0);
+  
+  // Custom main offer config from quantity_offers section (if any)
+  const qOffersSection = (product?.sections || []).find((s: any) => s.section_type === 'quantity_offers');
+  const qOffersConfig = qOffersSection?.config || {};
+  const mainOfferQty = qOffersConfig.main_offer_quantity ? parseInt(qOffersConfig.main_offer_quantity) : 1;
+  const mainOfferPrice = (qOffersConfig.main_offer_price && parseFloat(qOffersConfig.main_offer_price) > 0)
+    ? parseFloat(qOffersConfig.main_offer_price)
+    : productPrice;
+
   const offers = (product?.quantity_offers || []).sort((a: any, b: any) => a.quantity - b.quantity);
   const bestOffer = offers.length > 0 ? offers.filter((o: any) => o.quantity <= quantity).pop() : null;
-  const unitPrice = bestOffer ? bestOffer.price / bestOffer.quantity : productPrice;
+  const unitPrice = bestOffer ? bestOffer.price / bestOffer.quantity : (quantity === mainOfferQty ? (mainOfferPrice / mainOfferQty) : productPrice);
   const totalProductPrice = unitPrice * quantity;
   const totalSavings = (productPrice - unitPrice) * quantity;
   const couponDiscountAmount = (couponApplied && couponDiscountPct > 0) ? totalProductPrice * (couponDiscountPct / 100) : 0;
@@ -1514,6 +1523,12 @@ export default function StorefrontProductDetail() {
               const offersSectionTitle = offersConfig.offers_section_title || '';
               const defaultOffersTitle = t("عروض الكمية (اختر الكمية لتخفيض السعر)", "Offres de quantité (Choisissez la quantité pour réduire le prix)", "Quantity Offers (Select quantity to reduce price)");
               
+              const secMainQty = offersConfig.main_offer_quantity ? parseInt(offersConfig.main_offer_quantity) : 1;
+              const secMainPrice = (offersConfig.main_offer_price && parseFloat(offersConfig.main_offer_price) > 0)
+                ? parseFloat(offersConfig.main_offer_price)
+                : productPrice;
+              const secMainLabel = offersConfig.main_offer_label || t(`${secMainQty} قطعة`, `${secMainQty} pièce`, `${secMainQty} piece`);
+
               // Color variables controlled by config
               const titleColor = offersConfig.title_color || (hasTheme ? themed.text : '#0f172a');
               const textColor = offersConfig.text_color || (hasTheme ? themed.text : '#1e293b');
@@ -1539,27 +1554,27 @@ export default function StorefrontProductDetail() {
                   {offersDisplayMode === 'list' ? (
                     /* ── LIST MODE ── */
                     <div className="space-y-2">
-                      {/* Base 1-piece row */}
+                      {/* Base / Main offer row */}
                       <div
-                        onClick={() => setQuantity(1)}
+                        onClick={() => setQuantity(secMainQty)}
                         className="flex items-center justify-between px-4 py-3 cursor-pointer transition-all"
                         style={{
                           borderWidth: '2px',
                           borderStyle: 'solid',
-                          borderColor: quantity === 1 ? accentColor : offerBorderColor,
+                          borderColor: quantity === secMainQty ? accentColor : offerBorderColor,
                           borderRadius: themed.sectionRadius || '12px',
-                          backgroundColor: quantity === 1 ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
+                          backgroundColor: quantity === secMainQty ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
                         }}
                       >
                         <div className="flex items-center gap-2">
                           <div className="h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                            style={{ borderColor: quantity === 1 ? accentColor : offerBorderColor }}
+                            style={{ borderColor: quantity === secMainQty ? accentColor : offerBorderColor }}
                           >
-                            {quantity === 1 && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} />}
+                            {quantity === secMainQty && <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} />}
                           </div>
-                          <span className="text-sm font-bold" style={{ color: textColor }}>{t("1 قطعة", "1 pièce", "1 piece")}</span>
+                          <span className="text-sm font-bold" style={{ color: textColor }}>{secMainLabel}</span>
                         </div>
-                        <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(productPrice)}</div>
+                        <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(secMainPrice)}</div>
                       </div>
                       {offers.map((offer: any) => {
                         const savePct = productPrice > 0 ? Math.round((1 - offer.price / offer.quantity / productPrice) * 100) : 0;
@@ -1606,18 +1621,18 @@ export default function StorefrontProductDetail() {
                     /* ── GRID MODE (default) ── */
                     <div className="grid grid-cols-2 gap-2">
                       <div
-                        onClick={() => setQuantity(1)}
-                        className="p-3 text-center cursor-pointer transition-all"
+                        onClick={() => setQuantity(secMainQty)}
+                        className="p-3 text-center cursor-pointer transition-all flex flex-col justify-between"
                         style={{
                           borderWidth: '2px',
                           borderStyle: 'solid',
-                          borderColor: quantity === 1 ? accentColor : offerBorderColor,
+                          borderColor: quantity === secMainQty ? accentColor : offerBorderColor,
                           borderRadius: themed.sectionRadius || '12px',
-                          backgroundColor: quantity === 1 ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
+                          backgroundColor: quantity === secMainQty ? (offersConfig.active_bg_color || `${accentColor}10`) : offerBgColor,
                         }}
                       >
-                        <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(productPrice)}</div>
-                        <div className="text-xs opacity-80" style={{ color: textColor }}>{t("1 قطعة", "1 pièce", "1 piece")}</div>
+                        <div className="text-lg font-black font-outfit" style={{ color: priceColor }}>{formatCurrency(secMainPrice)}</div>
+                        <div className="text-xs font-bold leading-tight my-0.5 line-clamp-2" style={{ color: textColor }}>{secMainLabel}</div>
                       </div>
                       {offers.map((offer: any) => {
                         const savePct = productPrice > 0 ? Math.round((1 - offer.price / offer.quantity / productPrice) * 100) : 0;
