@@ -1,4 +1,4 @@
-"""Order views."""
+"""Order views for S Platform — production order listing, creation, and shipping sync."""
 import io
 import logging
 import requests
