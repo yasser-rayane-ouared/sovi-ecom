@@ -13,171 +13,204 @@ from apps.orders.models import Order
 from .models import PageView, ConversionEvent, SectionInteractionEvent
 
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class DashboardAnalyticsView(APIView):
     """Main analytics dashboard data."""
 
     def get(self, request, store_id):
-        store = get_store_for_user(store_id, request.user, None)
-        days = int(request.query_params.get('days', 30))
-        since = timezone.now() - timedelta(days=days)
+        try:
+            store = get_store_for_user(store_id, request.user, None)
+            days = int(request.query_params.get('days', 365))
+            since = timezone.now() - timedelta(days=days)
 
-        # Orders stats query (filtered by time)
-        orders = Order.objects.filter(store=store, created_at__gte=since, is_abandoned=False)
-        total_orders = orders.count()
-        total_revenue = orders.filter(status='delivered').aggregate(Sum('total'))['total__sum'] or 0
-        confirmed = orders.filter(status='confirmed').count()
-        delivered = orders.filter(status='delivered').count()
-        returned = orders.filter(status='returned').count()
-        cancelled = orders.filter(status='cancelled').count()
+            # Orders stats query (filtered by time)
+            orders = Order.objects.filter(store=store, created_at__gte=since, is_abandoned=False)
+            total_orders = orders.count()
+            total_revenue = orders.filter(status='delivered').aggregate(Sum('total'))['total__sum'] or 0
+            confirmed = orders.filter(status='confirmed').count()
+            delivered = orders.filter(status='delivered').count()
+            returned = orders.filter(status='returned').count()
+            cancelled = orders.filter(status='cancelled').count()
 
-        # Views
-        views_count = PageView.objects.filter(store=store, created_at__gte=since).count()
+            # Views
+            views_count = PageView.objects.filter(store=store, created_at__gte=since).count()
 
-        # Conversion rate
-        conversion_rate = (total_orders / views_count * 100) if views_count > 0 else 0
+            # Conversion rate
+            conversion_rate = (total_orders / views_count * 100) if views_count > 0 else 0
 
-        # Top wilayas
-        top_wilayas = orders.values('wilaya__name_ar', 'wilaya__name_fr', 'wilaya__name_en').annotate(
-            count=Count('id'),
-            revenue=Coalesce(Sum('total', filter=Q(status='delivered')), 0.0, output_field=models.FloatField()),
-            delivered_count=Count('id', filter=Q(status='delivered')),
-            returned_count=Count('id', filter=Q(status='returned')),
-        ).order_by('-count')[:10]
+            # Top wilayas
+            top_wilayas = orders.values('wilaya__name_ar', 'wilaya__name_fr', 'wilaya__name_en').annotate(
+                count=Count('id'),
+                revenue=Coalesce(Sum('total', filter=Q(status='delivered')), 0.0, output_field=models.FloatField()),
+                delivered_count=Count('id', filter=Q(status='delivered')),
+                returned_count=Count('id', filter=Q(status='returned')),
+            ).order_by('-count')[:10]
 
-        # Top products
-        from apps.orders.models import OrderItem
-        top_products = OrderItem.objects.filter(
-            order__store=store, order__created_at__gte=since, order__is_abandoned=False
-        ).values('product_title').annotate(
-            count=Sum('quantity'),
-            revenue=Sum('total'),
-        ).order_by('-count')[:10]
+            # Top products
+            from apps.orders.models import OrderItem
+            top_products = OrderItem.objects.filter(
+                order__store=store, order__created_at__gte=since, order__is_abandoned=False
+            ).values('product_title').annotate(
+                count=Sum('quantity'),
+                revenue=Sum('total'),
+            ).order_by('-count')[:10]
 
-        # Orders by status
-        status_breakdown = orders.values('status').annotate(count=Count('id'))
+            # Orders by status
+            status_breakdown = orders.values('status').annotate(count=Count('id'))
 
-        # Live profit calculation (Python-based for accuracy & DB-agnostic operations)
-        total_sourcing_cost = 0.0
-        total_ad_spend = 0.0
-        total_delivery_loss = 0.0
-        total_delivered_subtotal = 0.0
+            # Live profit calculation (Python-based for accuracy & DB-agnostic operations)
+            total_sourcing_cost = 0.0
+            total_ad_spend = 0.0
+            total_delivery_loss = 0.0
+            total_delivered_subtotal = 0.0
 
-        daily_dict = {}
-        for i in range(days):
-            d = (timezone.now() - timedelta(days=i)).date()
-            daily_dict[d] = {
-                'day': d.strftime('%Y-%m-%d'),
-                'count': 0,
-                'revenue': 0.0,
-                'net_profit': 0.0,
-            }
-
-        all_orders_data = orders.select_related('wilaya', 'commune').prefetch_related('items__product')
-        for order in all_orders_data:
-            order_date = order.created_at.date()
-            if order_date not in daily_dict:
-                daily_dict[order_date] = {
-                    'day': order_date.strftime('%Y-%m-%d'),
+            daily_dict = {}
+            for i in range(days):
+                d = (timezone.now() - timedelta(days=i)).date()
+                daily_dict[d] = {
+                    'day': d.strftime('%Y-%m-%d'),
                     'count': 0,
                     'revenue': 0.0,
                     'net_profit': 0.0,
                 }
-            
-            day_data = daily_dict[order_date]
-            day_data['count'] += 1
-            
-            order_sourcing_cost = 0.0
-            order_ad_spend = 0.0
-            order_delivery_loss = 0.0
-            
-            for item in order.items.all():
-                qty = item.quantity
-                ad_val = float(item.product.ad_cost_per_order or 0)
-                order_ad_spend += ad_val * qty
-            total_ad_spend += order_ad_spend
-            
-            if order.status == 'delivered':
-                order_revenue = float(order.total)
-                delivered_subtotal = float(order.subtotal)
-                total_delivered_subtotal += delivered_subtotal
+
+            all_orders_data = orders.select_related('wilaya', 'commune').prefetch_related('items__product')
+            for order in all_orders_data:
+                order_date = order.created_at.date()
+                if order_date not in daily_dict:
+                    daily_dict[order_date] = {
+                        'day': order_date.strftime('%Y-%m-%d'),
+                        'count': 0,
+                        'revenue': 0.0,
+                        'net_profit': 0.0,
+                    }
+                
+                day_data = daily_dict[order_date]
+                day_data['count'] += 1
+                
+                order_sourcing_cost = 0.0
+                order_ad_spend = 0.0
+                order_delivery_loss = 0.0
                 
                 for item in order.items.all():
                     qty = item.quantity
-                    cost_val = float(item.product.cost_price or 0)
-                    order_sourcing_cost += cost_val * qty
-                total_sourcing_cost += order_sourcing_cost
+                    prod = getattr(item, 'product', None)
+                    ad_val = float(getattr(prod, 'ad_cost_per_order', 0) or 0) if prod else 0.0
+                    order_ad_spend += ad_val * qty
+                total_ad_spend += order_ad_spend
                 
-                order_profit = delivered_subtotal - order_sourcing_cost - order_ad_spend
-                day_data['revenue'] += order_revenue
-                day_data['net_profit'] += order_profit
-            elif order.status == 'returned':
-                order_delivery_loss = float(order.delivery_price)
-                total_delivery_loss += order_delivery_loss
-                order_profit = - order_ad_spend - order_delivery_loss
-                day_data['net_profit'] += order_profit
-            elif order.status == 'cancelled':
-                order_profit = - order_ad_spend
-                day_data['net_profit'] += order_profit
-            else:
-                # pending status (e.g. new, confirmed, prepared, shipped)
-                order_profit = - order_ad_spend
-                day_data['net_profit'] += order_profit
+                if order.status == 'delivered':
+                    order_revenue = float(order.total)
+                    delivered_subtotal = float(order.subtotal)
+                    total_delivered_subtotal += delivered_subtotal
+                    
+                    for item in order.items.all():
+                        qty = item.quantity
+                        prod = getattr(item, 'product', None)
+                        cost_val = float(getattr(prod, 'cost_price', 0) or 0) if prod else 0.0
+                        order_sourcing_cost += cost_val * qty
+                    total_sourcing_cost += order_sourcing_cost
+                    
+                    order_profit = delivered_subtotal - order_sourcing_cost - order_ad_spend
+                    day_data['revenue'] += order_revenue
+                    day_data['net_profit'] += order_profit
+                elif order.status == 'returned':
+                    order_delivery_loss = float(order.delivery_price)
+                    total_delivery_loss += order_delivery_loss
+                    order_profit = - order_ad_spend - order_delivery_loss
+                    day_data['net_profit'] += order_profit
+                elif order.status == 'cancelled':
+                    order_profit = - order_ad_spend
+                    day_data['net_profit'] += order_profit
+                else:
+                    # pending status (e.g. new, confirmed, prepared, shipped)
+                    order_profit = - order_ad_spend
+                    day_data['net_profit'] += order_profit
 
-        net_profit = total_delivered_subtotal - total_sourcing_cost - total_ad_spend - total_delivery_loss
-        daily_orders_list = sorted(list(daily_dict.values()), key=lambda x: x['day'])
+            net_profit = total_delivered_subtotal - total_sourcing_cost - total_ad_spend - total_delivery_loss
+            daily_orders_list = sorted(list(daily_dict.values()), key=lambda x: x['day'])
 
-        # Recent activities (order creation and status changes)
-        from apps.orders.models import OrderStatusHistory
-        recent_orders = Order.objects.filter(store=store, is_abandoned=False).select_related('wilaya').order_by('-created_at')[:5]
-        recent_history = OrderStatusHistory.objects.filter(order__store=store).select_related('order', 'order__wilaya').order_by('-changed_at')[:5]
-        
-        recent_activities = []
-        for o in recent_orders:
-            recent_activities.append({
-                'type': 'order_created',
-                'order_number': o.order_number,
-                'customer_name': o.full_name,
-                'wilaya_ar': o.wilaya.name_ar,
-                'wilaya_fr': o.wilaya.name_fr,
-                'wilaya_en': o.wilaya.name_en,
-                'total': float(o.total),
-                'timestamp': o.created_at.isoformat(),
-            })
-        
-        for h in recent_history:
-            recent_activities.append({
-                'type': 'status_changed',
-                'order_number': h.order.order_number,
-                'customer_name': h.order.full_name,
-                'from_status': h.from_status,
-                'to_status': h.to_status,
-                'note': h.note,
-                'timestamp': h.changed_at.isoformat(),
-            })
+            # Recent activities (order creation and status changes)
+            from apps.orders.models import OrderStatusHistory
+            recent_orders = Order.objects.filter(store=store, is_abandoned=False).select_related('wilaya').order_by('-created_at')[:5]
+            recent_history = OrderStatusHistory.objects.filter(order__store=store).select_related('order', 'order__wilaya').order_by('-changed_at')[:5]
             
-        recent_activities = sorted(recent_activities, key=lambda x: x['timestamp'], reverse=True)[:10]
+            recent_activities = []
+            for o in recent_orders:
+                w_ar = o.wilaya.name_ar if o.wilaya else ''
+                w_fr = o.wilaya.name_fr if o.wilaya else ''
+                w_en = getattr(o.wilaya, 'name_en', '') if o.wilaya else ''
+                recent_activities.append({
+                    'type': 'order_created',
+                    'order_number': o.order_number,
+                    'customer_name': o.full_name,
+                    'wilaya_ar': w_ar,
+                    'wilaya_fr': w_fr,
+                    'wilaya_en': w_en,
+                    'total': float(o.total),
+                    'timestamp': o.created_at.isoformat(),
+                })
+            
+            for h in recent_history:
+                recent_activities.append({
+                    'type': 'status_changed',
+                    'order_number': h.order.order_number if h.order else '',
+                    'customer_name': h.order.full_name if h.order else '',
+                    'from_status': h.from_status,
+                    'to_status': h.to_status,
+                    'note': h.note,
+                    'timestamp': h.changed_at.isoformat() if h.changed_at else timezone.now().isoformat(),
+                })
+                
+            recent_activities = sorted(recent_activities, key=lambda x: x['timestamp'], reverse=True)[:10]
 
-        return Response({
-            'overview': {
-                'total_orders': total_orders,
-                'total_revenue': float(total_revenue),
-                'views': views_count,
-                'conversion_rate': round(conversion_rate, 2),
-                'confirmed': confirmed,
-                'delivered': delivered,
-                'returned': returned,
-                'cancelled': cancelled,
-                'net_profit': round(net_profit, 2),
-                'total_sourcing_cost': round(total_sourcing_cost, 2),
-                'total_ad_spend': round(total_ad_spend, 2),
-                'total_delivery_loss': round(total_delivery_loss, 2),
-            },
-            'top_wilayas': list(top_wilayas),
-            'top_products': list(top_products),
-            'status_breakdown': list(status_breakdown),
-            'daily_orders': daily_orders_list,
-            'recent_activities': recent_activities,
-        })
+            return Response({
+                'overview': {
+                    'total_orders': total_orders,
+                    'total_revenue': float(total_revenue),
+                    'views': views_count,
+                    'conversion_rate': round(conversion_rate, 2),
+                    'confirmed': confirmed,
+                    'delivered': delivered,
+                    'returned': returned,
+                    'cancelled': cancelled,
+                    'net_profit': round(net_profit, 2),
+                    'total_sourcing_cost': round(total_sourcing_cost, 2),
+                    'total_ad_spend': round(total_ad_spend, 2),
+                    'total_delivery_loss': round(total_delivery_loss, 2),
+                },
+                'top_wilayas': list(top_wilayas),
+                'top_products': list(top_products),
+                'status_breakdown': list(status_breakdown),
+                'daily_orders': daily_orders_list,
+                'recent_activities': recent_activities,
+            })
+        except Exception as e:
+            logger.exception("Error in DashboardAnalyticsView for store %s: %s", store_id, str(e))
+            return Response({
+                'overview': {
+                    'total_orders': 0,
+                    'total_revenue': 0.0,
+                    'views': 0,
+                    'conversion_rate': 0.0,
+                    'confirmed': 0,
+                    'delivered': 0,
+                    'returned': 0,
+                    'cancelled': 0,
+                    'net_profit': 0.0,
+                    'total_sourcing_cost': 0.0,
+                    'total_ad_spend': 0.0,
+                    'total_delivery_loss': 0.0,
+                },
+                'top_wilayas': [],
+                'top_products': [],
+                'status_breakdown': [],
+                'daily_orders': [],
+                'recent_activities': [],
+            })
 
 
 class TrackEventView(APIView):
@@ -552,118 +585,125 @@ class ProductsSummaryView(APIView):
     """Analytics summary for all products in a store — powers the enhanced Top Products table."""
 
     def get(self, request, store_id):
-        from apps.products.models import Product
-        from apps.orders.models import OrderItem
-        from collections import defaultdict
+        try:
+            from apps.products.models import Product
+            from apps.orders.models import OrderItem
+            from collections import defaultdict
 
-        store = get_store_for_user(store_id, request.user, None)
-        days = int(request.query_params.get('days', 30))
-        since = timezone.now() - timedelta(days=days)
+            store = get_store_for_user(store_id, request.user, None)
+            days = int(request.query_params.get('days', 365))
+            since = timezone.now() - timedelta(days=days)
 
-        # All active products for this store
-        products = Product.objects.filter(store=store, status='active')
+            # All active products for this store
+            products = Product.objects.filter(store=store, status='active')
 
-        # Batch: views per product
-        views_qs = ConversionEvent.objects.filter(
-            store=store, event_type='view_content', product__isnull=False, created_at__gte=since
-        ).values('product_id').annotate(views=Count('id'))
-        views_map = {str(row['product_id']): row['views'] for row in views_qs}
+            # Batch: views per product
+            views_qs = ConversionEvent.objects.filter(
+                store=store, event_type='view_content', product__isnull=False, created_at__gte=since
+            ).values('product_id').annotate(views=Count('id'))
+            views_map = {str(row['product_id']): row['views'] for row in views_qs}
 
-        # Batch: order items with order data
-        order_items = OrderItem.objects.filter(
-            order__store=store, order__is_abandoned=False, order__created_at__gte=since,
-            product__in=products
-        ).select_related('order', 'product')
+            # Batch: order items with order data
+            order_items = OrderItem.objects.filter(
+                order__store=store, order__is_abandoned=False, order__created_at__gte=since,
+                product__in=products
+            ).select_related('order', 'product')
 
-        # Aggregate per product
-        product_data = defaultdict(lambda: {
-            'total_orders': 0,
-            'total_qty': 0,
-            'confirmed': 0,
-            'delivered': 0,
-            'returned': 0,
-            'cancelled': 0,
-            'revenue': 0.0,
-            'ad_spend': 0.0,
-            'sourcing_cost': 0.0,
-            'delivery_loss': 0.0,
-        })
-
-        confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered'}
-
-        for oi in order_items:
-            pid = str(oi.product_id)
-            d = product_data[pid]
-            st = oi.order.status
-            qty = oi.quantity
-
-            d['total_orders'] += 1
-            d['total_qty'] += qty
-
-            ad_cost = float(oi.product.ad_cost_per_order or 0)
-            cost_price = float(oi.product.cost_price or 0)
-
-            d['ad_spend'] += ad_cost * qty
-
-            if st in confirmed_statuses:
-                d['confirmed'] += 1
-            if st == 'delivered':
-                d['delivered'] += 1
-                d['revenue'] += float(oi.total)
-                d['sourcing_cost'] += cost_price * qty
-            elif st == 'returned':
-                d['returned'] += 1
-                d['delivery_loss'] += float(oi.order.delivery_price)
-            elif st == 'cancelled':
-                d['cancelled'] += 1
-
-        # Build response list
-        result = []
-        for product in products:
-            pid = str(product.id)
-            d = product_data.get(pid, {
-                'total_orders': 0, 'total_qty': 0, 'confirmed': 0,
-                'delivered': 0, 'returned': 0, 'cancelled': 0,
-                'revenue': 0.0, 'ad_spend': 0.0, 'sourcing_cost': 0.0, 'delivery_loss': 0.0,
+            # Aggregate per product
+            product_data = defaultdict(lambda: {
+                'total_orders': 0,
+                'total_qty': 0,
+                'confirmed': 0,
+                'delivered': 0,
+                'returned': 0,
+                'cancelled': 0,
+                'revenue': 0.0,
+                'ad_spend': 0.0,
+                'sourcing_cost': 0.0,
+                'delivery_loss': 0.0,
             })
 
-            total_orders = d['total_orders']
-            delivered = d['delivered']
-            returned = d['returned']
-            revenue = d['revenue']
-            ad_spend = d['ad_spend']
-            sourcing_cost = d['sourcing_cost']
-            delivery_loss = d['delivery_loss']
+            confirmed_statuses = {'confirmed', 'pending', 'prepared', 'shipped', 'delivered'}
 
-            confirmation_rate = (d['confirmed'] / total_orders * 100) if total_orders > 0 else 0
-            delivery_rate = (delivered / (delivered + returned) * 100) if (delivered + returned) > 0 else 0
-            net_profit = revenue - sourcing_cost - ad_spend - delivery_loss
+            for oi in order_items:
+                pid = str(oi.product_id)
+                d = product_data[pid]
+                st = oi.order.status if oi.order else 'new'
+                qty = oi.quantity
 
-            result.append({
-                'product_id': pid,
-                'title': product.title,
-                'primary_image': product.primary_image,
-                'views': views_map.get(pid, 0),
-                'total_orders': total_orders,
-                'total_qty': d['total_qty'],
-                'confirmed': d['confirmed'],
-                'delivered': delivered,
-                'returned': returned,
-                'cancelled': d['cancelled'],
-                'confirmation_rate': round(confirmation_rate, 1),
-                'delivery_rate': round(delivery_rate, 1),
-                'revenue': round(revenue, 2),
-                'ad_spend': round(ad_spend, 2),
-                'sourcing_cost': round(sourcing_cost, 2),
-                'delivery_loss': round(delivery_loss, 2),
-                'net_profit': round(net_profit, 2),
-                'stock': product.stock_quantity,
-                'low_stock_threshold': product.low_stock_threshold,
-                'track_inventory': product.track_inventory,
-            })
+                d['total_orders'] += 1
+                d['total_qty'] += qty
 
-        # Sort by total orders descending
-        result.sort(key=lambda x: x['total_orders'], reverse=True)
+                prod = getattr(oi, 'product', None)
+                ad_cost = float(getattr(prod, 'ad_cost_per_order', 0) or 0) if prod else 0.0
+                cost_price = float(getattr(prod, 'cost_price', 0) or 0) if prod else 0.0
 
-        return Response(result)
+                d['ad_spend'] += ad_cost * qty
+
+                if st in confirmed_statuses:
+                    d['confirmed'] += 1
+                if st == 'delivered':
+                    d['delivered'] += 1
+                    d['revenue'] += float(oi.total)
+                    d['sourcing_cost'] += cost_price * qty
+                elif st == 'returned':
+                    d['returned'] += 1
+                    d['delivery_loss'] += float(getattr(oi.order, 'delivery_price', 0) or 0) if oi.order else 0.0
+                elif st == 'cancelled':
+                    d['cancelled'] += 1
+
+            # Build response list
+            result = []
+            for product in products:
+                pid = str(product.id)
+                d = product_data.get(pid, {
+                    'total_orders': 0, 'total_qty': 0, 'confirmed': 0,
+                    'delivered': 0, 'returned': 0, 'cancelled': 0,
+                    'revenue': 0.0, 'ad_spend': 0.0, 'sourcing_cost': 0.0, 'delivery_loss': 0.0,
+                })
+
+                total_orders = d['total_orders']
+                delivered = d['delivered']
+                returned = d['returned']
+                revenue = d['revenue']
+                ad_spend = d['ad_spend']
+                sourcing_cost = d['sourcing_cost']
+                delivery_loss = d['delivery_loss']
+
+                confirmation_rate = (d['confirmed'] / total_orders * 100) if total_orders > 0 else 0
+                delivery_rate = (delivered / (delivered + returned) * 100) if (delivered + returned) > 0 else 0
+                net_profit = revenue - sourcing_cost - ad_spend - delivery_loss
+
+                primary_img = getattr(product, 'primary_image', None)
+
+                result.append({
+                    'product_id': pid,
+                    'title': product.title,
+                    'primary_image': primary_img,
+                    'views': views_map.get(pid, 0),
+                    'total_orders': total_orders,
+                    'total_qty': d['total_qty'],
+                    'confirmed': d['confirmed'],
+                    'delivered': delivered,
+                    'returned': returned,
+                    'cancelled': d['cancelled'],
+                    'confirmation_rate': round(confirmation_rate, 1),
+                    'delivery_rate': round(delivery_rate, 1),
+                    'revenue': round(revenue, 2),
+                    'ad_spend': round(ad_spend, 2),
+                    'sourcing_cost': round(sourcing_cost, 2),
+                    'delivery_loss': round(delivery_loss, 2),
+                    'net_profit': round(net_profit, 2),
+                    'stock': product.stock_quantity,
+                    'low_stock_threshold': product.low_stock_threshold,
+                    'track_inventory': product.track_inventory,
+                })
+
+            # Sort by total orders descending
+            result.sort(key=lambda x: x['total_orders'], reverse=True)
+
+            return Response(result)
+        except Exception as e:
+            logger.exception("Error in ProductsSummaryView for store %s: %s", store_id, str(e))
+            return Response([])
 
