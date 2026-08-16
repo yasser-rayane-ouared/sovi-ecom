@@ -61,6 +61,11 @@ class OrderListView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         try:
+            from .db_patch import auto_heal_schema
+            auto_heal_schema()
+        except Exception:
+            pass
+        try:
             return super().list(request, *args, **kwargs)
         except Exception as e:
             logger.exception("Error listing orders for store %s: %s", kwargs.get('store_id'), str(e))
@@ -1199,6 +1204,11 @@ class OrderDebugView(APIView):
 
     def get(self, request, store_id):
         import traceback
+        try:
+            from .db_patch import auto_heal_schema
+            auto_heal_schema()
+        except Exception:
+            pass
         result = {
             'store_id_received': str(store_id),
             'user': str(request.user),
