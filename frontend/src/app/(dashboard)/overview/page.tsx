@@ -325,7 +325,8 @@ export default function DashboardOverview({ storeId, storeSubdomain }: OverviewP
           setData(dashRes.data);
           setProductsSummary(Array.isArray(prodRes.data) ? prodRes.data : []);
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error('[Overview] Analytics API error:', err?.response?.status, err?.response?.data || err?.message);
           setData({
             overview: {
               total_orders: 0,

@@ -3,6 +3,7 @@ import io
 import logging
 import requests
 import pandas as pd
+from django.db.models import Q
 from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -46,9 +47,9 @@ class OrderListView(generics.ListAPIView):
         search_param = self.request.query_params.get('search')
         if search_param:
             queryset = queryset.filter(
-                models.Q(order_number__icontains=search_param) |
-                models.Q(full_name__icontains=search_param) |
-                models.Q(phone__icontains=search_param)
+                Q(order_number__icontains=search_param) |
+                Q(full_name__icontains=search_param) |
+                Q(phone__icontains=search_param)
             )
 
         start_date = self.request.query_params.get('start_date')

@@ -335,7 +335,9 @@ export default function OrdersDashboard() {
           setTotalCount(data.count ?? 0);
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('[fetchOrders] API error:', err?.response?.status, err?.response?.data || err?.message);
+      })
       .finally(() => setLoading(false));
   };
 

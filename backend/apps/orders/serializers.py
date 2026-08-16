@@ -5,8 +5,8 @@ from apps.delivery.models import Wilaya, Commune, DeliveryPricing
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    cost_price = serializers.DecimalField(source='product.cost_price', max_digits=10, decimal_places=2, read_only=True, required=False, allow_null=True)
-    ad_cost_per_order = serializers.DecimalField(source='product.ad_cost_per_order', max_digits=10, decimal_places=2, read_only=True, required=False, allow_null=True)
+    cost_price = serializers.DecimalField(source='product.cost_price', max_digits=10, decimal_places=2, read_only=True, required=False, allow_null=True, default=None)
+    ad_cost_per_order = serializers.DecimalField(source='product.ad_cost_per_order', max_digits=10, decimal_places=2, read_only=True, required=False, allow_null=True, default=None)
 
     class Meta:
         model = OrderItem
